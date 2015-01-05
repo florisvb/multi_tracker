@@ -42,7 +42,7 @@ def draw_trajectory(img, pts, color, thickness):
 
 # The main tracking class, a ROS node
 class Tracker:
-    def __init__(self, image_topic="camera/image_mono"):
+    def __init__(self, image_topic="/image_raw"):
         '''
         Default image_topic for:
             Basler ace cameras with camera_aravis driver: camera/image_raw
@@ -50,11 +50,13 @@ class Tracker:
         '''
         # default parameters (should eventually move to ROS Parameter Server)
         self.params = { 'image_topic'       : image_topic,
-                        'threshold'         : 70,
+                        'threshold'         : 150,
                         'backgroundupdate'  : 0.001,
                         'camera_encoding'   : 'mono8', # fireflies are bgr8, basler gige cams are mono8
-                        'min_persistence_to_draw'   : 50,
-                        'max_frames_to_draw'        : 100,
+                        'min_persistence_to_draw'   : 10,
+                        'max_frames_to_draw'        : 50,
+                        'erode'                     : 1,
+                        'dilate'                    : 2,
                         }
                         
         # set up thread locks
@@ -274,6 +276,7 @@ class Tracker:
 
             # Display the image.
             # Draw the tracked trajectories
+            print self.tracked_trajectories.keys()
             for objid, trajec in self.tracked_trajectories.items():
                 if len(trajec.positions) > 5:
                     draw_trajectory(self.imgOutput, trajec.positions, trajec.color, 2)
@@ -310,6 +313,10 @@ class Tracker:
             self.threshed = np.uint8(self.threshed)
         else:
             self.threshed = np.uint8(cv2.cvtColor(self.threshed, cv2.COLOR_BGR2GRAY))
+        kernel = np.ones((5,5),np.uint8)
+        self.threshed = cv2.erode(self.threshed, kernel, iterations=self.params['erode'])
+        self.threshed = cv2.dilate(self.threshed, kernel, iterations=self.params['dilate'])
+        
         contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         # http://docs.opencv.org/trunk/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html
         
