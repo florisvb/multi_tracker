@@ -42,15 +42,15 @@ def draw_trajectory(img, pts, color, thickness):
 
 # The main tracking class, a ROS node
 class Tracker:
-    def __init__(self, image_topic="/image_raw"):
+    def __init__(self):
         '''
         Default image_topic for:
             Basler ace cameras with camera_aravis driver: camera/image_raw
             Pt Grey Firefly cameras with pt grey driver : camera/image_mono
         '''
-        # default parameters (should eventually move to ROS Parameter Server)
-        self.params = { 'image_topic'       : image_topic,
-                        'threshold'         : 150,
+        # default parameters (parameter server overides them)
+        self.params = { 'image_topic'       : '/camera/image_raw',
+                        'threshold'         : 20,
                         'backgroundupdate'  : 0.001,
                         'camera_encoding'   : 'mono8', # fireflies are bgr8, basler gige cams are mono8
                         'min_persistence_to_draw'   : 10,
@@ -58,6 +58,12 @@ class Tracker:
                         'erode'                     : 1,
                         'dilate'                    : 2,
                         }
+        for parameter, value in self.params.items():
+            try:
+                p = '/multi_tracker/tracker/' + parameter
+                self.params[parameter] = rospy.get_param(p)
+            except:
+                print 'Using default parameter: ', parameter, ' = ', value
                         
         # set up thread locks
         self.lockParams = threading.Lock()
@@ -69,8 +75,6 @@ class Tracker:
         
         # initialize display
         self.window_name = 'output'
-        cv2.namedWindow(self.window_name,1)
-        self.window_name = 'threshold'
         cv2.namedWindow(self.window_name,1)
         
         self.cvbridge = CvBridge()
@@ -276,7 +280,7 @@ class Tracker:
 
             # Display the image.
             # Draw the tracked trajectories
-            print self.tracked_trajectories.keys()
+            #print self.tracked_trajectories.keys()
             for objid, trajec in self.tracked_trajectories.items():
                 if len(trajec.positions) > 5:
                     draw_trajectory(self.imgOutput, trajec.positions, trajec.color, 2)
@@ -284,10 +288,6 @@ class Tracker:
                 
             # Show the image
             cv2.imshow('output', self.imgOutput)
-            try:
-                cv2.imshow('threshold', np.uint8(self.threshed))
-            except:
-                pass
             
         cv2.waitKey(1)
 

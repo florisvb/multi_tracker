@@ -12,21 +12,22 @@ from multi_tracker.msg import Trackedobject, Trackedobjectlist
 
 import matplotlib.pyplot as plt
 import Kalman
+import imp
 
-class Struct(object):
-    pass
 
 class DataAssociator(object):
-    def __init__(self, kalman_parameters, max_covariance):
-        self.kalman_parameters = kalman_parameters
+    def __init__(self):
+        kalman_parameter_py_file = rospy.get_param('/multi_tracker/data_association/kalman_parameters_py_file')
+        self.kalman_parameters = imp.load_source('kalman_parameters', kalman_parameter_py_file)
+        self.association_matrix = self.kalman_parameters.association_matrix
+        self.association_matrix /= np.linalg.norm(self.association_matrix)
+        self.max_covariance = self.kalman_parameters.max_covariance
+        
         self.tracked_objects = {}
         self.current_objid = 0
         
-        self.association_matrix = np.matrix([[1,1,0,.01,0]], dtype=float).T
-        self.association_matrix /= np.linalg.norm(self.association_matrix)
-        self.min_size = 5
-        self.max_covariance = max_covariance
-        self.max_tracked_objects = 5
+        self.min_size = rospy.get_param('/multi_tracker/data_association/min_size')
+        self.max_tracked_objects = rospy.get_param('/multi_tracker/data_association/max_tracked_objects')
         
         # initialize the node
         rospy.init_node('data_associator')
@@ -127,7 +128,7 @@ class DataAssociator(object):
                 contours_accounted_for = []
                 objects_accounted_for = []
                 for data in contour_to_object_error:
-                    print data
+                    #print data
                     c = int(data[2])
                     objid = int(data[1])
                     if objid not in objects_accounted_for:
@@ -227,33 +228,5 @@ class DataAssociator(object):
                 
                 
 if __name__ == '__main__':
-    
-    ### Define kalman filter properties ########
-    kalman_parameters = Struct()
-    kalman_parameters.phi = np.matrix([  [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                                         [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                                         [0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
-                                         [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-                                         [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
-                                         [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                                         [0, 0, 0, 0, 0, 0, 1, 1, 0, 0],
-                                         [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                                         [0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
-    kalman_parameters.H   = np.matrix([  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                         [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                                         [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                                         [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                                         [0, 0, 0, 0, 0, 0, 0, 0, 1, 0]])
-    kalman_parameters.P0  = 1*np.eye(10)
-    kalman_parameters.Q   = 1*np.matrix(np.eye(10))
-    kalman_parameters.R   = .0001*np.matrix(np.eye(5))
-    
-    kalman_parameters.gamma  = None
-    kalman_parameters.gammaW = None
-    
-    max_covariance = 30
-    #############################################
-    
-    data_associator = DataAssociator(kalman_parameters, max_covariance)
+    data_associator = DataAssociator()
     data_associator.main()
