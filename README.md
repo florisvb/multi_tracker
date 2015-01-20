@@ -16,6 +16,8 @@ Copy the multi tracker package into your catkin_workspace/src, and run catkin_ma
 
 To talk to the camera, you may need a udev rule. There is an example udev rule for a point grey firefly camera in the rules folder. Move this file to /etc/udev/rules.d directory.
 
+To use the analysis tools, from inside multi_tracker, run python ./setup.py install. You may want to do this in a virtual environment: http://docs.python-guide.org/en/latest/dev/virtualenvs/
+
 Overview
 ============
 
