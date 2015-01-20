@@ -55,7 +55,7 @@ def convert_data_dict_to_object(data_dict):
         data.setdefault(key, trajec_obj)
     return data
     
-def load_data_as_python_object_from_csv_file(filename):
+def load_data_as_python_object_from_csv_file(filename)  :
     data_dict = read_csv_file_to_dictionary(filename)
     data_obj  = convert_data_dict_to_object(data_dict)
     return data_obj

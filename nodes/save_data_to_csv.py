@@ -11,7 +11,7 @@ class DataListener:
     def __init__(self, info='data information'):
         self.subTrackedObjects = rospy.Subscriber('multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
         
-        filename = 'data.csv'
+        filename = '/home/brainhacker/multi_tracker_data_files/data.csv'
         self.csvfile = open(filename, 'wb')
         self.datawrite = csv.writer(self.csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         

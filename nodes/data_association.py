@@ -33,10 +33,10 @@ class DataAssociator(object):
         rospy.init_node('data_associator')
         
         # Publishers.
-        self.pubTrackedObjects = rospy.Publisher('multi_tracker/tracked_objects', Trackedobjectlist)
+        self.pubTrackedObjects = rospy.Publisher('/multi_tracker/tracked_objects', Trackedobjectlist)
         
         # Subscriptions.
-        self.subImage = rospy.Subscriber('multi_tracker/contours', Contourlist, self.contour_identifier)
+        self.subImage = rospy.Subscriber('/multi_tracker/contours', Contourlist, self.contour_identifier)
         
     def contour_identifier(self, contourlist):
         now = rospy.get_time()
