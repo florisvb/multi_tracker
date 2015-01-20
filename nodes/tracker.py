@@ -15,6 +15,7 @@ from std_msgs.msg import Float32, Header, String
 
 from multi_tracker.msg import Contourinfo, Contourlist
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
+from multi_tracker.srv import TrackerParameterTrigger
 
 # for basler ace cameras, use camera_aravis
 # https://github.com/ssafarik/camera_aravis
@@ -49,7 +50,7 @@ class Tracker:
             Pt Grey Firefly cameras with pt grey driver : camera/image_mono
         '''
         # default parameters (parameter server overides them)
-        self.params = { 'image_topic'       : '/camera/image_raw',
+        self.params = { 'image_topic'       : '/camera/image_mono',
                         'threshold'         : 20,
                         'backgroundupdate'  : 0.001,
                         'camera_encoding'   : 'mono8', # fireflies are bgr8, basler gige cams are mono8
@@ -72,6 +73,10 @@ class Tracker:
         # initialize the node
         rospy.init_node('multi_tracker')
         self.nodename = rospy.get_name().rstrip('/')
+        
+        # background reset service
+        self.reset_background_flag = False
+        self.reset_background_service = rospy.Service("/tracker/reset_background", TrackerParameterTrigger, self.reset_background)
         
         # initialize display
         self.window_name = 'output'
@@ -108,13 +113,17 @@ class Tracker:
         self.tracked_trajectories = {}
         
         # Publishers - publish contours
-        self.pubContours = rospy.Publisher(self.nodename+'/contours', Contourlist)
+        self.pubContours = rospy.Publisher('/multi_tracker/contours', Contourlist)
         
         # Subscriptions - subscribe to images, and tracked objects
         sizeImage = 128+1024*1024*3 # Size of header + data.
         self.subImage = rospy.Subscriber(self.params['image_topic'], Image, self.image_callback, queue_size=2, buff_size=2*sizeImage, tcp_nodelay=True)
-        self.subTrackedObjects = rospy.Subscriber('multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
+        self.subTrackedObjects = rospy.Subscriber('/multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
 
+    def reset_background(self, service_call):
+        self.reset_background_flag = True
+        return 1
+        
     def tracked_object_callback(self, tracked_objects):
         for trajec in self.tracked_trajectories.values():
             trajec.popout = 1
@@ -303,6 +312,10 @@ class Tracker:
         # If there is no background image, grab one, and move on to the next frame
         if self.backgroundImage is None:
             self.backgroundImage = copy.copy(np.float32(self.imgScaled))
+            return
+        if self.reset_background_flag:
+            self.backgroundImage = copy.copy(np.float32(self.imgScaled))
+            self.reset_background_flag = False
             return
         
         # Absdiff, threshold, and contours       
