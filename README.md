@@ -22,8 +22,10 @@ To use the analysis tools, from inside multi_tracker, run python ./setup.py inst
 Overview
 ============
 
-Parameters - examples are found in the /demo folder
+Parameters
 ------------
+
+(examples are found in the /demo folder)
 
 camera_parameters.yaml: specifies key camera parameters, such as framerate, exposure time, etc. These parameter names may be camera brand dependent. The camera parameters can also be specified by running *rosrun rqt_reconfigure rqt_reconfigure* 
 
