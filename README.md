@@ -9,6 +9,7 @@ Installing
 ============
 
 Install ROS, if you have not already done so (tested with ros hydro, full desktop install): http://wiki.ros.org/hydro/Installation/Ubuntu
+
 Setup your catkin workspace, if you have not already done so: http://wiki.ros.org/catkin/Tutorials/create_a_workspace
 Install the appropriate camera driver, such as: http://wiki.ros.org/pointgrey_camera_driver
 
@@ -22,7 +23,7 @@ Overview
 ============
 
 Parameters - examples are found in the /demo folder
-==
+------------
 
 camera_parameters.yaml: specifies key camera parameters, such as framerate, exposure time, etc. These parameter names may be camera brand dependent. The camera parameters can also be specified by running *rosrun rqt_reconfigure rqt_reconfigure* 
 
@@ -33,18 +34,13 @@ data_association_parameters.yaml: specifies various data association related par
 kalman_parameters.py: specifies the kalman parameters
 
 Nodes
-==
+------------
 
 tracker.py: listens to /camera/image_mono (or whatever topic is specified in tracker_parameters.yaml), uses simple background subtraction and contour detection to find the outer most contours of objects in the tracking space. Publishes a list of contours each frame, including x,y position, angle, and area. 
 
 data_association.py: listens to the '/multi_tracker/contours' topic and runs a simple kalman filter to do data association and filtering between subsequent frames. Publishes tracked objects to '/multi_tracker/tracked_objects' 
 
 save_data_to_csv.py: listens to '/multi_tracker/tracked_objects' and saves the data to a csv file. Alternatively, one can use "rosbag record" to record the data in ros format, which can replayed at a later time.
-
-Analysis
-==
-
-Some bare-bones python based analysis tools are provided in multi_tracker_analysis. From multi_tracker, run setup.py to install these tools. Then, from multi_tracker/demo run analyze_data to make a simple plot of the collected data (you will need to edit analyze_data.py so that it reads from the correct data file).
 
 
 Running
