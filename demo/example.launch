@@ -1,0 +1,14 @@
+<launch>
+
+<rosparam command="load" file="/home/brainhacker/catkin_ws/src/multi_tracker/demo/camera_parameters.yaml"/>
+
+<rosparam command="load" file="/home/brainhacker/catkin_ws/src/multi_tracker/demo/tracker_parameters.yaml"/>
+<rosparam command="load" file="/home/brainhacker/catkin_ws/src/multi_tracker/demo/data_association_parameters.yaml"/>
+
+<include file="$(find pointgrey_camera_driver)/launch/camera.launch" />
+
+<node name="tracker" pkg="multi_tracker" type="tracker.py" />
+<node name="data_association" pkg="multi_tracker" type="data_association.py" />
+<node name="save_data_to_csv" pkg="multi_tracker" type="save_data_to_csv.py" />
+
+</launch>

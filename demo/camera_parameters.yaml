@@ -1,0 +1,6 @@
+/camera/camera_nodelet/auto_exposure: False
+/camera/camera_nodelet/auto_gain: False
+/camera/camera_nodelet/auto_shutter: False
+/camera/camera_nodelet/frame_rate: 30
+/camera/camera_nodelet/gain: 1
+/camera/camera_nodelet/shutter_speed: 0.005
