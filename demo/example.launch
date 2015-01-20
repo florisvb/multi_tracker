@@ -1,9 +1,12 @@
 <launch>
 
-<rosparam command="load" file="/home/brainhacker/catkin_ws/src/multi_tracker/demo/camera_parameters.yaml"/>
+<rosparam command="load" file="home_directory.yaml"/>
+<rosparam command="load" file="csv_data_filename.yaml"/>
 
-<rosparam command="load" file="/home/brainhacker/catkin_ws/src/multi_tracker/demo/tracker_parameters.yaml"/>
-<rosparam command="load" file="/home/brainhacker/catkin_ws/src/multi_tracker/demo/data_association_parameters.yaml"/>
+<rosparam command="load" file="camera_parameters.yaml"/>
+
+<rosparam command="load" file="tracker_parameters.yaml"/>
+<rosparam command="load" file="data_association_parameters.yaml"/>
 
 <include file="$(find pointgrey_camera_driver)/launch/camera.launch" />
 

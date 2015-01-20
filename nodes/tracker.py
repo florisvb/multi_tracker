@@ -15,7 +15,7 @@ from std_msgs.msg import Float32, Header, String
 
 from multi_tracker.msg import Contourinfo, Contourlist
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
-from multi_tracker.srv import TrackerParameterTrigger
+from multi_tracker.srv import resetBackgroundService
 
 # for basler ace cameras, use camera_aravis
 # https://github.com/ssafarik/camera_aravis
@@ -76,7 +76,7 @@ class Tracker:
         
         # background reset service
         self.reset_background_flag = False
-        self.reset_background_service = rospy.Service("/tracker/reset_background", TrackerParameterTrigger, self.reset_background)
+        self.reset_background_service = rospy.Service("/multi_tracker/reset_background", resetBackgroundService, self.reset_background)
         
         # initialize display
         self.window_name = 'output'

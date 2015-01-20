@@ -2,6 +2,8 @@
 from __future__ import division
 import roslib
 import rospy
+import os
+
 import numpy as np
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
 
@@ -11,7 +13,10 @@ class DataListener:
     def __init__(self, info='data information'):
         self.subTrackedObjects = rospy.Subscriber('multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
         
-        filename = '/home/brainhacker/multi_tracker_data_files/data.csv'
+        filename = rospy.get_param('/multi_tracker/csv_data_filename')
+        home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/home_directory') )
+        filename = os.path.join(home_directory, filename)
+        
         self.csvfile = open(filename, 'wb')
         self.datawrite = csv.writer(self.csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         
