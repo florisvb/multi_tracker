@@ -113,7 +113,7 @@ class Tracker:
         self.tracked_trajectories = {}
         
         # Publishers - publish contours
-        self.pubContours = rospy.Publisher('/multi_tracker/contours', Contourlist)
+        self.pubContours = rospy.Publisher('/multi_tracker/contours', Contourlist, queue_size=5)
         
         # Subscriptions - subscribe to images, and tracked objects
         sizeImage = 128+1024*1024*3 # Size of header + data.
