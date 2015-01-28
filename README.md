@@ -13,7 +13,7 @@ Install ROS, if you have not already done so (tested with ros hydro, full deskto
 Setup your catkin workspace, if you have not already done so: http://wiki.ros.org/catkin/Tutorials/create_a_workspace
 Install the appropriate camera driver, such as: http://wiki.ros.org/pointgrey_camera_driver
 
-Copy the multi tracker package into your catkin_workspace/src, and run catkin_make from the catkin_workspace.
+Copy the multi tracker package into your catkin_workspace/src, and run catkin_make from the catkin_workspace. Use "git clone https://github.com/florisvb/multi_tracker.git" for this. 
 
 To talk to the camera, you may need a udev rule. There is an example udev rule for a point grey firefly camera in the rules folder. Move this file to /etc/udev/rules.d directory.
 
@@ -54,7 +54,7 @@ Minimal steps to run:
 2. from inside the demo folder, run "roslaunch example.launch"
    This will load all the yaml (parameter) files, and launch the tracker, data_association, and save_data_to_csv nodes.
 3. Hit control-c to stop the node (and cease collecting data).
-4. from inside the demo folder, run "python ./analyzer_data.py" to analyze the default data.csv file, and make a plot using matplotlib. For this to work, you must have installed multi_tracker_analysis
+4. from inside the demo folder, run "python ./analyze_data.py" to analyze the default data.csv file, and make a plot using matplotlib. For this to work, you must have installed multi_tracker_analysis
 
 Now you can try editing some of the contents of the yaml files to change the file structure and tracking parameters.
 
