@@ -8,5 +8,5 @@ author_email='floris@caltech.edu',
 packages = ['multi_tracker_analysis'],
 license='BSD',
 description='Analysis scripts for data collected with multi tracker',
-long_description=open('README.txt').read(),
+long_description=open('README.md').read(),
 )
