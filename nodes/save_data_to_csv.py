@@ -14,7 +14,7 @@ class DataListener:
         self.subTrackedObjects = rospy.Subscriber('multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
         
         filename = rospy.get_param('/multi_tracker/csv_data_filename')
-        home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/home_directory') )
+        home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
         filename = os.path.join(home_directory, filename)
         
         self.csvfile = open(filename, 'wb')
