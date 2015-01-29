@@ -340,6 +340,8 @@ class Tracker:
                 ellipse = cv2.fitEllipse(contour)
                 cv2.ellipse(self.imgOutput,ellipse,(0,255,0),2) # draw the ellipse, green
                 (x,y), (a,b), angle = ellipse
+                a /= 2.
+                b /= 2.
                 ecc = np.min((a,b)) / np.max((a,b))
                 area = np.pi*a*b
             # Small ones just get a point
