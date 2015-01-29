@@ -32,6 +32,7 @@ class DataAssociator(object):
         self.current_objid = 0
         
         self.min_size = rospy.get_param('/multi_tracker/data_association/min_size')
+        self.max_size = rospy.get_param('/multi_tracker/data_association/max_size')
         self.max_tracked_objects = rospy.get_param('/multi_tracker/data_association/max_tracked_objects')
         
         # initialize the node
@@ -90,6 +91,8 @@ class DataAssociator(object):
                     if c in contours_accounted_for:
                         continue
                     if contour.area < self.min_size:
+                        continue
+                    if contour.area > self.max_size:
                         continue
                     measurement = np.matrix([contour.x, contour.y, 0, contour.area, contour.angle]).T
                     error = np.linalg.norm( (measurement.T - (tracked_object['kalmanfilter'].H*tracked_object_state_estimate).T)*self.association_matrix )

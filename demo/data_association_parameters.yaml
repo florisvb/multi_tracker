@@ -1,3 +1,4 @@
 /multi_tracker/data_association/kalman_parameters_py_file: 'kalman_parameters.py'
 /multi_tracker/data_association/min_size: 5
+/multi_tracker/data_association/max_size: 20
 /multi_tracker/data_association/max_tracked_objects: 5
