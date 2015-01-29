@@ -58,6 +58,7 @@ class Tracker:
                         'max_frames_to_draw'        : 50,
                         'erode'                     : 1,
                         'dilate'                    : 2,
+                        'max_change_in_frame'       : 0.2,
                         }
         for parameter, value in self.params.items():
             try:
@@ -330,6 +331,11 @@ class Tracker:
         self.threshed = cv2.erode(self.threshed, kernel, iterations=self.params['erode'])
         self.threshed = cv2.dilate(self.threshed, kernel, iterations=self.params['dilate'])
         
+        # if the thresholded absolute difference is too large, reset the background
+        if np.sum(self.threshed>0) / float(self.shapeImage[0]*self.shapeImage[1]) > self.params['max_change_in_frame']:
+            self.backgroundImage = copy.copy(np.float32(self.imgScaled))
+            return
+            
         contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         # http://docs.opencv.org/trunk/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html
         

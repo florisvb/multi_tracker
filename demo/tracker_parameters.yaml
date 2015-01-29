@@ -6,3 +6,4 @@
 /multi_tracker/tracker/max_frames_to_draw: 50
 /multi_tracker/tracker/erode: 1
 /multi_tracker/tracker/dilate: 0
+/multi_tracker/tracker/max_change_in_frame: 0.2
