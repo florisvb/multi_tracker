@@ -17,6 +17,8 @@ from multi_tracker.msg import Contourinfo, Contourlist
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
 from multi_tracker.srv import resetBackgroundService
 
+import image_processing
+
 # for basler ace cameras, use camera_aravis
 # https://github.com/ssafarik/camera_aravis
 # rosrun camera_aravis camnode
@@ -82,6 +84,9 @@ class Tracker:
         # initialize display
         self.window_name = 'output'
         cv2.namedWindow(self.window_name,1)
+        self.window_name = 'imgproc'
+        cv2.namedWindow(self.window_name,2)
+        self.imgproc = None
         
         self.cvbridge = CvBridge()
         
@@ -114,11 +119,11 @@ class Tracker:
         self.tracked_trajectories = {}
         
         # Publishers - publish contours
-        self.pubContours = rospy.Publisher('/multi_tracker/contours', Contourlist, queue_size=5)
+        self.pubContours = rospy.Publisher('/multi_tracker/contours', Contourlist, queue_size=30)
         
         # Subscriptions - subscribe to images, and tracked objects
         sizeImage = 128+1024*1024*3 # Size of header + data.
-        self.subImage = rospy.Subscriber(self.params['image_topic'], Image, self.image_callback, queue_size=2, buff_size=2*sizeImage, tcp_nodelay=True)
+        self.subImage = rospy.Subscriber(self.params['image_topic'], Image, self.image_callback, queue_size=5, buff_size=2*sizeImage, tcp_nodelay=True)
         self.subTrackedObjects = rospy.Subscriber('/multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
 
     def reset_background(self, service_call):
@@ -173,7 +178,7 @@ class Tracker:
             self.iImgWorking = iImgWorkingNext
         self.bValidImage = True
 
-    def process_image(self):
+    def process_frame_buffer(self):
         rosimg = None
         
         with self.lockBuffer:
@@ -285,9 +290,10 @@ class Tracker:
             else:
                 self.imgOutput = self.imgScaled
             
-            # Call to image processing function
-            self.background_subtraction()
-
+########### Call to image processing function ##############################################################
+            self.process_image() # must be defined seperately - see "main" code at the bottom of this script
+############################################################################################################
+            
             # Display the image.
             # Draw the tracked trajectories
             #print self.tracked_trajectories.keys()
@@ -295,97 +301,27 @@ class Tracker:
                 if len(trajec.positions) > 5:
                     draw_trajectory(self.imgOutput, trajec.positions, trajec.color, 2)
                     cv2.circle(self.imgOutput,(int(trajec.positions[-1][0]),int(trajec.positions[-1][1])),int(trajec.covariances[-1]),trajec.color,2)
-                
+                    print trajec.covariances[-1]
+                    
             # Show the image
             cv2.imshow('output', self.imgOutput)
+            
+            if self.imgproc is not None:
+                cv2.imshow('imgproc', self.imgproc)
             
         cv2.waitKey(1)
 
     def Main(self):
         while (not rospy.is_shutdown()):
-            self.process_image()
+            self.process_frame_buffer()
         cv2.destroyAllWindows()
 
-########### This is where the processing happens ####################################################
-    def background_subtraction(self):
-        now = rospy.get_time()
-        
-        # If there is no background image, grab one, and move on to the next frame
-        if self.backgroundImage is None:
-            self.backgroundImage = copy.copy(np.float32(self.imgScaled))
-            return
-        if self.reset_background_flag:
-            self.backgroundImage = copy.copy(np.float32(self.imgScaled))
-            self.reset_background_flag = False
-            return
-        
-        # Absdiff, threshold, and contours       
-        # cv2.RETR_EXTERNAL only extracts the outer most contours - good for speed, and most simple objects 
-        self.absdiff = cv2.absdiff(np.float32(self.imgScaled), self.backgroundImage)
-        retval, self.threshed = cv2.threshold(self.absdiff, self.params['threshold'], 255, 0)#cv2.THRESH_BINARY)
-        if self.params['camera_encoding'] == 'mono8':
-            self.threshed = np.uint8(self.threshed)
-        else:
-            self.threshed = np.uint8(cv2.cvtColor(self.threshed, cv2.COLOR_BGR2GRAY))
-        kernel = np.ones((5,5),np.uint8)
-        self.threshed = cv2.erode(self.threshed, kernel, iterations=self.params['erode'])
-        self.threshed = cv2.dilate(self.threshed, kernel, iterations=self.params['dilate'])
-        
-        # if the thresholded absolute difference is too large, reset the background
-        if np.sum(self.threshed>0) / float(self.shapeImage[0]*self.shapeImage[1]) > self.params['max_change_in_frame']:
-            self.backgroundImage = copy.copy(np.float32(self.imgScaled))
-            return
-            
-        contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        # http://docs.opencv.org/trunk/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html
-        
-        contour_info = []
-        for contour in contours:
-            # Large objects are approximated by an ellipse
-            if len(contour) > 5:
-                ellipse = cv2.fitEllipse(contour)
-                cv2.ellipse(self.imgOutput,ellipse,(0,255,0),2) # draw the ellipse, green
-                (x,y), (a,b), angle = ellipse
-                a /= 2.
-                b /= 2.
-                ecc = np.min((a,b)) / np.max((a,b))
-                area = np.pi*a*b
-            # Small ones just get a point
-            else:
-                moments = cv2.moments(contour, True)
-                m00 = moments['m00']
-                m10 = moments['m10']
-                m01 = moments['m01']
-                if (m00 != 0.0):
-                    x = m10/m00
-                    y = m01/m00
-                else: # There was just one pixel in the contour.
-                    (x,y) = contour[0][0]
-                area = 1.
-                angle = 0.
-                ecc = 1.
-                cv2.circle(self.imgOutput,(int(x),int(y)),2,(0,255,0),2) # draw a circle, green
-                
-            # Prepare to publish the contour info
-            # contour message info: dt, x, y, angle, area, ecc
-            data = Contourinfo()
-            data.header  = Header(seq=self.iCountCamera,stamp=rospy.Time.now(),frame_id='BackgroundSubtraction')
-            data.dt      = self.dtCamera
-            data.x       = x
-            data.y       = y
-            data.area    = area
-            data.angle   = angle
-            data.ecc     = ecc
-            contour_info.append(data)
-                
-        # publish the contours
-        self.pubContours.publish( Contourlist(header = Header(seq=self.iCountCamera,stamp=rospy.Time.now(),frame_id='BackgroundSubtraction'), contours=contour_info) )
-            
-        # running background update
-        cv2.accumulateWeighted(np.float32(self.imgScaled), self.backgroundImage, self.params['backgroundupdate'])
 #####################################################################################################
     
 if __name__ == '__main__':
     
+    image_processing_function = rospy.get_param('/multi_tracker/tracker/image_processor')
+    image_processor = image_processing.__getattribute__(image_processing_function)
+    Tracker.process_image = image_processor
     tracker = Tracker()
     tracker.Main()

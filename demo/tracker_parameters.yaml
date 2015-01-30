@@ -7,3 +7,5 @@
 /multi_tracker/tracker/erode: 1
 /multi_tracker/tracker/dilate: 0
 /multi_tracker/tracker/max_change_in_frame: 0.2
+/multi_tracker/tracker/std_dev_update: 0.0002
+/multi_tracker/tracker/image_processor: 'background_subtraction_with_standard_deviations'
