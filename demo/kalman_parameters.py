@@ -17,9 +17,9 @@ H   = np.matrix([                    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                                      [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
                                      [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
                                      [0, 0, 0, 0, 0, 0, 0, 0, 1, 0]])
-P0  = 1*np.eye(10)
-Q   = 5*np.matrix(np.eye(10))
-R   = .1*np.matrix(np.eye(5))
+P0  = 10*np.eye(10)
+Q   = .01*np.matrix(np.eye(10))
+R   = 10*np.matrix(np.eye(5))
 
 gamma  = None
 gammaW = None

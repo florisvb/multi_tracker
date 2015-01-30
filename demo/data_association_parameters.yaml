@@ -2,3 +2,4 @@
 /multi_tracker/data_association/min_size: 5
 /multi_tracker/data_association/max_size: 20
 /multi_tracker/data_association/max_tracked_objects: 5
+/multi_tracker/data_association/n_covariances_to_reject_data: 3

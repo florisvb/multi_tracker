@@ -7,7 +7,7 @@ import copy
 import numpy as np
 import os
 
-from std_msgs.msg import Float32, Header, String
+from std_msgs.msg import Float32, Header, String                                                                                                                                  
 from geometry_msgs.msg import Point, Vector3
 from multi_tracker.msg import Contourinfo, Contourlist
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
@@ -34,12 +34,13 @@ class DataAssociator(object):
         self.min_size = rospy.get_param('/multi_tracker/data_association/min_size')
         self.max_size = rospy.get_param('/multi_tracker/data_association/max_size')
         self.max_tracked_objects = rospy.get_param('/multi_tracker/data_association/max_tracked_objects')
+        self.n_covariances_to_reject_data = rospy.get_param('/multi_tracker/data_association/n_covariances_to_reject_data')
         
         # initialize the node
         rospy.init_node('data_associator')
         
         # Publishers.
-        self.pubTrackedObjects = rospy.Publisher('/multi_tracker/tracked_objects', Trackedobjectlist, queue_size=10)
+        self.pubTrackedObjects = rospy.Publisher('/multi_tracker/tracked_objects', Trackedobjectlist, queue_size=30)
         
         # Subscriptions.
         self.subImage = rospy.Subscriber('/multi_tracker/contours', Contourlist, self.contour_identifier)
@@ -76,78 +77,43 @@ class DataAssociator(object):
             objid_in_order_of_persistance = [objids[o] for o in order]
         #print len(objid_in_order_of_persistance), objid_in_order_of_persistance
         
-        # loop through objects, in order of persistance, so longest existing objects get priority on new measurements    
-        if 0:    
-            for objid in objid_in_order_of_persistance:
-                tracked_object = self.tracked_objects[objid]
-                tracked_object_state_estimate = tracked_object['kalmanfilter'].xhat_apriori  # extract estimate of current position based on Kalman model
-                tracked_object_covariance = np.linalg.norm(tracked_object['kalmanfilter'].P_apriori.diagonal())  # extract current covariance based on Kalman model 
-                
-                # loop through contours and find best match, provided it is within the range of covariances allowed
-                best_contour = None
-                best_error = None
-                errors = []
-                for c, contour in enumerate(contourlist.contours):
-                    if c in contours_accounted_for:
-                        continue
-                    if contour.area < self.min_size:
-                        continue
-                    if contour.area > self.max_size:
-                        continue
-                    measurement = np.matrix([contour.x, contour.y, 0, contour.area, contour.angle]).T
-                    error = np.linalg.norm( (measurement.T - (tracked_object['kalmanfilter'].H*tracked_object_state_estimate).T)*self.association_matrix )
-                    errors.append(error)
-                    if error < 3*np.sqrt(tracked_object_covariance):
-                        if best_contour is None:
-                            best_contour = c
-                            best_error = error
-                        else:
-                            if error < best_error:
-                                best_contour = c
-                                best_error = error
-                                
-                if best_contour is not None:
-                    contour = contourlist.contours[best_contour]
-                    measurement = np.matrix([contour.x, contour.y, 0, contour.area, contour.angle]).T
-                    update_tracked_object(tracked_object, measurement, contourlist)
-                    contours_accounted_for.append(c)
                     
         # loop through contours and find errors to all tracked objects (if less than allowed error)
         # then loop through the errors in order of increasing error and assigned contours to objects
-        if 1:    
-            contour_to_object_error = []
-            for c, contour in enumerate(contourlist.contours):
-                if contour.area < self.min_size:
-                    continue
-                measurement = np.matrix([contour.x, contour.y, 0, contour.area, contour.angle]).T
-                
-                for objid, tracked_object in self.tracked_objects.items():
-                    tracked_object_state_estimate = tracked_object['kalmanfilter'].xhat_apriori  # extract estimate of current position based on Kalman model
-                    error = np.linalg.norm( (measurement.T - (tracked_object['kalmanfilter'].H*tracked_object_state_estimate).T)*self.association_matrix )
-                    tracked_object_covariance = np.linalg.norm(tracked_object['kalmanfilter'].P_apriori.diagonal())  # extract current covariance based on Kalman model 
-                    if error < 10*np.sqrt(tracked_object_covariance):
-                        contour_to_object_error.append([error, objid, c])
+        contour_to_object_error = []
+        for c, contour in enumerate(contourlist.contours):
+            if contour.area < self.min_size:
+                continue
+            if contour.area > self.max_size:
+                continue
+            measurement = np.matrix([contour.x, contour.y, 0, contour.area, contour.angle]).T
             
-            if len(contour_to_object_error) > 0:
-                contour_to_object_error = np.array(contour_to_object_error)
-                sorted_indices = np.argsort(contour_to_object_error[:,0])
-                contour_to_object_error = contour_to_object_error[sorted_indices,:]
-                
-                contours_accounted_for = []
-                objects_accounted_for = []
-                for data in contour_to_object_error:
-                    #print data
-                    c = int(data[2])
-                    objid = int(data[1])
-                    if objid not in objects_accounted_for:
-                        if c not in contours_accounted_for:
-                            contour = contourlist.contours[c]
-                            measurement = np.matrix([contour.x, contour.y, 0, contour.area, contour.angle]).T
-                            tracked_object = self.tracked_objects[objid]
-                            update_tracked_object(tracked_object, measurement, contourlist)
-                            contours_accounted_for.append(c)
-                            objects_accounted_for.append(objid)
-                
+            for objid, tracked_object in self.tracked_objects.items():
+                tracked_object_state_estimate = tracked_object['kalmanfilter'].xhat_apriori  # extract estimate of current position based on Kalman model
+                error = np.linalg.norm( (measurement.T - (tracked_object['kalmanfilter'].H*tracked_object_state_estimate).T)*self.association_matrix )
+                tracked_object_covariance = np.linalg.norm(tracked_object['kalmanfilter'].P.diagonal()[0:2])  # extract current covariance based on Kalman model 
+                if error < self.n_covariances_to_reject_data*tracked_object_covariance:
+                    contour_to_object_error.append([error, objid, c])
+        
+        if len(contour_to_object_error) > 0:
+            contour_to_object_error = np.array(contour_to_object_error)
+            sorted_indices = np.argsort(contour_to_object_error[:,0])
+            contour_to_object_error = contour_to_object_error[sorted_indices,:]
+            contours_accounted_for = []
+            objects_accounted_for = []
+            for data in contour_to_object_error:
+                #print data
+                c = int(data[2])
+                objid = int(data[1])
+                if objid not in objects_accounted_for:
+                    if c not in contours_accounted_for:
+                        contour = contourlist.contours[c]
+                        measurement = np.matrix([contour.x, contour.y, 0, contour.area, contour.angle]).T
+                        tracked_object = self.tracked_objects[objid]
+                        update_tracked_object(tracked_object, measurement, contourlist)
+                        contours_accounted_for.append(c)
+                        objects_accounted_for.append(objid)
+        
         # any unnaccounted contours should spawn new objects
         for c, contour in enumerate(contourlist.contours):
             if c not in contours_accounted_for:
@@ -191,7 +157,7 @@ class DataAssociator(object):
             #print 'destroying: ', len(objects_to_destroy)
             
         for objid, tracked_object in self.tracked_objects.items():
-            if np.linalg.norm( tracked_object['kalmanfilter'].P ) > self.max_covariance:
+            if np.linalg.norm(tracked_object['kalmanfilter'].P.diagonal()[0:2]) > self.max_covariance:
                 if objid not in objects_to_destroy:
                     objects_to_destroy.append(objid)
         for objid in objects_to_destroy:
