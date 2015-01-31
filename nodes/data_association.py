@@ -54,14 +54,13 @@ class DataAssociator(object):
         
         def update_tracked_object(tracked_object, measurement, contourlist):
             if measurement is None:
-                xhat, P, K = tracked_object['kalmanfilter'].update( None ) # run kalman filter
                 m = np.matrix([np.nan for i in range( tracked_object['measurement'].shape[0] ) ]).T
+                xhat, P, K = tracked_object['kalmanfilter'].update( None ) # run kalman filter
             else:
-                xhat, P, K = tracked_object['kalmanfilter'].update( tracked_object['measurement'][:,-1] ) # run kalman filter
                 tracked_object['measurement'] = np.hstack( (tracked_object['measurement'], measurement) ) # add object's data to the tracked object
+                xhat, P, K = tracked_object['kalmanfilter'].update( tracked_object['measurement'][:,-1] ) # run kalman filter
             tracked_object['frames'].append(contourlist.header.seq)
             tracked_object['timestamp'].append(contourlist.header.stamp)
-            
             tracked_object['state'] = np.hstack( (tracked_object['state'], xhat) )
         
         # iterate through objects first
@@ -91,10 +90,11 @@ class DataAssociator(object):
             for objid, tracked_object in self.tracked_objects.items():
                 tracked_object_state_estimate = tracked_object['kalmanfilter'].xhat_apriori  # extract estimate of current position based on Kalman model
                 error = np.linalg.norm( (measurement.T - (tracked_object['kalmanfilter'].H*tracked_object_state_estimate).T)*self.association_matrix )
-                tracked_object_covariance = np.linalg.norm(tracked_object['kalmanfilter'].P.diagonal()[0:2])  # extract current covariance based on Kalman model 
-                if error < self.n_covariances_to_reject_data*tracked_object_covariance:
+                tracked_object_covariance = np.linalg.norm( (tracked_object['kalmanfilter'].H*tracked_object['kalmanfilter'].P).T*self.association_matrix )
+                if error < self.n_covariances_to_reject_data*np.sqrt(tracked_object_covariance):
                     contour_to_object_error.append([error, objid, c])
         
+        o = []
         if len(contour_to_object_error) > 0:
             contour_to_object_error = np.array(contour_to_object_error)
             sorted_indices = np.argsort(contour_to_object_error[:,0])
@@ -113,7 +113,11 @@ class DataAssociator(object):
                         update_tracked_object(tracked_object, measurement, contourlist)
                         contours_accounted_for.append(c)
                         objects_accounted_for.append(objid)
-        
+                        e = [   tracked_object['kalmanfilter'].xhat_apriori[0] - contour.x,
+                                tracked_object['kalmanfilter'].xhat_apriori[2] - contour.y]
+                        tracked_object_covariance = np.linalg.norm( (tracked_object['kalmanfilter'].H*tracked_object['kalmanfilter'].P).T*self.association_matrix )
+                        o.append([objid, e, tracked_object_covariance])
+                                     
         # any unnaccounted contours should spawn new objects
         for c, contour in enumerate(contourlist.contours):
             if c not in contours_accounted_for:
@@ -139,14 +143,18 @@ class DataAssociator(object):
                                                                         H       = self.kalman_parameters.H, 
                                                                         Q       = self.kalman_parameters.Q, 
                                                                         R       = self.kalman_parameters.R, 
-                                                                        gammaW  = self.kalman_parameters.gammaW)
+                                                                        gammaW  = self.kalman_parameters.gammaW,
+                                                                        )
                           }
                 self.tracked_objects.setdefault(new_obj['objid'], new_obj)
                 self.current_objid += 1
-                
+        
+        
+        
         # propagate unmatched objects
         for objid, tracked_object in self.tracked_objects.items():
             if tracked_object['frames'][-1] != contourlist.header.seq:
+                print objid
                 update_tracked_object(tracked_object, None, contourlist)
         
         # make sure we don't get too many objects - delete the oldest ones, and ones with high covariances
@@ -157,7 +165,8 @@ class DataAssociator(object):
             #print 'destroying: ', len(objects_to_destroy)
             
         for objid, tracked_object in self.tracked_objects.items():
-            if np.linalg.norm(tracked_object['kalmanfilter'].P.diagonal()[0:2]) > self.max_covariance:
+            tracked_object_covariance = np.linalg.norm( (tracked_object['kalmanfilter'].H*tracked_object['kalmanfilter'].P).T*self.association_matrix )
+            if tracked_object_covariance > self.max_covariance:
                 if objid not in objects_to_destroy:
                     objects_to_destroy.append(objid)
         for objid in objects_to_destroy:
@@ -190,13 +199,15 @@ class DataAssociator(object):
                     data.velocity       = Vector3( v[0], v[1], v[2] )
                     data.angle          = tracked_object['state'][tracked_object['statenames']['angle'],-1]
                     data.size           = tracked_object['state'][tracked_object['statenames']['size'],-1]#np.linalg.norm(tracked_object['kalmanfilter'].P.diagonal())
-                    data.covariance     = np.linalg.norm(tracked_object['kalmanfilter'].P.diagonal()[0:2]) # position covariance only
+                    data.measurement    = Point( tracked_object['measurement'][0, -1], tracked_object['measurement'][1, -1], 0)
+                    tracked_object_covariance = np.linalg.norm( (tracked_object['kalmanfilter'].H*tracked_object['kalmanfilter'].P).T*self.association_matrix )
+                    data.covariance     = tracked_object_covariance # position covariance only
                     data.objid          = tracked_object['objid']
                     data.persistence    = len(tracked_object['frames'])
                     object_info_to_publish.append(data)
             header = Header(stamp=t)
             self.pubTrackedObjects.publish( Trackedobjectlist(header=header, tracked_objects=object_info_to_publish) )
-    
+        
     def main(self):
         rospy.spin()
                 

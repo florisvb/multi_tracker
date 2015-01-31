@@ -6,4 +6,4 @@ float64 size
 float64 covariance
 uint32 objid
 uint32 persistence
-
+geometry_msgs/Point measurement

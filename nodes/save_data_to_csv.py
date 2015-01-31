@@ -33,6 +33,8 @@ class DataListener:
                                 'angle',
                                 'size',
                                 'covariance',
+                                'measurement.x',
+                                'measurement.y',
                                 ]
         self.data_format = {    'header.stamp.secs': 'int',
                                 'header.stamp.nsecs': 'int', 
@@ -47,6 +49,8 @@ class DataListener:
                                 'angle': 'float',
                                 'size': 'float',
                                 'covariance': 'float',
+                                'measurement.x': 'float',
+                                'measurement.y': 'float',
                             }
         formats = [self.data_format[data] for data in self.data_to_save]
         
