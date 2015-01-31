@@ -55,7 +55,6 @@ class DiscreteKalmanFilter(object):
         self.H = H
         self.gammaW = gammaW
         
-        
     # the meat of the algorithm
     def update(self, measurement=None, control=None):
     
@@ -72,16 +71,6 @@ class DiscreteKalmanFilter(object):
         H = self.H
         gammaW = self.gammaW
         
-        if 0:
-            print xhat_apriori.shape
-            print P_apriori.shape
-            print phi.shape
-            print gamma.shape
-            print control.shape
-            print Q.shape
-            print R.shape
-            print gammaW.shape
-        
         # calculate kalman gain
         K = P_apriori*H.T*(H*P_apriori*H.T+R).I
 
@@ -92,7 +81,6 @@ class DiscreteKalmanFilter(object):
             P_aposteriori = (I-K*H)*P_apriori
         else:
             xhat_aposteriori = xhat_apriori
-            I = np.matrix(np.eye(self.nstates))
             P_aposteriori = P_apriori
             
         # propagate step
