@@ -114,7 +114,7 @@ def background_subtraction(self):
     
     convert_to_gray_if_necessary(self)
     erode_and_dialate(self)
-    extract_and_publish_contours(self, self.threshed)
+    extract_and_publish_contours(self)
     reset_background_if_difference_is_very_large(self)
         
 ###########################################################################################################
@@ -137,7 +137,7 @@ def dark_objects_only(self):
         
     convert_to_gray_if_necessary(self)
     erode_and_dialate(self)
-    extract_and_publish_contours(self, self.threshed)
+    extract_and_publish_contours(self)
     reset_background_if_difference_is_very_large(self)
         
 ###########################################################################################################
