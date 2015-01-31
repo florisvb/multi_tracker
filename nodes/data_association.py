@@ -74,7 +74,6 @@ class DataAssociator(object):
                  objids.append(objid)
             order = np.argsort(persistance)[::-1]
             objid_in_order_of_persistance = [objids[o] for o in order]
-        #print len(objid_in_order_of_persistance), objid_in_order_of_persistance
         
                     
         # loop through contours and find errors to all tracked objects (if less than allowed error)
@@ -102,7 +101,6 @@ class DataAssociator(object):
             contours_accounted_for = []
             objects_accounted_for = []
             for data in contour_to_object_error:
-                #print data
                 c = int(data[2])
                 objid = int(data[1])
                 if objid not in objects_accounted_for:
@@ -154,7 +152,6 @@ class DataAssociator(object):
         # propagate unmatched objects
         for objid, tracked_object in self.tracked_objects.items():
             if tracked_object['frames'][-1] != contourlist.header.seq:
-                print objid
                 update_tracked_object(tracked_object, None, contourlist)
         
         # make sure we don't get too many objects - delete the oldest ones, and ones with high covariances
@@ -162,7 +159,6 @@ class DataAssociator(object):
         if len(objid_in_order_of_persistance) > self.max_tracked_objects:
             for objid in objid_in_order_of_persistance[self.max_tracked_objects:]:
                 objects_to_destroy.append(objid)
-            #print 'destroying: ', len(objects_to_destroy)
             
         for objid, tracked_object in self.tracked_objects.items():
             tracked_object_covariance = np.linalg.norm( (tracked_object['kalmanfilter'].H*tracked_object['kalmanfilter'].P).T*self.association_matrix )
