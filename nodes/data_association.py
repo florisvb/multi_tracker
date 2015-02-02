@@ -31,8 +31,8 @@ class DataAssociator(object):
         self.tracked_objects = {}
         self.current_objid = 0
         
-        self.min_size = rospy.get_param('/multi_tracker/data_association/min_size')
-        self.max_size = rospy.get_param('/multi_tracker/data_association/max_size')
+        #self.min_size = rospy.get_param('/multi_tracker/data_association/min_size')
+        #self.max_size = rospy.get_param('/multi_tracker/data_association/max_size')
         self.max_tracked_objects = rospy.get_param('/multi_tracker/data_association/max_tracked_objects')
         self.n_covariances_to_reject_data = rospy.get_param('/multi_tracker/data_association/n_covariances_to_reject_data')
         
@@ -80,10 +80,10 @@ class DataAssociator(object):
         # then loop through the errors in order of increasing error and assigned contours to objects
         contour_to_object_error = []
         for c, contour in enumerate(contourlist.contours):
-            if contour.area < self.min_size:
-                continue
-            if contour.area > self.max_size:
-                continue
+            #if contour.area < self.min_size:
+            #    continue
+            #if contour.area > self.max_size:
+            #    continue
             measurement = np.matrix([contour.x, contour.y, 0, contour.area, contour.angle]).T
             
             for objid, tracked_object in self.tracked_objects.items():
