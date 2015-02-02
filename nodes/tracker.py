@@ -40,9 +40,12 @@ class Trajectory(object):
         self.popout = 0
 
 def draw_trajectory(img, pts, color, thickness):
-    for i in range(len(pts)-2):
-        cv2.line(img, (int(pts[i][0]), int(pts[i][1])), (int(pts[i+1][0]), int(pts[i+1][1])), color, thickness)
-
+    for i in range(len(pts)-3):
+        try:
+            cv2.line(img, (int(pts[i][0]), int(pts[i][1])), (int(pts[i+1][0]), int(pts[i+1][1])), color, thickness)
+        except:
+            raise Warning('could not draw trajectory line, length pts: ', len(pts), 'i: ', i)
+            
 # The main tracking class, a ROS node
 class Tracker:
     def __init__(self):
@@ -61,6 +64,8 @@ class Tracker:
                         'erode'                     : 1,
                         'dilate'                    : 2,
                         'max_change_in_frame'       : 0.2,
+                        'min_size'                  : 5,
+                        'max_size'                  : 200,
                         }
         for parameter, value in self.params.items():
             try:

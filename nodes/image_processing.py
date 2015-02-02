@@ -30,12 +30,16 @@ def extract_and_publish_contours(self):
         # Large objects are approximated by an ellipse
         if len(contour) > 5:
             ellipse = cv2.fitEllipse(contour)
-            cv2.ellipse(self.imgOutput,ellipse,(0,255,0),2) # draw the ellipse, green
             (x,y), (a,b), angle = ellipse
             a /= 2.
             b /= 2.
             ecc = np.min((a,b)) / np.max((a,b))
             area = np.pi*a*b
+            if area > self.params['min_size'] and area < self.params['max_size']:
+                cv2.ellipse(self.imgOutput,ellipse,(0,255,0),2) # draw the ellipse, green
+            else:
+                cv2.ellipse(self.imgOutput,ellipse,(0,0,255),2) # draw the ellipse, not green
+            
         # Small ones just get a point
         else:
             moments = cv2.moments(contour, True)
@@ -50,19 +54,24 @@ def extract_and_publish_contours(self):
             area = 1.
             angle = 0.
             ecc = 1.
-            cv2.circle(self.imgOutput,(int(x),int(y)),2,(0,255,0),2) # draw a circle, green
             
-        # Prepare to publish the contour info
-        # contour message info: dt, x, y, angle, area, ecc
-        data = Contourinfo()
-        data.header  = Header(seq=self.iCountCamera,stamp=rospy.Time.now(),frame_id='BackgroundSubtraction')
-        data.dt      = self.dtCamera
-        data.x       = x
-        data.y       = y
-        data.area    = area
-        data.angle   = angle
-        data.ecc     = ecc
-        contour_info.append(data)
+            if area > self.params['min_size'] and area < self.params['max_size']:
+                cv2.circle(self.imgOutput,(int(x),int(y)),2,(0,255,0),2) # draw a circle, green
+            else:
+                cv2.circle(self.imgOutput,(int(x),int(y)),2,(0,0,255),2) # draw a circle, not green
+            
+        if area > self.params['min_size'] and area < self.params['max_size']:
+            # Prepare to publish the contour info
+            # contour message info: dt, x, y, angle, area, ecc
+            data = Contourinfo()
+            data.header  = Header(seq=self.iCountCamera,stamp=rospy.Time.now(),frame_id='BackgroundSubtraction')
+            data.dt      = self.dtCamera
+            data.x       = x
+            data.y       = y
+            data.area    = area
+            data.angle   = angle
+            data.ecc     = ecc
+            contour_info.append(data)
             
     # publish the contours
     self.pubContours.publish( Contourlist(header = Header(seq=self.iCountCamera,stamp=rospy.Time.now(),frame_id='BackgroundSubtraction'), contours=contour_info) )  
