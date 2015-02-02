@@ -50,6 +50,7 @@ def convert_data_dict_to_object(data_dict):
         trajec_obj.objid = key
         trajec_obj.position = np.array([trajec_dict['position.x'], trajec_dict['position.y'], trajec_dict['position.z']]).T
         trajec_obj.velocity = np.array([trajec_dict['velocity.x'], trajec_dict['velocity.y'], trajec_dict['velocity.z']]).T
+        trajec_obj.size = np.array(trajec_dict['size']).T
         trajec_obj.measured_position = np.array([trajec_dict['measurement.x'], trajec_dict['measurement.y']]).T
         trajec_obj.time = np.array(trajec_dict['header.stamp.secs'], dtype=float) + np.array(trajec_dict['header.stamp.nsecs'], dtype=float)*1e-9
         trajec_obj.length = len(trajec_obj.position)
