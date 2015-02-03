@@ -154,55 +154,49 @@ def dark_objects_only(self):
 # Good for highly sensitive tracking in a noisy environment. Loses objects that stop moving. 
 ##########################
 
-def calculate_standard_deviations_for_each_pixel(self):
-    n = np.min([self.n_frames_processed, 1/self.stdDevUpdate])
-    sum_x = self.meanDifference*n
-    sum_x_sq = n*(self.stdDifference**2 + self.meanDifference**2)
-    stdDifference_sq = ( (n+1)*(self.difference**2 + sum_x_sq) - (self.difference + sum_x)**2 ) / (n+1)**2
-    self.stdDifference = np.float32(np.sqrt(stdDifference_sq))
-    cv2.accumulateWeighted(self.difference, self.meanDifference, 1/float(n))
-    
 def background_subtraction_with_standard_deviations(self):
+    '''
+    calculate difference between current img and background, and compare this difference to the mean difference between the img and background. If the current difference is more then *threshold* standard deviations away from the mean difference, then it is a pixel of interest. The standard deviations are calculated in a somewhat hacked way, so that they can be weighted towards the current variation without keeping track of all the data for computational speed. 
     
+    '''
     # If there is no background image, grab one, and move on to the next frame
     if self.backgroundImage is None:
         self.backgroundImage = copy.copy(np.float32(self.imgScaled))
-        self.meanDifference = copy.copy(self.backgroundImage)
-        self.stdDifference = np.zeros_like(self.meanDifference)
-        self.n_frames_processed = 1
-        
+        self.meanDifference = np.zeros_like(self.backgroundImage)
+        self.stdDifference = 0.44*np.ones_like(self.meanDifference)
         self.stdDevUpdate = rospy.get_param('/multi_tracker/tracker/std_dev_update')
         return
     if self.reset_background_flag:
         self.backgroundImage = copy.copy(np.float32(self.imgScaled))
         self.meanDifference = copy.copy(self.backgroundImage)
-        self.stdDifference = np.zeros_like(self.meanDifference)
-        self.n_frames_processed = 1
-        
+        self.stdDifference = 0.44*np.ones_like(self.meanDifference)
         self.stdDevUpdate = rospy.get_param('/multi_tracker/tracker/std_dev_update')
-        
         self.reset_background_flag = False
         return
     
-    self.n_frames_processed += 1
     
-    # calculate difference between img and background, and add to pixel by pixel standard deviation measurement
+    # calculate difference between img and background, and compare this 
     self.difference = cv2.add(np.float32(self.imgScaled), -1*self.backgroundImage)
-    calculate_standard_deviations_for_each_pixel(self)
-    
-    # running background update
-    self.imgproc = copy.copy(np.uint8(self.stdDifference))
     cv2.accumulateWeighted(np.float32(self.imgScaled), self.backgroundImage, self.params['backgroundupdate']) # this needs to be here, otherwise there's an accumulation of something in the background
+    stdDifference_tmp = cv2.absdiff(self.difference, -1*self.meanDifference) # hacked way to get some kind of variance measurement
+    cv2.accumulateWeighted(stdDifference_tmp, self.stdDifference, self.stdDevUpdate)
+    cv2.accumulateWeighted(self.difference, self.meanDifference, self.stdDevUpdate)
+    
+    #self.imgproc = copy.copy(np.uint8(self.stdDifference*100))
 
     # if difference - meandifference is larger than N standard deviations, it is a pixel of interest
-    absdiff = np.float32(cv2.absdiff(self.difference, self.meanDifference))
-    n_devs_away = cv2.divide(absdiff, self.stdDifference)
-    self.threshed = cv2.compare(n_devs_away, self.params['threshold'], cv2.CMP_GT) # CMP_GT is great than
-        
-    print self.n_frames_processed, np.min(n_devs_away), np.max(n_devs_away)
-        
+    m_neg = cv2.add(self.meanDifference, -1*self.stdDifference*self.params['threshold']) # for dark pixels
+    m_pos = cv2.add(self.meanDifference, self.stdDifference*self.params['threshold']) # for bright pixels
+    self.threshed_dark = cv2.compare(self.difference, m_neg, cv2.CMP_LT) # CMP_LT is great than
+    self.threshed_bright = cv2.compare(self.difference, m_pos, cv2.CMP_GT) # CMP_GT is great than
+    self.threshed = cv2.add(self.threshed_dark, self.threshed_bright)
+
     convert_to_gray_if_necessary(self)
     erode_and_dialate(self)
     extract_and_publish_contours(self)
-
+    
+    
+    
+    
+    
 ####################################################################################
