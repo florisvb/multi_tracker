@@ -90,8 +90,8 @@ class Tracker:
         self.window_name = 'output'
         cv2.namedWindow(self.window_name,1)
         self.window_name = 'imgproc'
-        cv2.namedWindow(self.window_name,2)
-        self.imgproc = None
+        #cv2.namedWindow(self.window_name,2)
+        #self.imgproc = None
         
         self.cvbridge = CvBridge()
         
@@ -311,8 +311,8 @@ class Tracker:
             # Show the image
             cv2.imshow('output', self.imgOutput)
             
-            if self.imgproc is not None:
-                cv2.imshow('imgproc', self.imgproc)
+            #if self.imgproc is not None:
+            #    cv2.imshow('imgproc', self.imgproc)
             
         cv2.waitKey(1)
 
