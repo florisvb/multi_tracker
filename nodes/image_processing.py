@@ -156,40 +156,41 @@ def dark_objects_only(self):
 
 def background_subtraction_with_standard_deviations(self):
     '''
-    calculate difference between current img and background, and compare this difference to the mean difference between the img and background. If the current difference is more then *threshold* standard deviations away from the mean difference, then it is a pixel of interest. The standard deviations are calculated in a somewhat hacked way, so that they can be weighted towards the current variation without keeping track of all the data for computational speed. 
+    calculate difference between current img and background, and compare this difference to the mean difference between the img and background. If the current difference is more then *threshold*  away from the mean difference, then it is a pixel of interest. 
+    
+    Originally I intended to multiply the threshold by the standard deviations of each pixel, but this produced some strange compounding error I do not understand, so that part has been removed.
     
     '''
     # If there is no background image, grab one, and move on to the next frame
     if self.backgroundImage is None:
         self.backgroundImage = copy.copy(np.float32(self.imgScaled))
         self.meanDifference = np.zeros_like(self.backgroundImage)
-        self.stdDifference = 0.44*np.ones_like(self.meanDifference)
+        #self.stdDifference = 0.6*np.ones_like(self.meanDifference)
         self.stdDevUpdate = rospy.get_param('/multi_tracker/tracker/std_dev_update')
         return
     if self.reset_background_flag:
         self.backgroundImage = copy.copy(np.float32(self.imgScaled))
         self.meanDifference = copy.copy(self.backgroundImage)
-        self.stdDifference = 0.44*np.ones_like(self.meanDifference)
+        #self.stdDifference = 0.6*np.ones_like(self.meanDifference)
         self.stdDevUpdate = rospy.get_param('/multi_tracker/tracker/std_dev_update')
         self.reset_background_flag = False
         return
     
     
     # calculate difference between img and background, and compare this 
-    self.difference = cv2.add(np.float32(self.imgScaled), -1*self.backgroundImage)
+    #self.difference = cv2.add(np.float32(self.imgScaled), -1*np.float32(self.backgroundImage))
+    self.difference = cv2.absdiff(np.float32(self.imgScaled), np.float32(self.backgroundImage))
     cv2.accumulateWeighted(np.float32(self.imgScaled), self.backgroundImage, self.params['backgroundupdate']) # this needs to be here, otherwise there's an accumulation of something in the background
-    stdDifference_tmp = cv2.absdiff(self.difference, -1*self.meanDifference) # hacked way to get some kind of variance measurement
+    #stdDifference_tmp = cv2.absdiff(self.difference, -1*self.meanDifference) # hacked way to get some kind of variance measurement
+    
+
+    tmp = cv2.absdiff(self.difference, self.meanDifference)
+    self.threshed = cv2.compare(tmp, self.params['threshold'], cv2.CMP_GT)
+    
+    self.imgproc = copy.copy(np.uint8(tmp*20))
+    
     cv2.accumulateWeighted(stdDifference_tmp, self.stdDifference, self.stdDevUpdate)
     cv2.accumulateWeighted(self.difference, self.meanDifference, self.stdDevUpdate)
-    
-    #self.imgproc = copy.copy(np.uint8(self.stdDifference*100))
-
-    # if difference - meandifference is larger than N standard deviations, it is a pixel of interest
-    m_neg = cv2.add(self.meanDifference, -1*self.stdDifference*self.params['threshold']) # for dark pixels
-    m_pos = cv2.add(self.meanDifference, self.stdDifference*self.params['threshold']) # for bright pixels
-    self.threshed_dark = cv2.compare(self.difference, m_neg, cv2.CMP_LT) # CMP_LT is great than
-    self.threshed_bright = cv2.compare(self.difference, m_pos, cv2.CMP_GT) # CMP_GT is great than
-    self.threshed = cv2.add(self.threshed_dark, self.threshed_bright)
 
     convert_to_gray_if_necessary(self)
     erode_and_dialate(self)
