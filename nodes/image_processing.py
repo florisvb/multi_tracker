@@ -189,7 +189,7 @@ def background_subtraction_with_standard_deviations(self):
     
     self.imgproc = copy.copy(np.uint8(tmp*20))
     
-    cv2.accumulateWeighted(stdDifference_tmp, self.stdDifference, self.stdDevUpdate)
+    #cv2.accumulateWeighted(stdDifference_tmp, self.stdDifference, self.stdDevUpdate)
     cv2.accumulateWeighted(self.difference, self.meanDifference, self.stdDevUpdate)
 
     convert_to_gray_if_necessary(self)
