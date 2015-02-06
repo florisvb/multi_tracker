@@ -24,3 +24,10 @@ def get_keys_of_length_greater_than(data, length):
         if trajec.length > length:
             keys.append(key)
     return keys
+
+def get_keys_in_local_time_range(data, local_time_range):
+    keys = []
+    for key, trajec in data.items():
+        if trajec.time_local[0] > local_time_range[0] and trajec.time_local[0] < local_time_range[-1]:
+            keys.append(key)
+    return keys
