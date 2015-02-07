@@ -1,11 +1,15 @@
 
-def get_keys_with_attributes(data, attributes, values):
+def get_keys_with_attributes(data, attributes, values, keys=None):
+    if keys is None:
+        keys = data.keys()
+        
     if type(attributes) is not list:
         attributes = [attributes]
         values = [values]
     
-    keys = []
-    for key, trajec in data.items():
+    keys_with_attributes = []
+    for key in keys:
+        trajec = data[key]
         key_ok = True
         for a, attribute in enumerate(attributes):
             if trajec.__getattribute__(attribute) == values[a]:
@@ -14,20 +18,28 @@ def get_keys_with_attributes(data, attributes, values):
                 key_ok = False
                 break
         if key_ok:
-            keys.append(key)
+            keys_with_attributes.append(key)
         
-    return keys
+    return keys_with_attributes
         
-def get_keys_of_length_greater_than(data, length):
-    keys = []
-    for key, trajec in data.items():
+def get_keys_of_length_greater_than(data, length, keys=None):
+    if keys is None:
+        keys = data.keys()
+        
+    keys_greater_than = []
+    for key in keys:
+        trajec = data[key]
         if trajec.length > length:
-            keys.append(key)
-    return keys
+            keys_greater_than.append(key)
+    return keys_greater_than
 
-def get_keys_in_local_time_range(data, local_time_range):
-    keys = []
-    for key, trajec in data.items():
+def get_keys_in_local_time_range(data, local_time_range, keys=None):
+    if keys is None:
+        keys = data.keys()
+        
+    keys_in_time_range = []
+    for key in keys:
+        trajec = data[key]
         if trajec.time_local[0] > local_time_range[0] and trajec.time_local[0] < local_time_range[-1]:
-            keys.append(key)
-    return keys
+            keys_in_time_range.append(key)
+    return keys_in_time_range

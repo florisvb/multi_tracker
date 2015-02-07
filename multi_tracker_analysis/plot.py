@@ -1,15 +1,68 @@
+import matplotlib
 import matplotlib.pyplot as plt
-import data_slicing
+import numpy as np
 
-def plot_trajectories(data, length):
-    
+import data_slicing
+import plotting_preferences
+
+def plot_trajectories(data, keys):
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    
-    keys = data_slicing.get_keys_of_length_greater_than(data, length)
-    
     for key in keys:
         trajec = data[key]
         ax.plot(trajec.position[:,0], trajec.position[:,1])
-    
     ax.set_aspect('equal')
+    
+def plot_trajectories_of_length_greater_than(data, length, keys=None):
+    if keys is None:
+        keys = keys = data.keys()
+    keys_long_enough = data_slicing.get_keys_of_length_greater_than(data, length, keys=keys)
+    plot_trajectories(data, keys_long_enough)
+    
+##################################################################################################
+# Heatmaps
+
+def get_bins_and_blank_array(xlim, ylim, resolution=0.02):
+    binsx = np.arange(xlim[0],xlim[-1],resolution)
+    binsy = np.arange(ylim[0],ylim[-1],resolution)
+    arr = np.zeros([len(binsy)-1, len(binsx)-1])
+    return binsx, binsy, arr
+    
+def get_heatmap_array(data, xlim, ylim, resolution, keys=None, axes=[0,1]):
+    if keys is None:
+        keys = keys = data.keys()
+    
+    binsx, binsy, arr = get_bins_and_blank_array(xlim, ylim, resolution)
+    
+    for key in keys:
+        trajec = data[key]
+        x = trajec.position[:,axes[0]]
+        y = trajec.position[:,axes[1]]
+        hist, bx, by = np.histogram2d(x,y,bins=(binsx, binsy))
+        arr += hist.T
+               
+    return binsx, binsy, arr
+    
+def plot_heatmap(data, xlim, ylim, resolution, keys=None, axes=[0,1], norm=[0,0.03]):
+    '''
+    norm - fraction of all frames to use as max and min of heatmap colorscheme
+    '''
+
+    binsx, binsy, arr = get_heatmap_array(data, xlim, ylim, resolution, keys, axes)
+            
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    
+    all_frames = np.sum(arr)
+    vmin = all_frames*norm[0]
+    vmax = all_frames*norm[-1]
+    colornorm = matplotlib.colors.Normalize(vmin, vmax)
+    
+    ax.imshow(arr, cmap=plotting_preferences.heatmap_colormap, interpolation=plotting_preferences.heatmap_interpolation, norm=colornorm, origin=plotting_preferences.heatmap_origin, extent=[binsx[0], binsx[-1], binsy[0], binsy[-1]])
+            
+            
+            
+            
+            
+            
+##################################################################################################
