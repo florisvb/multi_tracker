@@ -1,3 +1,4 @@
+import numpy as np
 
 def get_keys_with_attributes(data, attributes, values, keys=None):
     if keys is None:
@@ -43,3 +44,39 @@ def get_keys_in_local_time_range(data, local_time_range, keys=None):
         if trajec.time_local[0] > local_time_range[0] and trajec.time_local[0] < local_time_range[-1]:
             keys_in_time_range.append(key)
     return keys_in_time_range
+    
+def get_keys_in_speed_range(data, speed_range, keys=None):
+    if keys is None:
+        keys = data.keys()
+    
+    keys_in_speed_range = []
+    for key in keys:
+        trajec = data[key]
+        if np.min(trajec.speed) > np.min(speed_range) and np.max(trajec.speed) < np.max(speed_range):
+            keys_in_speed_range.append(key)
+    
+    return keys_in_speed_range
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

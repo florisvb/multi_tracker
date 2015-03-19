@@ -13,3 +13,6 @@ def calc_localtime(data):
             localtime = get_localtime(t)
             trajec.time_local[i] = localtime
     
+def calc_speed(data):
+    for key, trajec in data.items():
+        trajec.speed = np.linalg.norm(trajec.velocity, axis=1)
