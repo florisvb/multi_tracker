@@ -17,6 +17,8 @@ from multi_tracker.msg import Contourinfo, Contourlist, DeltaVid
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
 from multi_tracker.srv import resetBackgroundService
 
+import time
+
 import image_processing
 
 import matplotlib.pyplot as plt
@@ -253,9 +255,10 @@ class Compressor:
             delta_msg = DeltaVid()
             delta_msg.header.stamp = self.stampCamera 
             delta_msg.background_image = self.background_img_filename
-            delta_msg.xpixels = changed_pixels[0].tolist()
-            delta_msg.ypixels = changed_pixels[1].tolist()
-            delta_msg.values = self.imgScaled[changed_pixels].tolist()
+            if len(changed_pixels[0]) > 0:
+                delta_msg.xpixels = changed_pixels[0].tolist()
+                delta_msg.ypixels = changed_pixels[1].tolist()
+                delta_msg.values = self.imgScaled[changed_pixels].tolist()
             self.pubDeltaVid.publish(delta_msg)
             
             # if the thresholded absolute difference is too large, reset the background
