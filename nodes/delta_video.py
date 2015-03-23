@@ -235,13 +235,13 @@ class Compressor:
             # If there is no background image, grab one, and move on to the next frame
             if self.backgroundImage is None:
                 self.backgroundImage = copy.copy(self.imgScaled)
-                self.background_img_filename = str(self.current_background_img) + '.png'
+                self.background_img_filename = time.strftime("%Y%m%d_%H%M", time.localtime()) + '.png'
                 cv2.imwrite(self.background_img_filename, self.backgroundImage)
                 self.current_background_img += 1
                 return
             if self.reset_background_flag:
                 self.backgroundImage = copy.copy(self.imgScaled)
-                self.background_img_filename = str(self.current_background_img) + '.png'
+                self.background_img_filename = time.strftime("%Y%m%d_%H%M", time.localtime()) + '.png'
                 cv2.imwrite(self.background_img_filename, self.backgroundImage)
                 self.current_background_img += 1
                 self.reset_background_flag = False
