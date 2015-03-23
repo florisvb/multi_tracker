@@ -53,6 +53,7 @@ add_message_files(
     Contourlist.msg
     Trackedobject.msg
     Trackedobjectlist.msg
+    DeltaVid.msg
 )
 
 ## Generate services in the 'srv' folder
