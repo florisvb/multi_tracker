@@ -58,14 +58,17 @@ class DeCompressor:
     def delta_image_callback(self, delta_vid):
         if self.background_img_filename != delta_vid.background_image:
             self.background_img_filename = delta_vid.background_image
-            self.backgroundImage = cv2.imread(self.background_img_filename, cv2.CV_LOAD_IMAGE_GRAYSCALE)
+            self.backgroundImage = cv2.imread(self.background_img_filename, cv2.CV_8UC1)
+            self.backgroundImage = self.backgroundImage.reshape([self.backgroundImage.shape[0], self.backgroundImage[1], 1])
         
         new_image = copy.copy(self.backgroundImage)
         
-        if len(delta_vid.values) > 0:
-            new_image[delta_vid.xpixels, delta_vid.ypixels] = delta_vid.values
+        if delta_vid.values is not None:
+            if len(delta_vid.values) > 0:
+                new_image[delta_vid.xpixels, delta_vid.ypixels, 0] = delta_vid.values
 
-        self.pubDeltaVid.publish(self.cvbridge.cv2_to_imgmsg(new_image, "mono8"))
+        image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="mono8")
+        self.pubDeltaVid.publish(image_message)
     
     def Main(self):
         rospy.spin()
