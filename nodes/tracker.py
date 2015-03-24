@@ -305,12 +305,14 @@ class Tracker:
             for objid, trajec in self.tracked_trajectories.items():
                 if len(trajec.positions) > 5:
                     draw_trajectory(self.imgOutput, trajec.positions, trajec.color, 2)
+                    print objid, trajec.color
                     cv2.circle(self.imgOutput,(int(trajec.positions[-1][0]),int(trajec.positions[-1][1])),int(trajec.covariances[-1]),trajec.color,2)
                     print trajec.covariances[-1]
                     
             # Show the image
+            #cv2.imshow('output', self.imgOutput)
             cv2.imshow('output', self.imgOutput)
-            
+                
             #if self.imgproc is not None:
             #    cv2.imshow('imgproc', self.imgproc)
             

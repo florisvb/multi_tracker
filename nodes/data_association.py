@@ -87,12 +87,22 @@ class DataAssociator(object):
             measurement = np.matrix([contour.x, contour.y, 0, contour.area, contour.angle]).T
             
             for objid, tracked_object in self.tracked_objects.items():
+                #tracked_object_state_estimate = tracked_object['kalmanfilter'].xhat_apriori  # extract estimate of current position based on Kalman model
+                #error = np.linalg.norm( (measurement.T - (tracked_object['kalmanfilter'].H*tracked_object_state_estimate).T)*self.association_matrix )
+                #tracked_object_covariance = np.linalg.norm( (tracked_object['kalmanfilter'].H*tracked_object['kalmanfilter'].P).T*self.association_matrix )
+                #if 1: #error < self.n_covariances_to_reject_data*np.sqrt(tracked_object_covariance):
+                #    contour_to_object_error.append([error, objid, c])
+                
                 tracked_object_state_estimate = tracked_object['kalmanfilter'].xhat_apriori  # extract estimate of current position based on Kalman model
-                error = np.linalg.norm( (measurement.T - (tracked_object['kalmanfilter'].H*tracked_object_state_estimate).T)*self.association_matrix )
+                e = np.array([tracked_object_state_estimate[0], tracked_object_state_estimate[2]])
+                m = np.array([measurement[0], measurement[1]])
+                error = np.linalg.norm( m-e )
+                
                 tracked_object_covariance = np.linalg.norm( (tracked_object['kalmanfilter'].H*tracked_object['kalmanfilter'].P).T*self.association_matrix )
+                
                 if error < self.n_covariances_to_reject_data*np.sqrt(tracked_object_covariance):
                     contour_to_object_error.append([error, objid, c])
-        
+                
         o = []
         if len(contour_to_object_error) > 0:
             contour_to_object_error = np.array(contour_to_object_error)

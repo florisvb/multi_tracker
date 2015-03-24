@@ -24,7 +24,7 @@ from multi_tracker.srv import resetBackgroundService
 def extract_and_publish_contours(self):
     contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # http://docs.opencv.org/trunk/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html
-    
+
     contour_info = []
     for contour in contours:
         # Large objects are approximated by an ellipse
@@ -86,8 +86,8 @@ def convert_to_gray_if_necessary(self):
         
 def erode_and_dialate(self):
     kernel = np.ones((5,5),np.uint8)
-    self.threshed = cv2.erode(self.threshed, kernel, iterations=self.params['erode'])
     self.threshed = cv2.dilate(self.threshed, kernel, iterations=self.params['dilate'])
+    self.threshed = cv2.erode(self.threshed, kernel, iterations=self.params['erode'])
     
 def reset_background_if_difference_is_very_large(self):
     # if the thresholded absolute difference is too large, reset the background
@@ -143,8 +143,8 @@ def dark_objects_only(self):
         return
       
     self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
-        
-    convert_to_gray_if_necessary(self)
+    
+    #convert_to_gray_if_necessary(self)
     erode_and_dialate(self)
     extract_and_publish_contours(self)
     reset_background_if_difference_is_very_large(self)
