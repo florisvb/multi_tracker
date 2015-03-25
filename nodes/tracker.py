@@ -129,6 +129,7 @@ class Tracker:
         # Subscriptions - subscribe to images, and tracked objects
         sizeImage = 128+1024*1024*3 # Size of header + data.
         self.subImage = rospy.Subscriber(self.params['image_topic'], Image, self.image_callback, queue_size=5, buff_size=2*sizeImage, tcp_nodelay=True)
+        #self.subTrackedObjects = rospy.Subscriber('/multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
         self.subTrackedObjects = rospy.Subscriber('/multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
 
     def reset_background(self, service_call):

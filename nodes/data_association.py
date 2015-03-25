@@ -46,6 +46,7 @@ class DataAssociator(object):
         self.subImage = rospy.Subscriber('/multi_tracker/contours', Contourlist, self.contour_identifier)
         
     def contour_identifier(self, contourlist):
+        
         now = rospy.get_time()
         # keep track of which new objects have been "taken"
         contours_accounted_for = []
@@ -87,12 +88,15 @@ class DataAssociator(object):
             measurement = np.matrix([contour.x, contour.y, 0, contour.area, contour.angle]).T
             
             for objid, tracked_object in self.tracked_objects.items():
+                ''' something wrong with error calculation in this code '''
                 #tracked_object_state_estimate = tracked_object['kalmanfilter'].xhat_apriori  # extract estimate of current position based on Kalman model
                 #error = np.linalg.norm( (measurement.T - (tracked_object['kalmanfilter'].H*tracked_object_state_estimate).T)*self.association_matrix )
                 #tracked_object_covariance = np.linalg.norm( (tracked_object['kalmanfilter'].H*tracked_object['kalmanfilter'].P).T*self.association_matrix )
                 #if 1: #error < self.n_covariances_to_reject_data*np.sqrt(tracked_object_covariance):
                 #    contour_to_object_error.append([error, objid, c])
+                ''' end bad code '''
                 
+                # not very flexible error calculation
                 tracked_object_state_estimate = tracked_object['kalmanfilter'].xhat_apriori  # extract estimate of current position based on Kalman model
                 e = np.array([tracked_object_state_estimate[0], tracked_object_state_estimate[2]])
                 m = np.array([measurement[0], measurement[1]])
