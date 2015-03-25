@@ -141,10 +141,14 @@ def dark_objects_only(self):
         self.backgroundImage = copy.copy(np.float32(self.imgScaled))
         self.reset_background_flag = False
         return
+    
+    cv2.accumulateWeighted(np.float32(self.imgScaled), self.backgroundImage, self.params['backgroundupdate']) # this needs to be here, otherwise there's an accumulation of something in the background
       
     self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
     
-    #convert_to_gray_if_necessary(self)
+    
+    
+    convert_to_gray_if_necessary(self)
     erode_and_dialate(self)
     extract_and_publish_contours(self)
     reset_background_if_difference_is_very_large(self)
