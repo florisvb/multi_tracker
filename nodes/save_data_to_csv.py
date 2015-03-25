@@ -3,6 +3,7 @@ from __future__ import division
 import roslib
 import rospy
 import os
+import time
 
 import numpy as np
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
@@ -14,6 +15,8 @@ class DataListener:
         self.subTrackedObjects = rospy.Subscriber('multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
         
         filename = rospy.get_param('/multi_tracker/csv_data_filename')
+        if filename == 'none':
+            filename = time.strftime("%Y%m%d_%H%M_rotpaddata", time.localtime()) + '.csv'
         home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
         filename = os.path.join(home_directory, filename)
         
