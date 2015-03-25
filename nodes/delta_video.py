@@ -18,7 +18,7 @@ from multi_tracker.msg import Trackedobject, Trackedobjectlist
 from multi_tracker.srv import resetBackgroundService
 
 import time
-
+import os
 import image_processing
 
 import matplotlib.pyplot as plt
@@ -238,12 +238,17 @@ class Compressor:
             if self.backgroundImage is None:
                 self.backgroundImage = copy.copy(self.imgScaled)
                 self.background_img_filename = time.strftime("%Y%m%d_%H%M", time.localtime()) + '.png'
+                home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
+                self.background_img_filename = os.path.join(home_directory, self.background_img_filename)
+                
                 cv2.imwrite(self.background_img_filename, self.backgroundImage)
                 self.current_background_img += 1
                 return
             if self.reset_background_flag:
                 self.backgroundImage = copy.copy(self.imgScaled)
                 self.background_img_filename = time.strftime("%Y%m%d_%H%M", time.localtime()) + '.png'
+                home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
+                self.background_img_filename = os.path.join(home_directory, self.background_img_filename)
                 cv2.imwrite(self.background_img_filename, self.backgroundImage)
                 self.current_background_img += 1
                 self.reset_background_flag = False
@@ -258,7 +263,11 @@ class Compressor:
             if len(changed_pixels[0]) > 0:
                 delta_msg.xpixels = changed_pixels[0].tolist()
                 delta_msg.ypixels = changed_pixels[1].tolist()
-                delta_msg.values = self.imgScaled[changed_pixels].tolist()
+                delta_msg.values = self.imgScaled[changed_pixels].reshape(len(changed_pixels[0])).tolist()
+            else:
+                delta_msg.xpixels = [0]
+                delta_msg.ypixels = [0]
+                #delta_msg.values = [0]
             self.pubDeltaVid.publish(delta_msg)
             
             # if the thresholded absolute difference is too large, reset the background
