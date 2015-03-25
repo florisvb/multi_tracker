@@ -4,6 +4,32 @@ from collections import namedtuple
 
 OBJECT_IDENTIFIER = 2
 
+def calc_length_of_objids(filename):
+    data = {}
+    with open(filename, 'rb') as csvfile:
+        datareader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        r = -1
+        for row in datareader:
+            r += 1
+            if r == 0:
+                continue
+            if r == 1:
+                labels = row
+                continue
+            if r == 2:
+                formats = row
+                continue
+            
+            objid = row[OBJECT_IDENTIFIER]
+            
+            if objid not in data.keys():
+                data.setdefault(objid, 1)
+            else:
+                data[objid] += 1
+                print data[objid]
+    return data
+    
+
 def read_csv_file_to_dictionary(filename):
     data = {}
     with open(filename, 'rb') as csvfile:
