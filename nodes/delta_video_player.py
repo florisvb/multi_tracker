@@ -59,13 +59,19 @@ class DeCompressor:
         if self.background_img_filename != delta_vid.background_image:
             self.background_img_filename = delta_vid.background_image
             self.backgroundImage = cv2.imread(self.background_img_filename, cv2.CV_8UC1)
-            self.backgroundImage = self.backgroundImage.reshape([self.backgroundImage.shape[0], self.backgroundImage[1], 1])
-        
+            try:
+                self.backgroundImage = self.backgroundImage.reshape([self.backgroundImage.shape[0], self.backgroundImage[1], 1]) # for hydro
+            except:
+                pass # for indigo
+                
         new_image = copy.copy(self.backgroundImage)
         
         if delta_vid.values is not None:
             if len(delta_vid.values) > 0:
-                new_image[delta_vid.xpixels, delta_vid.ypixels, 0] = delta_vid.values
+                try:
+                    new_image[delta_vid.xpixels, delta_vid.ypixels, 0] = delta_vid.values # for hydro
+                except:
+                    new_image[delta_vid.xpixels, delta_vid.ypixels] = delta_vid.values # for indigo
 
         image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="mono8")
         self.pubDeltaVid.publish(image_message)
