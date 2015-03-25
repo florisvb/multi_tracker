@@ -66,3 +66,22 @@ def plot_heatmap(data, xlim, ylim, resolution, keys=None, axes=[0,1], norm=[0,0.
             
             
 ##################################################################################################
+
+def plot_histogram_of_sizes(data):
+    sizes = []
+    for key, trajec in data.items():
+        sizes.extend(trajec.size.tolist())
+    
+    bins = np.linspace(0,200,200)
+    plt.hist(sizes, bins=bins)
+    
+
+
+
+
+
+
+
+
+
+
