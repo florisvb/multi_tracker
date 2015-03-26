@@ -64,7 +64,7 @@ def extract_and_publish_contours(self):
             # Prepare to publish the contour info
             # contour message info: dt, x, y, angle, area, ecc
             data = Contourinfo()
-            data.header  = Header(seq=self.iCountCamera,stamp=rospy.Time.now(),frame_id='BackgroundSubtraction')
+            data.header  = Header(seq=self.iCountCamera,stamp=self.stampCamera,frame_id='BackgroundSubtraction')
             data.dt      = self.dtCamera
             data.x       = x
             data.y       = y
@@ -74,7 +74,7 @@ def extract_and_publish_contours(self):
             contour_info.append(data)
             
     # publish the contours
-    self.pubContours.publish( Contourlist(header = Header(seq=self.iCountCamera,stamp=rospy.Time.now(),frame_id='BackgroundSubtraction'), contours=contour_info) )  
+    self.pubContours.publish( Contourlist(header = Header(seq=self.iCountCamera,stamp=self.stampCamera,frame_id='BackgroundSubtraction'), contours=contour_info) )  
 
     return
 

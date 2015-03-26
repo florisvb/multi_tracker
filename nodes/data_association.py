@@ -133,6 +133,7 @@ class DataAssociator(object):
         # any unnaccounted contours should spawn new objects
         for c, contour in enumerate(contourlist.contours):
             if c not in contours_accounted_for:
+                
                 obj_state = np.matrix([contour.x, 0, contour.y, 0, 0, 0, contour.area, 0, contour.angle, 0]).T # pretending 3-d tracking (z and zvel) for now
                 obj_measurement = np.matrix([contour.x, contour.y, 0, contour.area, contour.angle]).T
                 # If not associated with previous object, spawn a new object
@@ -197,7 +198,7 @@ class DataAssociator(object):
         # publish tracked objects
         if 1:
             object_info_to_publish = []
-            t = rospy.Time.now()
+            t = contourlist.header.stamp
             for objid in objid_in_order_of_persistance:
                 if objid not in objects_to_destroy:
                     tracked_object = self.tracked_objects[objid]

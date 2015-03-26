@@ -16,6 +16,7 @@ from std_msgs.msg import Float32, Header, String
 from multi_tracker.msg import Contourinfo, Contourlist, DeltaVid
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
 from multi_tracker.srv import resetBackgroundService
+import os
 
 import image_processing
 
@@ -50,6 +51,8 @@ class DeCompressor:
         self.pubDeltaVid = rospy.Publisher('/camera/image_decompressed', Image, queue_size=30)
         self.subDeltaVid = rospy.Subscriber('/multi_tracker/delta_video', DeltaVid, self.delta_image_callback, queue_size=30)
         
+        self.directory = rospy.get_param('/multi_tracker/delta_video/directory', default='')
+        
         self.cvbridge = CvBridge()
         
         self.backgroundImage = None
@@ -58,7 +61,9 @@ class DeCompressor:
     def delta_image_callback(self, delta_vid):
         if self.background_img_filename != delta_vid.background_image:
             self.background_img_filename = delta_vid.background_image
-            self.backgroundImage = cv2.imread(self.background_img_filename, cv2.CV_8UC1)
+            basename = os.path.basename(self.background_img_filename)
+            directory_with_basename = os.path.join(self.directory, basename)
+            self.backgroundImage = cv2.imread(directory_with_basename, cv2.CV_8UC1)
             try:
                 self.backgroundImage = self.backgroundImage.reshape([self.backgroundImage.shape[0], self.backgroundImage[1], 1]) # for hydro
             except:
@@ -74,6 +79,7 @@ class DeCompressor:
                     new_image[delta_vid.xpixels, delta_vid.ypixels] = delta_vid.values # for indigo
 
         image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="mono8")
+        image_message.header.stamp = delta_vid.header.stamp
         self.pubDeltaVid.publish(image_message)
     
     def Main(self):
