@@ -6,8 +6,12 @@ import matplotlib.pyplot as plt
 def simple_plot(datafile):
     data = mta.read_csv_file_to_python.load_data_as_python_object_from_csv_file( datafile )
     length = 50
-    mta.plot.plot_trajectories(data, length)
-    plt.show()
+    keys = mta.data_slicing.get_keys_of_length_greater_than(data, length)
+    if len(keys) < 1:
+        print 'Warning: no trajectories of length >= ', length
+    else:    
+        mta.plot.plot_trajectories(data, keys)
+        plt.show()
 
 
 if __name__ == '__main__':
