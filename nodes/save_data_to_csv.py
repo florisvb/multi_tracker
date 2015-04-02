@@ -89,7 +89,6 @@ class DataListener:
                     ]  
             ''' 
             self.datawrite.writerow(row)
-            print row
             
     def main(self):
         while (not rospy.is_shutdown()):

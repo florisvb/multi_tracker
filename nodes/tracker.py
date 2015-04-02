@@ -44,7 +44,8 @@ def draw_trajectory(img, pts, color, thickness):
         try:
             cv2.line(img, (int(pts[i][0]), int(pts[i][1])), (int(pts[i+1][0]), int(pts[i+1][1])), color, thickness)
         except:
-            raise Warning('could not draw trajectory line, length pts: ', len(pts), 'i: ', i)
+            pass
+            print 'could not draw trajectory line, length pts: ', len(pts), 'i: ', i
             
 # The main tracking class, a ROS node
 class Tracker:

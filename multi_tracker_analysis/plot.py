@@ -61,10 +61,6 @@ def plot_heatmap(data, xlim, ylim, resolution, keys=None, axes=[0,1], norm=[0,0.
     ax.imshow(arr, cmap=plotting_preferences.heatmap_colormap, interpolation=plotting_preferences.heatmap_interpolation, norm=colornorm, origin=plotting_preferences.heatmap_origin, extent=[binsx[0], binsx[-1], binsy[0], binsy[-1]])
             
             
-            
-            
-            
-            
 ##################################################################################################
 
 def plot_histogram_of_sizes(data):
@@ -75,10 +71,15 @@ def plot_histogram_of_sizes(data):
     bins = np.linspace(0,200,200)
     plt.hist(sizes, bins=bins)
     
+##################################################################################################
 
-
-
-
+def plot_histogram_of_activity(dataset):
+    times = []
+    for key, trajec in dataset.items():
+        times.extend(trajec.time_local.tolist())
+    bins = np.linspace(0,24,48)
+    plt.hist(times, bins=bins)
+    
 
 
 

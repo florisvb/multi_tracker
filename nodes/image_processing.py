@@ -101,8 +101,6 @@ def reset_background_if_difference_is_very_large(self):
 ###############################
 
 def background_subtraction(self):
-    now = rospy.get_time()
-    
     # If there is no background image, grab one, and move on to the next frame
     if self.backgroundImage is None:
         self.backgroundImage = copy.copy(np.float32(self.imgScaled))
@@ -131,8 +129,6 @@ def background_subtraction(self):
 #########################
 
 def dark_objects_only(self):
-    now = rospy.get_time()
-    
     # If there is no background image, grab one, and move on to the next frame
     if self.backgroundImage is None:
         self.backgroundImage = copy.copy(np.float32(self.imgScaled))

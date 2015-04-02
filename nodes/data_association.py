@@ -47,7 +47,6 @@ class DataAssociator(object):
         
     def contour_identifier(self, contourlist):
         
-        now = rospy.get_time()
         # keep track of which new objects have been "taken"
         contours_accounted_for = []
         
