@@ -4,10 +4,10 @@
 /multi_tracker/tracker/camera_encoding: 'mono8'
 /multi_tracker/tracker/min_persistence_to_draw: 10
 /multi_tracker/tracker/max_frames_to_draw: 50
-/multi_tracker/tracker/erode: 1
+/multi_tracker/tracker/erode: 0
 /multi_tracker/tracker/dilate: 0
 /multi_tracker/tracker/max_change_in_frame: 0.2
 /multi_tracker/tracker/std_dev_update: 0.0002
-/multi_tracker/tracker/image_processor: 'background_subtraction_with_standard_deviations'
+/multi_tracker/tracker/image_processor: 'dark_objects_only'
 /multi_tracker/tracker/min_size: 5
-/multi_tracker/tracker/max_size: 20
+/multi_tracker/tracker/max_size: 2000
