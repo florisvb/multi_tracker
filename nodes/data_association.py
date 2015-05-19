@@ -202,7 +202,7 @@ class DataAssociator(object):
                 if objid not in objects_to_destroy:
                     tracked_object = self.tracked_objects[objid]
                     data = Trackedobject()
-                    data.header  = Header(stamp=t)
+                    data.header  = Header(stamp=t, seq=contourlist.header.seq)
                     p = np.array( tracked_object['state'][tracked_object['statenames']['position'],-1] ).flatten().tolist()
                     v = np.array( tracked_object['state'][tracked_object['statenames']['velocity'],-1] ).flatten().tolist()
                     data.position       = Point( p[0], p[1], p[2] )
