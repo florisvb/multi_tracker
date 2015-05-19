@@ -93,6 +93,12 @@ def reset_background_if_difference_is_very_large(self):
     # if the thresholded absolute difference is too large, reset the background
     if np.sum(self.threshed>0) / float(self.shapeImage[0]*self.shapeImage[1]) > self.params['max_change_in_frame']:
         self.backgroundImage = copy.copy(np.float32(self.imgScaled))
+        filename = rospy.get_param('/multi_tracker/csv_data_filename')
+        if filename == 'none':
+            filename = time.strftime("%Y%m%d_%H%M_rotpadbgimage", time.localtime()) + '.png'
+        home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
+        filename = os.path.join(home_directory, filename)
+        cv2.imwrite(filename, self.backgroundImage)
         return
 ###########################################################################################################
 
