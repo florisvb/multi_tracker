@@ -91,19 +91,21 @@ class DataListener:
                 self.create_hdf5_object(objid)
             
             obj = self.hdf5[objid]
-            prev_frame = obj.attrs.get('current_frame')
-            frame = prev_frame + 1
-            obj.attrs.modify('current_frame',  frame)
+            frame = obj.attrs.get('current_frame')
             
             if frame >= obj.attrs.get('length'):
                 self.add_chunk(obj)
             self.save_data(obj, tracked_object, frame)
-
+            
+            frame += 1
+            obj.attrs.modify('current_frame',  frame)
+            
             print objid, obj.attrs.get('current_frame'), obj.attrs.get('length'), obj['position'].shape
                  
     def main(self):
         while (not rospy.is_shutdown()):
             rospy.spin()
+        self.hdf5.close()
         
 if __name__ == '__main__':
     
