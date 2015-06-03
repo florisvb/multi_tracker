@@ -79,6 +79,7 @@ def convert_data_dict_to_object(data_dict):
     data = {}
     for key, trajec_dict in data_dict.items():
         trajec_obj = Trajectory()
+        trajec_obj.frames = np.array(trajec_dict['header.seq'])
         trajec_obj.position = np.array([trajec_dict['position.x'], trajec_dict['position.y'], trajec_dict['position.z']]).T
         trajec_obj.velocity = np.array([trajec_dict['velocity.x'], trajec_dict['velocity.y'], trajec_dict['velocity.z']]).T
         trajec_obj.size = np.array(trajec_dict['size']).T

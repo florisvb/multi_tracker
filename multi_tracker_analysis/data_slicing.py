@@ -45,6 +45,17 @@ def get_keys_in_local_time_range(data, local_time_range, keys=None):
             keys_in_time_range.append(key)
     return keys_in_time_range
     
+def get_keys_in_continuous_local_time_range(data, local_time_range, keys=None):
+    if keys is None:
+        keys = data.keys()
+        
+    keys_in_time_range = []
+    for key in keys:
+        trajec = data[key]
+        if trajec.time_continuous_local[0] > local_time_range[0] and trajec.time_continuous_local[0] < local_time_range[-1]:
+            keys_in_time_range.append(key)
+    return keys_in_time_range
+    
 def get_keys_in_speed_range(data, speed_range, keys=None):
     if keys is None:
         keys = data.keys()

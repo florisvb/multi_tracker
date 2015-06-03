@@ -5,9 +5,14 @@ import numpy as np
 import data_slicing
 import plotting_preferences
 
-def plot_trajectories(data, keys):
+def plot_trajectories(data, keys, image_filename=None):
     fig = plt.figure()
     ax = fig.add_subplot(111)
+    
+    if image_filename is not None:
+        image = plt.imread(image_filename)
+        ax.imshow(image, cmap='gray')
+    
     for key in keys:
         trajec = data[key]
         ax.plot(trajec.position[:,0], trajec.position[:,1])

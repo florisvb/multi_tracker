@@ -2,3 +2,4 @@ import read_csv_file_to_python
 import plot
 import data_slicing
 import trajectory_analysis
+import animate
