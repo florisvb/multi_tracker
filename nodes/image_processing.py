@@ -17,6 +17,8 @@ from multi_tracker.msg import Contourinfo, Contourlist
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
 from multi_tracker.srv import resetBackgroundService
 
+import time, os
+
 ###########################################################################################################
 # General use functions
 #######################
@@ -92,14 +94,18 @@ def erode_and_dialate(self):
 def reset_background_if_difference_is_very_large(self):
     # if the thresholded absolute difference is too large, reset the background
     if np.sum(self.threshed>0) / float(self.shapeImage[0]*self.shapeImage[1]) > self.params['max_change_in_frame']:
-        self.backgroundImage = copy.copy(np.float32(self.imgScaled))
-        filename = rospy.get_param('/multi_tracker/csv_data_filename')
-        if filename == 'none':
-            filename = time.strftime("%Y%m%d_%H%M_rotpadbgimage", time.localtime()) + '.png'
-        home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
-        filename = os.path.join(home_directory, filename)
-        cv2.imwrite(filename, self.backgroundImage)
+        reset_background(self)
         return
+        
+def reset_background(self):
+    self.backgroundImage = copy.copy(np.float32(self.imgScaled))
+    filename = rospy.get_param('/multi_tracker/csv_data_filename')
+    if filename == 'none':
+        filename = time.strftime("%Y%m%d_%H%M_rotpadbgimage", time.localtime()) + '.png'
+    home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
+    filename = os.path.join(home_directory, filename)
+    cv2.imwrite(filename, self.backgroundImage)
+    print 'Background reset: ', filename
 ###########################################################################################################
 
 ###########################################################################################################
@@ -109,10 +115,10 @@ def reset_background_if_difference_is_very_large(self):
 def background_subtraction(self):
     # If there is no background image, grab one, and move on to the next frame
     if self.backgroundImage is None:
-        self.backgroundImage = copy.copy(np.float32(self.imgScaled))
+        reset_background(self)
         return
     if self.reset_background_flag:
-        self.backgroundImage = copy.copy(np.float32(self.imgScaled))
+        reset_background(self)
         self.reset_background_flag = False
         return
       
@@ -137,10 +143,10 @@ def background_subtraction(self):
 def dark_objects_only(self):
     # If there is no background image, grab one, and move on to the next frame
     if self.backgroundImage is None:
-        self.backgroundImage = copy.copy(np.float32(self.imgScaled))
+        reset_background(self)
         return
     if self.reset_background_flag:
-        self.backgroundImage = copy.copy(np.float32(self.imgScaled))
+        reset_background(self)
         self.reset_background_flag = False
         return
     

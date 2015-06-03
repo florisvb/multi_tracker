@@ -21,7 +21,7 @@ class DataListener:
         filename = os.path.join(home_directory, filename)
         
         self.chunk_size = 100
-        self.hdf5 = open(filename, 'w')
+        self.hdf5 = h5py.File(filename, 'w')
         self.hdf5.attrs.create("info", info)
         
         self.data_to_save = [   'header.stamp.secs',
@@ -47,8 +47,8 @@ class DataListener:
         self.data_shape = {    'header.stamp.secs': 1,
                                 'header.stamp.nsecs': 1, 
                                 'header.seq': 1, 
-                                'position': 2, 
-                                'velocity': 2,
+                                'position': 3, 
+                                'velocity': 3,
                                 'angle': 1,
                                 'size': 1,
                                 'covariance': 1,
@@ -67,9 +67,11 @@ class DataListener:
         self.hdf5[objid].attrs.create('length', self.chunk_size)
         
     def add_chunk(self, obj):
+        length = obj.attrs.get('length')
+        new_length = length + self.chunk_size
         for attribute in self.data_to_save:
-            obj[attribute].resize(obj.attrs.get('length')+self.chunk_size, axis=0)
-            obj.attrs.modify('length', obj.attrs.get('length')+self.chunk_size)
+            obj[attribute].resize(new_length, axis=0)
+        obj.attrs.modify('length', new_length)
             
     def save_data(self, obj, tracked_object, frame):
         obj['header.stamp.secs'][frame] = tracked_object.header.stamp.secs
@@ -82,26 +84,26 @@ class DataListener:
         obj['covariance'][frame] = tracked_object.covariance
         obj['measurement'][frame] = [tracked_object.measurement.x, tracked_object.measurement.y]
         
-        
     def tracked_object_callback(self, tracked_objects):
         for tracked_object in tracked_objects.tracked_objects:
             objid = str(tracked_object.objid)
             if objid not in self.hdf5:
-                self.hdf5.create_group(objid)
+                self.create_hdf5_object(objid)
             
             obj = self.hdf5[objid]
-            obj.attrs.modify('current_frame', obj.attrs.get('current_frame') + 1)
-            frame = obj.attrs.get('current_frame')
+            prev_frame = obj.attrs.get('current_frame')
+            frame = prev_frame + 1
+            obj.attrs.modify('current_frame',  frame)
             
-            if frame > obj.attrs.get('length'):
+            if frame >= obj.attrs.get('length'):
                 self.add_chunk(obj)
-                
             self.save_data(obj, tracked_object, frame)
-                    
+
+            print objid, obj.attrs.get('current_frame'), obj.attrs.get('length'), obj['position'].shape
+                 
     def main(self):
         while (not rospy.is_shutdown()):
             rospy.spin()
-        self.csvfile.close()
         
 if __name__ == '__main__':
     
