@@ -22,6 +22,7 @@ class DataAssociator(object):
         kalman_parameter_py_file = rospy.get_param('/multi_tracker/data_association/kalman_parameters_py_file')
         home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/home_directory') )
         kalman_parameter_py_file = os.path.join(home_directory, kalman_parameter_py_file)
+        print 'Kalman py file: ', kalman_parameter_py_file
         
         self.kalman_parameters = imp.load_source('kalman_parameters', kalman_parameter_py_file)
         self.association_matrix = self.kalman_parameters.association_matrix
