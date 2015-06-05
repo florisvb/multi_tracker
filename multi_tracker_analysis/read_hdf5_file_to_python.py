@@ -13,17 +13,19 @@ class Trajectory(object):
 def convert_hdf5_to_object(hdf5):
     data = {}
     for key, obj in hdf5.items():
-        last_frame = obj.attrs.get('current_frame') + 1
+        last_frame = obj.attrs.get('current_frame') - 1
         if last_frame < 5:
             continue
         trajec_obj = Trajectory()
-        trajec_obj.frames =     np.array( obj['header.seq'][1:last_frame] ).reshape(last_frame-1)
-        trajec_obj.position =   np.array( obj['position'][1:last_frame] )
-        trajec_obj.velocity =   np.array( obj['velocity'][1:last_frame] )
-        #trajec_obj.size =       np.array( obj['size'][1:last_frame] ).reshape(last_frame)
-        #trajec_obj.measured_position = np.array( obj['measurement'][1:last_frame] ).reshape(last_frame)
-        trajec_obj.time =       np.array( obj['header.stamp.secs'][1:last_frame] ).astype(float) + np.array( obj['header.stamp.nsecs'][1:last_frame] ).astype(float)*1e-9
-        trajec_obj.time = trajec_obj.time.reshape(last_frame-1)
+        print obj['header.seq'][0:last_frame].shape, last_frame
+        trajec_obj.frames =     np.array( obj['header.seq'][0:last_frame] ).reshape(last_frame)
+        trajec_obj.position =   np.array( obj['position'][0:last_frame] )
+        trajec_obj.velocity =   np.array( obj['velocity'][0:last_frame] )
+        trajec_obj.size =       np.array( obj['size'][0:last_frame] ).reshape(last_frame)
+        trajec_obj.covariance = np.array( obj['covariance'][0:last_frame] ).reshape(last_frame)
+        trajec_obj.measured_position = np.array( obj['measurement'][0:last_frame] )
+        trajec_obj.time =       np.array( obj['header.stamp.secs'][0:last_frame] ).astype(float) + np.array( obj['header.stamp.nsecs'][0:last_frame] ).astype(float)*1e-9
+        trajec_obj.time = trajec_obj.time.reshape(last_frame)
         trajec_obj.length = len(trajec_obj.frames)
         t_str = time.strftime('%Y%m%d', time.localtime(trajec_obj.time[0]))
         objid = t_str + '_' + key
