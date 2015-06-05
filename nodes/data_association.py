@@ -36,6 +36,8 @@ class DataAssociator(object):
         #self.max_size = rospy.get_param('/multi_tracker/data_association/max_size')
         self.max_tracked_objects = rospy.get_param('/multi_tracker/data_association/max_tracked_objects')
         self.n_covariances_to_reject_data = rospy.get_param('/multi_tracker/data_association/n_covariances_to_reject_data')
+
+        self.contour_buffer = []
         
         # initialize the node
         rospy.init_node('data_associator')
@@ -44,9 +46,13 @@ class DataAssociator(object):
         self.pubTrackedObjects = rospy.Publisher('/multi_tracker/tracked_objects', Trackedobjectlist, queue_size=30)
         
         # Subscriptions.
-        self.subImage = rospy.Subscriber('/multi_tracker/contours', Contourlist, self.contour_identifier)
+        self.subImage = rospy.Subscriber('/multi_tracker/contours', Contourlist, self.contour_callback)
+        
+    def contour_callback(self, contourlist):
+        self.contour_buffer.append(contourlist)
         
     def contour_identifier(self, contourlist):
+        time_now = rospy.Time.now()
         
         # keep track of which new objects have been "taken"
         contours_accounted_for = []
@@ -60,7 +66,7 @@ class DataAssociator(object):
             else:
                 tracked_object['measurement'] = np.hstack( (tracked_object['measurement'], measurement) ) # add object's data to the tracked object
                 xhat, P, K = tracked_object['kalmanfilter'].update( tracked_object['measurement'][:,-1] ) # run kalman filter
-            tracked_object['frames'].append(contourlist.header.seq)
+            tracked_object['frames'].append(int(contourlist.header.frame_id))
             tracked_object['timestamp'].append(contourlist.header.stamp)
             tracked_object['state'] = np.hstack( (tracked_object['state'], xhat) )
         
@@ -148,7 +154,7 @@ class DataAssociator(object):
                             'state':        obj_state,
                             'measurement':  obj_measurement,
                             'timestamp':    [contour.header.stamp],
-                            'frames':       [contour.header.seq],
+                            'frames':       [int(contour.header.frame_id)],
                             'kalmanfilter': Kalman.DiscreteKalmanFilter(x0      = obj_state, 
                                                                         P0      = self.kalman_parameters.P0, 
                                                                         phi     = self.kalman_parameters.phi, 
@@ -166,7 +172,7 @@ class DataAssociator(object):
         
         # propagate unmatched objects
         for objid, tracked_object in self.tracked_objects.items():
-            if tracked_object['frames'][-1] != contourlist.header.seq:
+            if tracked_object['frames'][-1] != int(contourlist.header.frame_id):
                 update_tracked_object(tracked_object, None, contourlist)
         
         # make sure we don't get too many objects - delete the oldest ones, and ones with high covariances
@@ -203,7 +209,7 @@ class DataAssociator(object):
                 if objid not in objects_to_destroy:
                     tracked_object = self.tracked_objects[objid]
                     data = Trackedobject()
-                    data.header  = Header(stamp=t, seq=contourlist.header.seq)
+                    data.header  = Header(stamp=t, frame_id=contourlist.header.frame_id)
                     p = np.array( tracked_object['state'][tracked_object['statenames']['position'],-1] ).flatten().tolist()
                     v = np.array( tracked_object['state'][tracked_object['statenames']['velocity'],-1] ).flatten().tolist()
                     data.position       = Point( p[0], p[1], p[2] )
@@ -219,8 +225,14 @@ class DataAssociator(object):
             header = Header(stamp=t)
             self.pubTrackedObjects.publish( Trackedobjectlist(header=header, tracked_objects=object_info_to_publish) )
         
+        pt = (rospy.Time.now()-time_now).to_sec()
+        if len(self.contour_buffer) > 3:
+            rospy.logwarn("Processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.contour_buffer))
+            
     def main(self):
-        rospy.spin()
+        while not rospy.is_shutdown():
+            if len(self.contour_buffer) > 0:
+                self.contour_identifier(self.contour_buffer.pop(0))
                 
                 
 if __name__ == '__main__':
