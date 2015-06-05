@@ -66,7 +66,8 @@ def extract_and_publish_contours(self):
             # Prepare to publish the contour info
             # contour message info: dt, x, y, angle, area, ecc
             data = Contourinfo()
-            data.header  = Header(seq=self.iCountCamera,stamp=self.stampCamera,frame_id='BackgroundSubtraction')
+            #data.header  = Header(seq=self.iCountCamera,stamp=self.stampCamera,frame_id='BackgroundSubtraction')
+            data.header  = Header(seq=self.framenumber,stamp=self.framestamp,frame_id='BackgroundSubtraction')
             data.dt      = self.dtCamera
             data.x       = x
             data.y       = y
@@ -76,7 +77,7 @@ def extract_and_publish_contours(self):
             contour_info.append(data)
             
     # publish the contours
-    self.pubContours.publish( Contourlist(header = Header(seq=self.iCountCamera,stamp=self.stampCamera,frame_id='BackgroundSubtraction'), contours=contour_info) )  
+    self.pubContours.publish( Contourlist(header = Header(seq=self.framenumber,stamp=self.framestamp,frame_id='BackgroundSubtraction'), contours=contour_info) )  
 
     return
 
@@ -150,7 +151,8 @@ def dark_objects_only(self):
         self.reset_background_flag = False
         return
     
-    cv2.accumulateWeighted(np.float32(self.imgScaled), self.backgroundImage, self.params['backgroundupdate']) # this needs to be here, otherwise there's an accumulation of something in the background
+    if self.params['backgroundupdate'] != 0:
+        cv2.accumulateWeighted(np.float32(self.imgScaled), self.backgroundImage, self.params['backgroundupdate']) # this needs to be here, otherwise there's an accumulation of something in the background
       
     self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
     
