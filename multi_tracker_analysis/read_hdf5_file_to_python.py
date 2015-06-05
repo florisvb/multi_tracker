@@ -17,8 +17,8 @@ def convert_hdf5_to_object(hdf5):
         if last_frame < 5:
             continue
         trajec_obj = Trajectory()
-        print obj['header.seq'][0:last_frame].shape, last_frame
-        trajec_obj.frames =     np.array( obj['header.seq'][0:last_frame] ).reshape(last_frame)
+        print obj['header.frame_id'][0:last_frame].shape, last_frame
+        trajec_obj.frames =     np.array( obj['header.frame_id'][0:last_frame] ).reshape(last_frame)
         trajec_obj.position =   np.array( obj['position'][0:last_frame] )
         trajec_obj.velocity =   np.array( obj['velocity'][0:last_frame] )
         trajec_obj.size =       np.array( obj['size'][0:last_frame] ).reshape(last_frame)
