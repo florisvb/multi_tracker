@@ -67,6 +67,7 @@ class Tracker:
                         'max_change_in_frame'       : 0.2,
                         'min_size'                  : 5,
                         'max_size'                  : 200,
+                        'liveview'                  : False,
                         }
         for parameter, value in self.params.items():
             try:
@@ -86,14 +87,12 @@ class Tracker:
         self.reset_background_service = rospy.Service("/multi_tracker/reset_background", resetBackgroundService, self.reset_background)
         
         # initialize display
-        self.window_name = 'output'
-        cv2.namedWindow(self.window_name,1)
-        self.window_name = 'imgproc'
-        #cv2.namedWindow(self.window_name,2)
-        #self.imgproc = None
-        
+        if self.params['liveview']:
+            self.window_name = 'output'
+            cv2.namedWindow(self.window_name,1)
+            self.subTrackedObjects = rospy.Subscriber('/multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
+            
         self.cvbridge = CvBridge()
-        
         self.imgScaled      = None
         self.backgroundImage = None
         self.tracked_trajectories = {}
@@ -104,8 +103,6 @@ class Tracker:
         # Subscriptions - subscribe to images, and tracked objects
         sizeImage = 128+1024*1024*3 # Size of header + data.
         self.subImage = rospy.Subscriber(self.params['image_topic'], Image, self.image_callback, queue_size=5, buff_size=2*sizeImage, tcp_nodelay=True)
-        #self.subTrackedObjects = rospy.Subscriber('/multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
-        self.subTrackedObjects = rospy.Subscriber('/multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
 
     def reset_background(self, service_call):
         self.reset_background_flag = True
@@ -169,7 +166,7 @@ class Tracker:
         # Draw the tracked trajectories
         #print self.tracked_trajectories.keys()
         
-        if 1:
+        if self.params['liveview']:
             for objid, trajec in self.tracked_trajectories.items():
                 if len(trajec.positions) > 5:
                     draw_trajectory(self.imgOutput, trajec.positions, trajec.color, 2)
@@ -180,11 +177,6 @@ class Tracker:
             # Show the image
             #cv2.imshow('output', self.imgOutput)
             cv2.imshow('output', self.imgOutput)
-            
-        #if self.imgproc is not None:
-        #    cv2.imshow('imgproc', self.imgproc)
-        
-        #print self.stampCamera.secs, rospy.Time.now().secs
             
         cv2.waitKey(1)
         
