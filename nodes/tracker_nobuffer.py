@@ -153,34 +153,29 @@ class Tracker:
         self.shapeImage = self.imgScaled.shape # (height,width)
         
         # Image for display
-        if self.params['camera_encoding'] == 'mono8':
-            self.imgOutput = cv2.cvtColor(self.imgScaled, cv2.COLOR_GRAY2RGB)
-        else:
-            self.imgOutput = self.imgScaled
+        if self.params['liveview']:
+            if self.params['camera_encoding'] == 'mono8':
+                self.imgOutput = cv2.cvtColor(self.imgScaled, cv2.COLOR_GRAY2RGB)
+            else:
+                self.imgOutput = self.imgScaled
         
 ########### Call to image processing function ##############################################################
         self.process_image() # must be defined seperately - see "main" code at the bottom of this script
 ############################################################################################################
         
-        # Display the image.
-        # Draw the tracked trajectories
-        #print self.tracked_trajectories.keys()
-        
+        # Display the image | Draw the tracked trajectories
         if self.params['liveview']:
             for objid, trajec in self.tracked_trajectories.items():
                 if len(trajec.positions) > 5:
                     draw_trajectory(self.imgOutput, trajec.positions, trajec.color, 2)
-                    #print objid, trajec.color
                     cv2.circle(self.imgOutput,(int(trajec.positions[-1][0]),int(trajec.positions[-1][1])),int(trajec.covariances[-1]),trajec.color,2)
-                    #print trajec.covariances[-1]
-                    
-            # Show the image
-            #cv2.imshow('output', self.imgOutput)
             cv2.imshow('output', self.imgOutput)
-            
-        cv2.waitKey(1)
-        
-        print 'Processing time: ', (rospy.Time.now() - self.time_now).to_sec()    
+            cv2.waitKey(1)
+    
+        # Check processing time    
+        pt = (rospy.Time.now() - self.time_now).to_sec()
+        if pt > self.dtCamera:
+            rospy.logwarn("Processing time exceeds acquisition rate. Processing time: %f", pt)
 
     def Main(self):
         while (not rospy.is_shutdown()):

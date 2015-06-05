@@ -26,7 +26,8 @@ import time, os
 def extract_and_publish_contours(self):
     contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # http://docs.opencv.org/trunk/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html
-
+    header  = Header(stamp=self.framestamp,frame_id=str(self.framenumber))
+    
     contour_info = []
     for contour in contours:
         # Large objects are approximated by an ellipse
@@ -37,10 +38,11 @@ def extract_and_publish_contours(self):
             b /= 2.
             ecc = np.min((a,b)) / np.max((a,b))
             area = np.pi*a*b
-            if area > self.params['min_size'] and area < self.params['max_size']:
-                cv2.ellipse(self.imgOutput,ellipse,(0,255,0),2) # draw the ellipse, green
-            else:
-                cv2.ellipse(self.imgOutput,ellipse,(0,0,255),2) # draw the ellipse, not green
+            if self.params['liveview']:
+                if area > self.params['min_size'] and area < self.params['max_size']:
+                    cv2.ellipse(self.imgOutput,ellipse,(0,255,0),2) # draw the ellipse, green
+                else:
+                    cv2.ellipse(self.imgOutput,ellipse,(0,0,255),2) # draw the ellipse, not green
             
         # Small ones just get a point
         else:
@@ -57,17 +59,19 @@ def extract_and_publish_contours(self):
             angle = 0.
             ecc = 1.
             
-            if area > self.params['min_size'] and area < self.params['max_size']:
-                cv2.circle(self.imgOutput,(int(x),int(y)),2,(0,255,0),2) # draw a circle, green
-            else:
-                cv2.circle(self.imgOutput,(int(x),int(y)),2,(0,0,255),2) # draw a circle, not green
+            if self.params['liveview']:
+                if area > self.params['min_size'] and area < self.params['max_size']:
+                    cv2.circle(self.imgOutput,(int(x),int(y)),2,(0,255,0),2) # draw a circle, green
+                else:
+                    cv2.circle(self.imgOutput,(int(x),int(y)),2,(0,0,255),2) # draw a circle, not green
             
         if area > self.params['min_size'] and area < self.params['max_size']:
             # Prepare to publish the contour info
             # contour message info: dt, x, y, angle, area, ecc
             data = Contourinfo()
             #data.header  = Header(seq=self.iCountCamera,stamp=self.stampCamera,frame_id='BackgroundSubtraction')
-            data.header  = Header(seq=self.framenumber,stamp=self.framestamp,frame_id='BackgroundSubtraction')
+            #data.header  = Header(seq=self.framenumber,stamp=self.framestamp,frame_id='BackgroundSubtraction')
+            data.header  = header
             data.dt      = self.dtCamera
             data.x       = x
             data.y       = y
@@ -77,7 +81,7 @@ def extract_and_publish_contours(self):
             contour_info.append(data)
             
     # publish the contours
-    self.pubContours.publish( Contourlist(header = Header(seq=self.framenumber,stamp=self.framestamp,frame_id='BackgroundSubtraction'), contours=contour_info) )  
+    self.pubContours.publish( Contourlist(header = header, contours=contour_info) )  
 
     return
 
