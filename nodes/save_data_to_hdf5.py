@@ -19,6 +19,7 @@ class DataListener:
             filename = time.strftime("%Y%m%d_%H%M_rotpaddata", time.localtime()) + '.hdf5'
         home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
         filename = os.path.join(home_directory, filename)
+        print 'Saving hdf5 data to: ', filename
         
         self.chunk_size = 100
         self.hdf5 = h5py.File(filename, 'w')
@@ -26,7 +27,7 @@ class DataListener:
         
         self.data_to_save = [   'header.stamp.secs',
                                 'header.stamp.nsecs', 
-                                'header.seq', 
+                                'header.frame_id', 
                                 'position', 
                                 'velocity',
                                 'angle',
@@ -36,7 +37,7 @@ class DataListener:
                                 ]
         self.data_format = {    'header.stamp.secs': 'int',
                                 'header.stamp.nsecs': 'int', 
-                                'header.seq': 'int', 
+                                'header.frame_id': 'int', 
                                 'position': 'float', 
                                 'velocity': 'float',
                                 'angle': 'float',
@@ -46,7 +47,7 @@ class DataListener:
                             }
         self.data_shape = {    'header.stamp.secs': 1,
                                 'header.stamp.nsecs': 1, 
-                                'header.seq': 1, 
+                                'header.frame_id': 1, 
                                 'position': 3, 
                                 'velocity': 3,
                                 'angle': 1,
@@ -58,12 +59,13 @@ class DataListener:
         
         rospy.init_node('save_data_to_hdf5')
         
-    def create_hdf5_object(self, objid):
+    def create_hdf5_object(self, objid, frame_camera):
         self.hdf5.create_group(objid)
         for attribute in self.data_to_save:
             self.hdf5[objid].create_dataset(attribute, (self.chunk_size,self.data_shape[attribute]), maxshape=(None,self.data_shape[attribute]), dtype=self.data_format[attribute])
         self.hdf5[objid].attrs.create('objid', objid)
         self.hdf5[objid].attrs.create('current_frame', 0)
+        self.hdf5[objid].attrs.create('first_camera_frame', frame_camera)
         self.hdf5[objid].attrs.create('length', self.chunk_size)
         
     def add_chunk(self, obj):
@@ -76,7 +78,7 @@ class DataListener:
     def save_data(self, obj, tracked_object, frame):
         obj['header.stamp.secs'][frame] = tracked_object.header.stamp.secs
         obj['header.stamp.nsecs'][frame] = tracked_object.header.stamp.nsecs
-        obj['header.seq'][frame] = tracked_object.header.seq
+        obj['header.frame_id'][frame] = int(tracked_object.header.frame_id)
         obj['position'][frame] = [tracked_object.position.x, tracked_object.position.y, tracked_object.position.z]
         obj['velocity'][frame] = [tracked_object.velocity.x, tracked_object.velocity.y, tracked_object.velocity.z]
         obj['angle'][frame] = tracked_object.angle
@@ -86,19 +88,20 @@ class DataListener:
         
     def tracked_object_callback(self, tracked_objects):
         for tracked_object in tracked_objects.tracked_objects:
+            frame_camera = int(tracked_object.header.frame_id)
+            
             objid = str(tracked_object.objid)
             if objid not in self.hdf5:
-                self.create_hdf5_object(objid)
+                self.create_hdf5_object(objid, frame_camera)
             
             obj = self.hdf5[objid]
-            frame = obj.attrs.get('current_frame')
+            frame_obj = frame_camera - obj.attrs.get('first_camera_frame')
             
-            if frame >= obj.attrs.get('length'):
+            if frame_obj >= obj.attrs.get('length'):
                 self.add_chunk(obj)
-            self.save_data(obj, tracked_object, frame)
+            self.save_data(obj, tracked_object, frame_obj)
             
-            frame += 1
-            obj.attrs.modify('current_frame',  frame)
+            obj.attrs.modify('current_frame',  frame_obj+1)
             
             print objid, obj.attrs.get('current_frame'), obj.attrs.get('length'), obj['position'].shape
                  
