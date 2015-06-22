@@ -115,7 +115,7 @@ class Tracker:
         self.nQueuePrev     = 0     # Length of the image queue.
         self.dnQueueF       = 0.0   # Rate of change of the image queue length.
         
-        self.bufferImages   = [None]*2 # Circular buffer for incoming images.
+        self.bufferImages   = [None]*30 # Circular buffer for incoming images.
         self.iImgLoading    = 0  # Index of the next slot to load.
         self.iImgWorking    = 0  # Index of the slot to process, i.e. the oldest image in the buffer.
         self.imgUnscaled    = None
@@ -178,7 +178,8 @@ class Tracker:
                 iImgLoadingNext = (self.iImgLoading+1) % len(self.bufferImages)
                 iImgWorkingNext = (self.iImgWorking+1) % len(self.bufferImages)
                 self.iDroppedFrame += 1
-
+                print 'DROPPED FRAME: ', self.iDroppedFrame
+                
             # Put the image into the queue.
             self.bufferImages[self.iImgLoading] = rosimg
             self.iImgLoading = iImgLoadingNext
@@ -304,16 +305,18 @@ class Tracker:
             # Display the image.
             # Draw the tracked trajectories
             #print self.tracked_trajectories.keys()
-            for objid, trajec in self.tracked_trajectories.items():
-                if len(trajec.positions) > 5:
-                    draw_trajectory(self.imgOutput, trajec.positions, trajec.color, 2)
-                    #print objid, trajec.color
-                    cv2.circle(self.imgOutput,(int(trajec.positions[-1][0]),int(trajec.positions[-1][1])),int(trajec.covariances[-1]),trajec.color,2)
-                    #print trajec.covariances[-1]
-                    
-            # Show the image
-            #cv2.imshow('output', self.imgOutput)
-            cv2.imshow('output', self.imgOutput)
+            
+            if 0:
+                for objid, trajec in self.tracked_trajectories.items():
+                    if len(trajec.positions) > 5:
+                        draw_trajectory(self.imgOutput, trajec.positions, trajec.color, 2)
+                        #print objid, trajec.color
+                        cv2.circle(self.imgOutput,(int(trajec.positions[-1][0]),int(trajec.positions[-1][1])),int(trajec.covariances[-1]),trajec.color,2)
+                        #print trajec.covariances[-1]
+                        
+                # Show the image
+                #cv2.imshow('output', self.imgOutput)
+                cv2.imshow('output', self.imgOutput)
                 
             #if self.imgproc is not None:
             #    cv2.imshow('imgproc', self.imgproc)
