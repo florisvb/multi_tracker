@@ -4,6 +4,7 @@ import roslib
 import rospy
 import os
 import time
+import threading
 
 import numpy as np
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
@@ -22,6 +23,9 @@ class DataListener:
         print 'Saving hdf5 data to: ', filename
         
         self.buffer = []
+        # set up thread locks
+        self.lockParams = threading.Lock()
+        self.lockBuffer = threading.Lock()
         
         self.chunk_size = 100
         self.hdf5 = h5py.File(filename, 'w')
@@ -89,30 +93,36 @@ class DataListener:
         obj['measurement'][frame] = [tracked_object.measurement.x, tracked_object.measurement.y]
         
     def tracked_object_callback(self, tracked_objects):
-        self.buffer.append(tracked_objects)
+        with self.lockBuffer:
+            self.buffer.append(tracked_objects)
         
     def process_buffer(self):
         if len(self.buffer) > 0:
-            tracked_objects = self.buffer.pop(0)
             
-            for tracked_object in tracked_objects.tracked_objects:
-                frame_camera = int(tracked_object.header.frame_id)
+            with self.lockBuffer:
+                tracked_objects = self.buffer.pop(0)
                 
-                objid = str(tracked_object.objid)
-                if objid not in self.hdf5:
-                    self.create_hdf5_object(objid, frame_camera)
-                
-                obj = self.hdf5[objid]
-                frame_obj = frame_camera - obj.attrs.get('first_camera_frame')
-                
-                if frame_obj >= obj.attrs.get('length'):
-                    self.add_chunk(obj)
-                self.save_data(obj, tracked_object, frame_obj)
-                
-                obj.attrs.modify('current_frame',  frame_obj+1)
-                
-                print objid, obj.attrs.get('current_frame'), obj.attrs.get('length'), obj['position'].shape
-                 
+                for tracked_object in tracked_objects.tracked_objects:
+                    frame_camera = int(tracked_object.header.frame_id)
+                    
+                    objid = str(tracked_object.objid)
+                    if objid not in self.hdf5:
+                        self.create_hdf5_object(objid, frame_camera)
+                    
+                    obj = self.hdf5[objid]
+                    frame_obj = frame_camera - obj.attrs.get('first_camera_frame')
+                    
+                    if frame_obj >= obj.attrs.get('length'):
+                        self.add_chunk(obj)
+                    
+                    self.save_data(obj, tracked_object, frame_obj)
+                    
+                    
+                    obj.attrs.modify('current_frame',  frame_obj+1)
+                    
+                    #print objid, obj.attrs.get('current_frame'), obj.attrs.get('length'), obj['position'].shape
+            
+            
     def main(self):
         while (not rospy.is_shutdown()):
             self.process_buffer()
