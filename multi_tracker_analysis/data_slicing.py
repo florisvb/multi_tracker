@@ -1,5 +1,11 @@
 import numpy as np
 
+def get_dataset_from_keys(data, keys):
+    new_data = {}
+    for key in keys:
+        new_data.setdefault(key, data[key])
+    return new_data
+
 def get_keys_with_attributes(data, attributes, values, keys=None):
     if keys is None:
         keys = data.keys()
@@ -52,8 +58,23 @@ def get_keys_in_continuous_local_time_range(data, local_time_range, keys=None):
     keys_in_time_range = []
     for key in keys:
         trajec = data[key]
-        if trajec.time_continuous_local[0] > local_time_range[0] and trajec.time_continuous_local[0] < local_time_range[-1]:
+        
+        # if trajectory entirely contained in local range
+        if trajec.time_continuous_local[0] > local_time_range[0] and trajec.time_continuous_local[-1] < local_time_range[-1]:
             keys_in_time_range.append(key)
+            
+        # if trajectory contains first point in range
+        elif trajec.time_continuous_local[-1] > local_time_range[0] and trajec.time_continuous_local[-1] < local_time_range[-1]:
+            keys_in_time_range.append(key)
+        
+        # if trajectory contains last point in range
+        elif trajec.time_continuous_local[0] > local_time_range[0] and trajec.time_continuous_local[0] < local_time_range[-1]:
+            keys_in_time_range.append(key) 
+            
+        # if trajectory contains entire range
+        elif trajec.time_continuous_local[0] < local_time_range[0] and trajec.time_continuous_local[-1] > local_time_range[-1]:
+            keys_in_time_range.append(key) 
+            
     return keys_in_time_range
     
 def get_keys_in_speed_range(data, speed_range, keys=None):

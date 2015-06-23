@@ -1,9 +1,11 @@
 import time
 import numpy as np
+import matplotlib.pyplot as plt
 
 def get_localtime(t):
-    lt = time.localtime(t)
-    return lt.tm_hour + lt.tm_min/60. + lt.tm_sec/3600.
+    lt = time.localtime(np.floor(t))
+    remainder = t - np.floor(t)
+    return lt.tm_hour + lt.tm_min/60. + lt.tm_sec/3600. + remainder/3600.
         
 def calc_localtime(data):
     for key, trajec in data.items():
@@ -27,3 +29,40 @@ def calc_continuous_localtime(data, rolloverthreshold=12):
 def calc_speed(data):
     for key, trajec in data.items():
         trajec.speed = np.linalg.norm(trajec.velocity, axis=1)
+        
+def get_length_stats(data):
+    length = []
+    for key, trajec in data.items():
+        length.append(trajec.length)
+    print 'mean: ', np.mean(length), 'std: ', np.std(length)
+    print 'min: ', np.min(length), 'max: ', np.max(length)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.hist(length, bins=50)
+    
+    
+                        
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            

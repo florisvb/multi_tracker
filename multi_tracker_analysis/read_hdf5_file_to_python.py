@@ -5,6 +5,7 @@ import time
 import pickle
 import h5py
 import trajectory_analysis
+import copy
 
 class Trajectory(object):
     def __init__(self):
@@ -14,20 +15,25 @@ def convert_hdf5_to_object(hdf5):
     data = {}
     for key, obj in hdf5.items():
         last_frame = obj.attrs.get('current_frame') - 1
+        first_frame = 0
         if last_frame < 5:
             continue
         trajec_obj = Trajectory()
-        print obj['header.frame_id'][0:last_frame].shape, last_frame
-        trajec_obj.frames =     np.array( obj['header.frame_id'][0:last_frame] ).reshape(last_frame)
-        trajec_obj.position =   np.array( obj['position'][0:last_frame] )
-        trajec_obj.velocity =   np.array( obj['velocity'][0:last_frame] )
-        trajec_obj.size =       np.array( obj['size'][0:last_frame] ).reshape(last_frame)
-        trajec_obj.covariance = np.array( obj['covariance'][0:last_frame] ).reshape(last_frame)
-        trajec_obj.measured_position = np.array( obj['measurement'][0:last_frame] )
-        trajec_obj.time =       np.array( obj['header.stamp.secs'][0:last_frame] ).astype(float) + np.array( obj['header.stamp.nsecs'][0:last_frame] ).astype(float)*1e-9
+        if 'header.frame_id' in obj.keys():
+            print obj['header.frame_id'][first_frame:last_frame].shape, last_frame
+            trajec_obj.frames =     np.array( obj['header.frame_id'][first_frame:last_frame] ).reshape(last_frame)
+        elif 'header.seq' in obj.keys(): 
+            print obj['header.seq'][first_frame:last_frame].shape, last_frame
+            trajec_obj.frames =     np.array( obj['header.seq'][first_frame:last_frame] ).reshape(last_frame)
+        trajec_obj.position =   np.array( obj['position'][first_frame:last_frame] )
+        trajec_obj.velocity =   np.array( obj['velocity'][first_frame:last_frame] )
+        trajec_obj.size =       np.array( obj['size'][first_frame:last_frame] ).reshape(last_frame)
+        trajec_obj.covariance = np.array( obj['covariance'][first_frame:last_frame] ).reshape(last_frame)
+        trajec_obj.measured_position = np.array( obj['measurement'][first_frame:last_frame] )
+        trajec_obj.time =       np.array( obj['header.stamp.secs'][first_frame:last_frame] ).astype(float) + np.array( obj['header.stamp.nsecs'][0:last_frame] ).astype(float)*1e-9
         trajec_obj.time = trajec_obj.time.reshape(last_frame)
         trajec_obj.length = len(trajec_obj.frames)
-        t_str = time.strftime('%Y%m%d', time.localtime(trajec_obj.time[0]))
+        t_str = time.strftime('%Y%m%d', time.localtime(trajec_obj.time[first_frame]))
         objid = t_str + '_' + key
         trajec_obj.objid = objid
         data.setdefault(objid, trajec_obj)
@@ -41,9 +47,11 @@ def load_data_as_python_object_from_hdf5_file(filename):
     
 def combine_datasets(datasets):
     primary_dataset = datasets[0]
-    for dataset in datasets[1:]:
+    for d, dataset in enumerate(datasets[1:]):
         for key, trajec in dataset.items():
-            primary_dataset.setdefault(key, trajec)
+            new_key = key + '_' + str(d)
+            trajec.objid = new_key
+            primary_dataset.setdefault(new_key, trajec)
     return primary_dataset
     
 def save_dataset(dataset, filename):
@@ -51,13 +59,43 @@ def save_dataset(dataset, filename):
     pickle.dump(dataset, f)
     f.close()
         
-        
-    
-    
-    
-    
-    
-    
-    
-    
-    
+def print_position_jumps(data, jumpsize=20):
+    for key, trajec in data.items():
+        v = np.linalg.norm(np.diff(trajec.position, axis=0), axis=1)
+        if np.max(v) > jumpsize:
+            print key
+            
+def split_jumps(data, jumpsize=20, dryrun=True):
+    for key, trajec in data.items():
+        v = np.linalg.norm(np.diff(trajec.position, axis=0), axis=1)
+        if np.max(v) > jumpsize:
+            jumps = np.where(v > jumpsize)[0].tolist()
+            jumps.insert(0,0)
+            jumps.append(trajec.length)
+            
+            new_trajecs = []
+            for j, jump in enumerate(jumps[0:-1]):
+                indices = [jump+1, jumps[j+1]]
+                if indices[1] - indices[0] > 1:
+                    if trajec.frames[indices[0]] != 0:
+                        trajec_obj = Trajectory()
+                        for attribute in trajec.__dict__.keys():
+                            if attribute == 'objid':
+                                newid = copy.copy(trajec.objid) + '_' + str(jump)
+                                trajec_obj.objid = newid 
+                            elif attribute == 'length':
+                                pass
+                            else:
+                                trajec_obj.__setattr__(attribute, copy.copy(trajec.__getattribute__(attribute)[indices[0]:indices[1]]))
+                        trajec.length = len(trajec.frames)
+                        new_trajecs.append(trajec_obj)
+                    
+            if not dryrun:
+                del(data[key])
+                for new_trajec in new_trajecs:
+                    print new_trajec.objid
+                    data.setdefault(new_trajec.objid, new_trajec)
+
+    return data
+     
+

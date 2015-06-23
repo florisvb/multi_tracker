@@ -5,7 +5,7 @@ import numpy as np
 import data_slicing
 import plotting_preferences
 
-def plot_trajectories(data, keys, image_filename=None):
+def plot_trajectories(data, keys, image_filename=None, show_keys=False):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     
@@ -16,6 +16,8 @@ def plot_trajectories(data, keys, image_filename=None):
     for key in keys:
         trajec = data[key]
         ax.plot(trajec.position[:,0], trajec.position[:,1])
+        if show_keys:
+            ax.text(trajec.position[0,0], trajec.position[0,1], key, {'fontsize': 7})
     ax.set_aspect('equal')
     
 def plot_trajectories_of_length_greater_than(data, length, keys=None):

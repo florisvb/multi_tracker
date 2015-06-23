@@ -21,9 +21,9 @@ def find_candidate_links(data, time_range=0.05, position_range=4):
 
     diff_matrix = np.ones([len(start_points), len(end_points)])
     for i in range(len(end_points)):
-        diff_matrix[i,:] = np.abs( start_points - end_points[i] )
+        diff_matrix[i,:] = start_points - end_points[i] # note: end points correspond to starting trajecs, start points to continuing trajecs
     
-    starting_trajec_indices, continuing_trajec_indices = np.where(diff_matrix < time_range)
+    starting_trajec_indices, continuing_trajec_indices = np.where( (diff_matrix < time_range)*(diff_matrix > 0) )
     
     link_dict = {}
     
@@ -35,7 +35,12 @@ def find_candidate_links(data, time_range=0.05, position_range=4):
             continue
         
         position_difference = np.linalg.norm( starting_trajec.position[-1] - continuing_trajec.position[0] )
+        
+        print keys[starting_trajec_indices[i]], keys[continuing_trajec_indices[i]]
+        print continuing_trajec.time[0] - starting_trajec.time[-1]
         print position_difference
+        print
+
         if position_difference < position_range:
             if starting_trajec.objid not in link_dict.keys():
                 link_dict.setdefault(starting_trajec.objid, [])
@@ -150,6 +155,15 @@ def get_linked_dataset(data, key_chains):
         linked_trajec = link_trajectories_into_one(data, key_chain)
         linked_data.setdefault(linked_trajec.objid, linked_trajec)
     return linked_data
+    
+def get_linked_dataset_for_position_time(data, time_range=0.05, position_range=6):
+    link_dict = find_candidate_links(data, time_range, position_range)
+    key_chains = get_all_link_chains(link_dict, data)
+    linked_data = get_linked_dataset(data, key_chains)
+    print
+    print len(data.keys())
+    print len(linked_data.keys())
+    return linked_data
         
 def iterate_linking(data, iterations=3, time_range=0.05, position_range=6):
     for iteration in range(iterations):
@@ -157,6 +171,13 @@ def iterate_linking(data, iterations=3, time_range=0.05, position_range=6):
         key_chains = get_all_link_chains(link_dict, data)
         data = get_linked_dataset(data, key_chains)
     return data
+    
+def multistage_iterated_linking(data, position_range=10, time_ranges = [0.1, 0.2, 0.5, 1, 2, 5, 10]):
+    linked_data = data
+    for time_range in time_ranges:
+        linked_data = iterate_linking(linked_data, iterations=3, time_range=time_range, position_range=position_range)
+        print 'N keys: ', len(linked_data.keys())
+    return linked_data
 
 def plot_linked_keys(data):
     
@@ -167,9 +188,30 @@ def plot_linked_keys(data):
         ax.plot(trajec.position[:,0], trajec.position[:,1])
         
         
+def plot_potential_links(key, link_dict, data):
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    
+    starting_trajec = data[key]
+    first_frame = np.max([0, starting_trajec.length-300])
+    ax.plot(starting_trajec.position[first_frame:starting_trajec.length,0], starting_trajec.position[first_frame:starting_trajec.length,1], color='green', linewidth=3)
+    
+    for k in link_dict[key]:
+        trajec = data[k]
+        first_frame = 0
+        last_frame = np.min([300, trajec.length])
+        ax.plot(trajec.position[first_frame:last_frame,0], trajec.position[first_frame:last_frame,1])
+
+        position_difference = np.linalg.norm( starting_trajec.position[-1] - trajec.position[0] )
+        print k
+        print position_difference
+        print trajec.time[0] - starting_trajec.time[-1]
         
-        
-        
+def cull_tiny_trajecs(data, cull_length=5):
+    for key, trajec in data.items():
+        if trajec.length < cull_length:
+            del(data[key])
         
         
         
