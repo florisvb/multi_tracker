@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 import Kalman
 import imp
 
+import threading
+
 
 class DataAssociator(object):
     def __init__(self):
@@ -23,6 +25,8 @@ class DataAssociator(object):
         home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/home_directory') )
         kalman_parameter_py_file = os.path.join(home_directory, kalman_parameter_py_file)
         print 'Kalman py file: ', kalman_parameter_py_file
+        
+        self.lockBuffer = threading.Lock()
         
         self.kalman_parameters = imp.load_source('kalman_parameters', kalman_parameter_py_file)
         self.association_matrix = self.kalman_parameters.association_matrix
@@ -49,10 +53,10 @@ class DataAssociator(object):
         self.subImage = rospy.Subscriber('/multi_tracker/contours', Contourlist, self.contour_callback)
         
     def contour_callback(self, contourlist):
-        self.contour_buffer.append(contourlist)
+        with self.lockBuffer:
+            self.contour_buffer.append(contourlist)
         
     def contour_identifier(self, contourlist):
-        time_now = rospy.Time.now()
         
         # keep track of which new objects have been "taken"
         contours_accounted_for = []
@@ -225,14 +229,15 @@ class DataAssociator(object):
             header = Header(stamp=t)
             self.pubTrackedObjects.publish( Trackedobjectlist(header=header, tracked_objects=object_info_to_publish) )
         
-        pt = (rospy.Time.now()-time_now).to_sec()
-        if len(self.contour_buffer) > 3:
-            rospy.logwarn("Processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.contour_buffer))
-            
     def main(self):
         while not rospy.is_shutdown():
-            if len(self.contour_buffer) > 0:
-                self.contour_identifier(self.contour_buffer.pop(0))
+            with self.lockBuffer:
+                time_now = rospy.Time.now()
+                if len(self.contour_buffer) > 0:
+                    self.contour_identifier(self.contour_buffer.pop(0))
+                pt = (rospy.Time.now()-time_now).to_sec()
+                if len(self.contour_buffer) > 3:
+                    rospy.logwarn("Data association processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.contour_buffer))
                 
                 
 if __name__ == '__main__':

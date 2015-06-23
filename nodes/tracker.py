@@ -76,7 +76,6 @@ class Tracker:
                 print 'Using default parameter: ', parameter, ' = ', value
                         
         # set up thread locks
-        self.lockParams = threading.Lock()
         self.lockBuffer = threading.Lock()
         
         # initialize the node
@@ -188,6 +187,8 @@ class Tracker:
 
     def process_frame_buffer(self):
         rosimg = None
+        
+        time_now = rospy.Time.now()
         
         with self.lockBuffer:
             # The image queue length.
@@ -324,7 +325,12 @@ class Tracker:
             #print self.stampCamera.secs, rospy.Time.now().secs
             
         cv2.waitKey(1)
-
+        
+        pt = (rospy.Time.now()-time_now).to_sec()
+        if len(self.bufferImages) > 3:
+            rospy.logwarn("Tracker processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.bufferImages))
+                    
+                    
     def Main(self):
         while (not rospy.is_shutdown()):
             self.process_frame_buffer()

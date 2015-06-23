@@ -96,36 +96,36 @@ class DataListener:
         with self.lockBuffer:
             self.buffer.append(tracked_objects)
         
-    def process_buffer(self):
-        if len(self.buffer) > 0:
+    def process_buffer(self, tracked_objects):
+        
+        for tracked_object in tracked_objects.tracked_objects:
+            frame_camera = int(tracked_object.header.frame_id)
             
-            with self.lockBuffer:
-                tracked_objects = self.buffer.pop(0)
-                
-                for tracked_object in tracked_objects.tracked_objects:
-                    frame_camera = int(tracked_object.header.frame_id)
-                    
-                    objid = str(tracked_object.objid)
-                    if objid not in self.hdf5:
-                        self.create_hdf5_object(objid, frame_camera)
-                    
-                    obj = self.hdf5[objid]
-                    frame_obj = frame_camera - obj.attrs.get('first_camera_frame')
-                    
-                    if frame_obj >= obj.attrs.get('length'):
-                        self.add_chunk(obj)
-                    
-                    self.save_data(obj, tracked_object, frame_obj)
-                    
-                    
-                    obj.attrs.modify('current_frame',  frame_obj+1)
-                    
-                    #print objid, obj.attrs.get('current_frame'), obj.attrs.get('length'), obj['position'].shape
+            objid = str(tracked_object.objid)
+            if objid not in self.hdf5:
+                self.create_hdf5_object(objid, frame_camera)
+            
+            obj = self.hdf5[objid]
+            frame_obj = frame_camera - obj.attrs.get('first_camera_frame')
+            
+            if frame_obj >= obj.attrs.get('length'):
+                self.add_chunk(obj)
+            
+            self.save_data(obj, tracked_object, frame_obj)
+            obj.attrs.modify('current_frame',  frame_obj+1)
+            
+            #print objid, obj.attrs.get('current_frame'), obj.attrs.get('length'), obj['position'].shape
             
             
     def main(self):
         while (not rospy.is_shutdown()):
-            self.process_buffer()
+            with self.lockBuffer:
+                time_now = rospy.Time.now()
+                if len(self.buffer) > 0:
+                    self.process_buffer(self.buffer.pop(0))
+                pt = (rospy.Time.now()-time_now).to_sec()
+                if len(self.buffer) > 3:
+                    rospy.logwarn("Data saving processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.buffer))
         self.hdf5.close()
         
 if __name__ == '__main__':
