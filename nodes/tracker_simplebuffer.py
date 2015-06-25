@@ -141,7 +141,7 @@ class Tracker:
                 if len(trajec.positions) <= 1:
                     del(self.tracked_trajectories[objid])
 
-    def process_image(self, rosimg):
+    def process_image_buffer(self, rosimg):
         self.time_now = rospy.Time.now()
         if self.framestamp is not None:
             self.dtCamera = (rosimg.header.stamp - self.framestamp).to_sec()
@@ -190,9 +190,9 @@ class Tracker:
             with self.lockBuffer:
                 time_now = rospy.Time.now()
                 if len(self.image_buffer) > 0:
-                    self.process_buffer(self.image_buffer.pop(0))
+                    self.process_image_buffer(self.image_buffer.pop(0))
                 pt = (rospy.Time.now()-time_now).to_sec()
-                if len(self.buffer) > 3:
+                if len(self.image_buffer) > 3:
                     rospy.logwarn("Tracking processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.buffer))
         cv2.destroyAllWindows()
 
