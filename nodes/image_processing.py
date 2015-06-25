@@ -26,8 +26,13 @@ import time, os
 def extract_and_publish_contours(self):
     contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # http://docs.opencv.org/trunk/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html
-    header  = Header(stamp=self.framestamp,frame_id=str(self.framenumber))
     
+    try:
+        header  = Header(stamp=self.framestamp,frame_id=str(self.framenumber))
+    except:
+        header  = Header(stamp=None,frame_id=str(self.framenumber))
+        print 'could not get framestamp, run tracker_nobuffer instead'
+        
     contour_info = []
     for contour in contours:
         # Large objects are approximated by an ellipse
@@ -106,11 +111,15 @@ def reset_background(self):
     self.backgroundImage = copy.copy(np.float32(self.imgScaled))
     filename = rospy.get_param('/multi_tracker/csv_data_filename')
     if filename == 'none':
-        filename = time.strftime("%Y%m%d_%H%M_rotpadbgimage", time.localtime()) + '.png'
+        filename = time.strftime("%Y%m%d_%H%M_rotpadbgimage", time.localtime()) + '.jpg'
     home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
     filename = os.path.join(home_directory, filename)
-    cv2.imwrite(filename, self.backgroundImage)
-    print 'Background reset: ', filename
+    
+    try:
+        cv2.imwrite(filename, self.backgroundImage) # requires opencv > 2.4.9
+        print 'Background reset: ', filename
+    except:
+        print 'failed to save background image, might need opencv 2.4.9?'
 ###########################################################################################################
 
 ###########################################################################################################
