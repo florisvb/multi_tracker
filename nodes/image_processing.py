@@ -111,7 +111,7 @@ def reset_background(self):
     self.backgroundImage = copy.copy(np.float32(self.imgScaled))
     filename = rospy.get_param('/multi_tracker/csv_data_filename')
     if filename == 'none':
-        filename = time.strftime("%Y%m%d_%H%M_rotpadbgimage", time.localtime()) + '.jpg'
+        filename = time.strftime("%Y%m%d_%H%M_rotpadbgimage", time.localtime()) + '.png'
     home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
     filename = os.path.join(home_directory, filename)
     
