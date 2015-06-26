@@ -79,7 +79,7 @@ class DeCompressor:
                     new_image[delta_vid.xpixels, delta_vid.ypixels] = delta_vid.values # for indigo
 
         image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="mono8")
-        image_message.header.stamp = delta_vid.header.stamp
+        image_message.header = delta_vid.header
         self.pubDeltaVid.publish(image_message)
     
     def Main(self):
