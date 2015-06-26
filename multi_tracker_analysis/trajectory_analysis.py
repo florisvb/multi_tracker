@@ -24,7 +24,10 @@ def calc_continuous_localtime(data, rolloverthreshold=12):
             else:
                 t = localtime
             trajec.time_continuous_local[i] = t
-            
+
+def calc_relative_time(data, timestamp_relative):
+    for key, trajec in data.items():
+        trajec.time_relative = trajec.time - timestamp_relative
     
 def calc_speed(data):
     for key, trajec in data.items():
