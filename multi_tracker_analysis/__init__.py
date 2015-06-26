@@ -5,3 +5,4 @@ import trajectory_analysis
 import animate
 import read_hdf5_file_to_python
 import stitch_trajectories
+import bag2hdf5
