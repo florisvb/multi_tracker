@@ -50,6 +50,11 @@ def flatten_msg(msg, t, max_strlen=None):
         elif rostype == 'geometry_msgs/Quaternion':
             p = getattr(msg, attr)
             result.extend([p.x, p.y, p.z, p.w])
+            
+        elif '[]' in rostype and 'string' not in rostype:
+            p = getattr(msg, attr)
+            l = [i for i in p]
+            result.extend(l)
 
         else:
             p = getattr(msg, attr)
@@ -91,7 +96,7 @@ def rostype2dtype(rostype, max_strlen=None):
         dtype = np.int32
     elif rostype == 'int64':
         dtype = np.int64
-    elif rostype == 'bool':
+    elif rostype == 'bool' or rostype == 'bool[]':
         dtype = np.bool
     elif rostype == 'string' or rostype == 'string[]':
         dtype = 'S' + str(max_strlen)
@@ -106,6 +111,11 @@ def make_dtype(msg, max_strlen=None):
     result = []
     for i, attr in enumerate(msg.__slots__):
         rostype = msg._slot_types[i]
+        
+        if '[]' in rostype and 'string' not in rostype:
+            p = getattr(msg, attr)
+            length_of_msg = len(p)
+        
         if rostype == 'Header':
             result.extend([('header_seq', np.uint32),
                            ('header_stamp_secs', np.int32),
@@ -129,6 +139,13 @@ def make_dtype(msg, max_strlen=None):
                            (attr+'_z', np.float32),
                            (attr+'_w', np.float32),
                            ])
+        elif '[]' in rostype and 'string' not in rostype:
+            basetype = rostype.split('[]')[0]
+            r = []
+            for i in range(length_of_msg):
+                r.append( (attr+'_'+str(i), np.__getattribute__(basetype)) )
+            result.extend(r)
+
         else:
             nptype = rostype2dtype(rostype, max_strlen=max_strlen)
             result.append((attr, nptype))
@@ -205,6 +222,9 @@ def bag2hdf5(fname, out_fname, topics=None, max_strlen=None):
                 if not len(results2[topic]['object']):
                     # no data
                     continue
+                print 'TOPIC: ', topic
+                print results2[topic]
+                print
                 arr = np.array(**results2[topic])
                 if topic in dsets:
                     h5append(dsets[topic], arr)
