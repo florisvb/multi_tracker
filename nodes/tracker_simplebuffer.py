@@ -76,8 +76,6 @@ class Tracker:
             except:
                 print 'Using default parameter: ', parameter, ' = ', value
                 
-        self.framestamp = None
-        
         # initialize the node
         rospy.init_node('multi_tracker')
         self.nodename = rospy.get_name().rstrip('/')
@@ -100,6 +98,7 @@ class Tracker:
         # buffer locking
         self.lockBuffer = threading.Lock()
         self.image_buffer = []
+        self.framestamp = None
         
         # Publishers - publish contours
         self.pubContours = rospy.Publisher('/multi_tracker/contours', Contourlist, queue_size=30)
@@ -142,7 +141,6 @@ class Tracker:
                     del(self.tracked_trajectories[objid])
 
     def process_image_buffer(self, rosimg):
-        self.time_now = rospy.Time.now()
         if self.framestamp is not None:
             self.dtCamera = (rosimg.header.stamp - self.framestamp).to_sec()
         else:
