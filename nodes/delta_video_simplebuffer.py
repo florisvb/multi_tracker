@@ -84,7 +84,7 @@ class Compressor:
         with self.lockBuffer:
             self.image_buffer.append(rosimg)
 
-    def process_frame_buffer(self, rosimg):
+    def process_image_buffer(self, rosimg):
         if self.framestamp is not None:
             self.dtCamera = (rosimg.header.stamp - self.framestamp).to_sec()
         else:
