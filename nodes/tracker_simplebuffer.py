@@ -178,11 +178,6 @@ class Tracker:
             cv2.imshow('output', self.imgOutput)
             cv2.waitKey(1)
     
-        # Check processing time    
-        pt = (rospy.Time.now() - self.time_now).to_sec()
-        if pt > self.dtCamera:
-            rospy.logwarn("Processing time exceeds acquisition rate. Processing time: %f", pt)
-
     def Main(self):
         while (not rospy.is_shutdown()):
             with self.lockBuffer:
@@ -191,7 +186,7 @@ class Tracker:
                     self.process_image_buffer(self.image_buffer.pop(0))
                 pt = (rospy.Time.now()-time_now).to_sec()
                 if len(self.image_buffer) > 3:
-                    rospy.logwarn("Tracking processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.buffer))
+                    rospy.logwarn("Tracking processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.image_buffer))
         cv2.destroyAllWindows()
 
 #####################################################################################################
