@@ -12,12 +12,16 @@ from sensor_msgs.msg import Image
 import cv
 from cv_bridge import CvBridge, CvBridgeError
 
+import imp
 
 ###############################################################################
 #
 class SaveBag:
-    def __init__(self, basename, directory, topics):
-        filename = basename + '_' time.strftime('%Y_%m_%d_%H_%M_%S') + '.bag'
+    def __init__(self, config):
+        basename = config.basename
+        directory = config.directory
+        self.topics = config.topics
+        filename = basename + '_' + time.strftime('%Y_%m_%d_%H_%M_%S') + '.bag'
 
         # Make sure path exists.
         try:
@@ -25,18 +29,19 @@ class SaveBag:
         except OSError:
             pass
 
-        self.filenameBag = os.path.join(directory, filename)
-        self.topics = topics
-
+        self.filenameBag = os.path.expanduser(os.path.join(directory, filename))
+        self.processRosbag = None
+        
         rospy.on_shutdown(self.OnShutdown_callback)
 
     def OnShutdown_callback(self):
         self.StopRecordingBag()
         
     def StartRecordingBag(self):
-        rospy.logwarn('Saving bag file: %s' % (self.dirBag+'/'+self.filenameBag))
-        cmdline = ['rosbag', 'record','-O', self.dirBag+'/'+self.filenameBag]
-        cmdline.extend([self.topics])
+        rospy.logwarn('Saving bag file: %s' % (self.filenameBag))
+        cmdline = ['rosbag', 'record','-O', self.filenameBag]
+        cmdline.extend(self.topics)
+        print cmdline
         self.processRosbag = subprocess.Popen(cmdline, preexec_fn=subprocess.os.setpgrp)
     
     def StopRecordingBag(self):
@@ -51,21 +56,15 @@ class SaveBag:
 
 if __name__ == '__main__':
     parser = OptionParser()
-    parser.add_option("--directory_parameter_name", type="str", dest="directory_parameter_name", default='',
-                        help="name of ros parameter where directory in which to save can be found")
-                        
-    parser.add_option("--topics_parameter_name", type="str", dest="topics_parameter_name", default='',
-                        help="name of ros parameter where list of topics to save can be found")
-    
-    parser.add_option("--basename", type="str", dest="basename", default='',
-                        help="basename for bagfile")
+    parser.add_option("--config", type="str", dest="config", default='',
+                        help="filename of configuration file")
     (options, args) = parser.parse_args()
-
-    directory = rospy.get_param(options.directory_parameter_name)
-    topics = rospy.get_param(options.topics_parameter_name)
     
+    configuration = imp.load_source('configuration', options.config)
+    config = configuration.Config()
+
     rospy.init_node('SaveBag', log_level=rospy.INFO)
     rospy.sleep(1)
-    savebag = SaveBag(basename, directory, topics)
+    savebag = SaveBag(config)
     savebag.Main()
     
