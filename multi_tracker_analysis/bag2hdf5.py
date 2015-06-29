@@ -222,9 +222,6 @@ def bag2hdf5(fname, out_fname, topics=None, max_strlen=None):
                 if not len(results2[topic]['object']):
                     # no data
                     continue
-                print 'TOPIC: ', topic
-                print results2[topic]
-                print
                 arr = np.array(**results2[topic])
                 if topic in dsets:
                     h5append(dsets[topic], arr)
