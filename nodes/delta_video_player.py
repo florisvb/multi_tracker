@@ -12,6 +12,7 @@ import dynamic_reconfigure.server
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 from std_msgs.msg import Float32, Header, String
+import imp
 
 from multi_tracker.msg import Contourinfo, Contourlist, DeltaVid
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
@@ -37,7 +38,7 @@ import matplotlib.pyplot as plt
 
 # The main tracking class, a ROS node
 class DeCompressor:
-    def __init__(self, topic_in, topic_out, directory):
+    def __init__(self, topic_in, topic_out, directory, config=None, mode='mono'):
         '''
         Default image_topic for:
             Basler ace cameras with camera_aravis driver: camera/image_raw
@@ -60,6 +61,9 @@ class DeCompressor:
         self.backgroundImage = None
         self.background_img_filename = 'none'
         
+        self.config = config
+        self.mode = mode
+        
     def delta_image_callback(self, delta_vid):
         if self.background_img_filename != delta_vid.background_image:
             self.background_img_filename = delta_vid.background_image
@@ -79,8 +83,19 @@ class DeCompressor:
                     new_image[delta_vid.xpixels, delta_vid.ypixels, 0] = delta_vid.values # for hydro
                 except:
                     new_image[delta_vid.xpixels, delta_vid.ypixels] = delta_vid.values # for indigo
+        
+        if self.mode == 'color':
+            new_image = cv2.cvtColor(new_image, cv2.COLOR_GRAY2RGB)
 
-        image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="mono8")
+        if self.config is not None:
+            #print delta_vid.header.stamp.secs + delta_vid.header.stamp.nsecs*1e-9
+            t = delta_vid.header.stamp.secs + delta_vid.header.stamp.nsecs*1e-9
+            self.config.draw(new_image, t)
+
+        if self.mode == 'mono':
+            image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="mono8")
+        elif self.mode == 'color':
+            image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="bgr8")
         image_message.header = delta_vid.header
         self.pubDeltaVid.publish(image_message)
     
@@ -97,7 +112,19 @@ if __name__ == '__main__':
                         help="output topic name")
     parser.add_option("--directory", type="str", dest="directory", default='',
                         help="directory where background images can be found")
+    parser.add_option("--config", type="str", dest="config", default='',
+                        help="configuration file, which should describe a class that has a method draw")
+    parser.add_option("--mode", type="str", dest="mode", default='mono',
+                        help="color if desired to convert to color image")
+    
+    
     (options, args) = parser.parse_args()
     
-    decompressor = DeCompressor(options.input, options.output, options.directory)
+    if len(options.config) > 0: 
+        config = imp.load_source('config', options.config)
+        c = config.Config(options.config)
+    else:
+        c = None
+        
+    decompressor = DeCompressor(options.input, options.output, options.directory, c, options.mode)
     decompressor.Main()
