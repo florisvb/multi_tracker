@@ -236,7 +236,7 @@ class DataAssociator(object):
                 if len(self.contour_buffer) > 0:
                     self.contour_identifier(self.contour_buffer.pop(0))
                 pt = (rospy.Time.now()-time_now).to_sec()
-                if len(self.contour_buffer) > 3:
+                if len(self.contour_buffer) > 9:
                     rospy.logwarn("Data association processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.contour_buffer))
                 
                 

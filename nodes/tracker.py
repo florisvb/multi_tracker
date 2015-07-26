@@ -327,7 +327,7 @@ class Tracker:
         cv2.waitKey(1)
         
         pt = (rospy.Time.now()-time_now).to_sec()
-        if len(self.bufferImages) > 3:
+        if len(self.bufferImages) > 9:
             rospy.logwarn("Tracker processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.bufferImages))
                     
                     

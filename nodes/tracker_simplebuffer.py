@@ -185,7 +185,7 @@ class Tracker:
                 if len(self.image_buffer) > 0:
                     self.process_image_buffer(self.image_buffer.pop(0))
                 pt = (rospy.Time.now()-time_now).to_sec()
-                if len(self.image_buffer) > 3:
+                if len(self.image_buffer) > 9:
                     rospy.logwarn("Tracking processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.image_buffer))
         cv2.destroyAllWindows()
 
