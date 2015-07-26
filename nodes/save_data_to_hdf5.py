@@ -11,6 +11,8 @@ from multi_tracker.msg import Trackedobject, Trackedobjectlist
 
 import h5py
 
+import atexit
+
 class DataListener:
     def __init__(self, info='data information'):
         self.subTrackedObjects = rospy.Subscriber('multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
@@ -27,7 +29,7 @@ class DataListener:
         self.lockParams = threading.Lock()
         self.lockBuffer = threading.Lock()
         
-        self.chunk_size = 100
+        self.chunk_size = 1000
         self.hdf5 = h5py.File(filename, 'w')
         self.hdf5.attrs.create("info", info)
         
@@ -118,15 +120,19 @@ class DataListener:
             
             
     def main(self):
+        atexit.register(self.stop_saving_data)
         while (not rospy.is_shutdown()):
             with self.lockBuffer:
                 time_now = rospy.Time.now()
                 if len(self.buffer) > 0:
                     self.process_buffer(self.buffer.pop(0))
                 pt = (rospy.Time.now()-time_now).to_sec()
-                if len(self.buffer) > 3:
+                if len(self.buffer) > 9:
                     rospy.logwarn("Data saving processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.buffer))
+        
+    def stop_saving_data(self):
         self.hdf5.close()
+        print 'shut down nicely'
         
 if __name__ == '__main__':
     
