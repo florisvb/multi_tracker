@@ -1,11 +1,195 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import data_slicing
 from scipy.interpolate import interp1d
+import trajectory_analysis
 
 class Trajectory(object):
     def __init__(self):
         pass
+        
+def generate_relative_time_to_key_dict(data):
+    time_to_key_dict = {}
+    for key, trajec in data.items():
+        t = int(trajec.time_relative[0])
+        if t in time_to_key_dict.keys():
+            time_to_key_dict[t].append(key)
+        else:
+            time_to_key_dict.setdefault(t, [key])
+    return time_to_key_dict
 
+def get_keys_in_relative_time_range(data, timerange, time_to_key_dict=None):
+    if time_to_key_dict is None:
+        time_to_key_dict = generate_relative_time_to_key_dict(data)
+    keys = []
+    for t in range(int(timerange[0]), int(timerange[-1])):
+        if t in time_to_key_dict.keys():
+            keys.extend(time_to_key_dict[t])
+    return np.unique(keys)
+                
+def find_link_candidates_for_trajectory(data, key, timerange=[0,5], distance_range=10, time_to_key_dict=None, claimed_keys=[]):
+    trajec = data[key]
+    candidate_continuing_keys = get_keys_in_relative_time_range(data, [trajec.time_relative[-1]+timerange[0], trajec.time_relative[-1]+timerange[-1]], time_to_key_dict=time_to_key_dict)
+    
+    distance_errors = []
+    time_errors = []
+    candidate_keys = []
+    for c, candidate_key in enumerate(candidate_continuing_keys):
+        if candidate_key in claimed_keys:
+            continue
+        else:
+            distance_error = np.linalg.norm(data[candidate_key].position[0] - trajec.position[-1])
+            distance_errors.append(distance_error)
+            time_errors.append( data[candidate_key].time[0] - trajec.time[-1] )
+            candidate_keys.append(candidate_key)
+    distance_errors = np.array(distance_errors)
+    time_errors = np.array(time_errors)
+    candidate_keys = np.array(candidate_keys)
+    
+    indices_with_positive_time_error = np.where(time_errors >= 0)[0]
+    indices_with_nearby_starting_points = np.where(distance_errors[indices_with_positive_time_error] < distance_range)
+
+    if len(    distance_errors[indices_with_positive_time_error][indices_with_nearby_starting_points] ) > 0:
+        best_index = np.argmin(time_errors[indices_with_positive_time_error][indices_with_nearby_starting_points])
+        return candidate_keys[indices_with_positive_time_error][indices_with_nearby_starting_points][best_index]
+    else:
+        return None
+        
+    #best_candidates = candidate_continuing_keys[indices_with_positive_time_error][indices_with_nearby_starting_points]
+    #return best_candidates
+    
+def find_link_chain(data, key, timerange=[0,10], distance_range=20, maxlinks=5, time_to_key_dict=None, claimed_keys=[]):
+    if time_to_key_dict is None:
+        time_to_key_dict = generate_relative_time_to_key_dict(data)
+        
+    keys = [key]
+    nlinks = 0
+    while nlinks < maxlinks:
+        best_link = find_link_candidates_for_trajectory(data, keys[-1], timerange=timerange, distance_range=distance_range, time_to_key_dict=time_to_key_dict, claimed_keys=claimed_keys)
+        if best_link is not None:
+            keys.append(best_link)
+            claimed_keys.append(best_link)
+            nlinks += 1
+        else:
+            break
+            
+    return keys, claimed_keys
+    
+    
+def get_complete_link_chains(data, timerange=[0,10], distance_range=20, maxlinks=1000):
+    time_to_key_dict = generate_relative_time_to_key_dict(data)
+    
+    seed_keys = data_slicing.get_keys_in_relative_time_range(data,[-1000, 3600])
+    keys_accounted_for = []
+    chains = []
+    claimed_keys = []
+    for seed_key in seed_keys:
+        if seed_key in keys_accounted_for:
+            continue
+        
+        links, claimed_keys = find_link_chain(data, seed_key, timerange=timerange, distance_range=distance_range, maxlinks=maxlinks, time_to_key_dict=time_to_key_dict, claimed_keys=claimed_keys)
+        chains.append(links)
+        keys_accounted_for.extend(links)
+        print len(links)
+    
+    return chains
+
+def find_duplicates_in_chains(chains):
+    duplicates = []
+    
+    for c, chain in enumerate(chains):
+        for key in chain:
+            if len(chains) > c+1:
+                for chain2 in chains[c+1:]:
+                    if key in chain2:
+                        duplicates.append(key)
+    
+    return duplicates
+
+def plot_trajec_and_candidate_links(data, key, candidates):
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    
+    ax.plot(data[key].position[:,0], data[key].position[:,1], color='red')
+    ax.plot(data[key].position[-1,0], data[key].position[-1,1], 'o', color='red')
+    
+    for key in candidates:
+        ax.plot(data[key].position[:,0], data[key].position[:,1], color='blue')
+        ax.plot(data[key].position[0,0], data[key].position[0,1], 'o', color='green')
+
+def link_trajectories_into_one(data, keys):
+    linked_trajec = Trajectory()
+
+    # init    
+    key = keys[0]
+    linked_trajec.frames =     data[key].frames
+    linked_trajec.position =   data[key].position
+    linked_trajec.velocity =   data[key].velocity
+    linked_trajec.time =       data[key].time
+    linked_trajec.objid =      key
+    linked_trajec.length =     data[key].length
+
+    for key in keys[1:]:
+        trajec = data[key]
+        n_frames_elapsed = trajec.frames[0] - linked_trajec.frames[-1]
+        
+        if n_frames_elapsed > 1:
+            frames_to_interpolate = np.arange(linked_trajec.frames[-1]+1, linked_trajec.frames[-1]+n_frames_elapsed)
+            # interpolate
+            interp_position = interp1d([linked_trajec.frames[-1], trajec.frames[0]], [linked_trajec.position[-1], trajec.position[0]], axis=0)
+            interp_velocity = interp1d([linked_trajec.frames[-1], trajec.frames[0]], [linked_trajec.velocity[-1], trajec.velocity[0]], axis=0)
+            interp_time = interp1d([linked_trajec.frames[-1], trajec.frames[0]], [linked_trajec.time[-1], trajec.time[0]], axis=0)
+            
+            interpolated_position = interp_position(frames_to_interpolate)
+            linked_trajec.position = np.vstack( (linked_trajec.position, interpolated_position) )
+            
+            interpolated_velocity = interp_velocity(frames_to_interpolate)
+            linked_trajec.velocity = np.vstack( (linked_trajec.velocity, interpolated_velocity) )
+            
+            interpolated_time = interp_time(frames_to_interpolate)
+            linked_trajec.time = np.hstack( (linked_trajec.time, interpolated_time) )
+
+            linked_trajec.frames = np.hstack( (linked_trajec.frames, frames_to_interpolate) )
+        
+        # append
+        linked_trajec.frames = np.hstack( (linked_trajec.frames, trajec.frames) )
+        linked_trajec.position = np.vstack( (linked_trajec.position, trajec.position) )
+        linked_trajec.velocity = np.vstack( (linked_trajec.velocity, trajec.velocity) )
+        linked_trajec.time = np.hstack( (linked_trajec.time, trajec.time) )
+        linked_trajec.objid += '_'
+        linked_trajec.objid += key.split('_')[1]
+        linked_trajec.length = len(linked_trajec.frames)
+        
+    return linked_trajec
+        
+def get_linked_dataset(config, data, key_chains):
+    linked_data = {}
+    for key_chain in key_chains:
+        linked_trajec = link_trajectories_into_one(data, key_chain)
+        linked_data.setdefault(linked_trajec.objid, linked_trajec)
+    trajectory_analysis.calc_localtime(linked_data)
+    trajectory_analysis.calc_relative_time(linked_data, config.timestamp_reference)
+    return linked_data
+    
+def link_data(config, data, timerange=[0,30], distance_range=30, maxlinks=100000):
+    chains = get_complete_link_chains(data, timerange=timerange, distance_range=distance_range, maxlinks=maxlinks)
+    linked_data = get_linked_dataset(config, data, chains)
+    return linked_data
+    
+def link_datasets(configs, datasets, timerange=[0,10], distance_range=30, maxlinks=100000):
+    linked_datasets = {}
+    for name in datasets.keys():
+        data = datasets[name]
+        linked_data = link_data(configs[name], data, timerange=timerange, distance_range=distance_range, maxlinks=maxlinks)
+        linked_datasets.setdefault(name, linked_data)
+    return linked_datasets
+    
+'''
+
+
+############
+    
 def collect_start_and_end_points(data):
     keys = []
     start_points = [] 
@@ -217,7 +401,7 @@ def cull_tiny_trajecs(data, cull_length=5):
         
         
         
-        
+'''
 
 
 

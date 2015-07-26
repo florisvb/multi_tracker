@@ -51,6 +51,18 @@ def get_keys_in_local_time_range(data, local_time_range, keys=None):
             keys_in_time_range.append(key)
     return keys_in_time_range
     
+def get_keys_in_relative_time_range(data, relative_time_range, keys=None):
+    if keys is None:
+        keys = data.keys()
+        
+    keys_in_time_range = []
+    for key in keys:
+        trajec = data[key]
+        
+        if np.max(relative_time_range[0]<trajec.time_relative) and np.max(relative_time_range[-1]>trajec.time_relative):
+            keys_in_time_range.append(key)
+    return keys_in_time_range
+    
 def get_keys_in_continuous_local_time_range(data, local_time_range, keys=None):
     if keys is None:
         keys = data.keys()

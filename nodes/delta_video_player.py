@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 
 # The main tracking class, a ROS node
 class DeCompressor:
-    def __init__(self, topic_in, topic_out, directory, config=None, mode='mono'):
+    def __init__(self, topic_in, topic_out, directory, config=None, mode='mono', saveto=''):
         '''
         Default image_topic for:
             Basler ace cameras with camera_aravis driver: camera/image_raw
@@ -63,6 +63,12 @@ class DeCompressor:
         
         self.config = config
         self.mode = mode
+        
+        if len(saveto) > 0:
+            self.saveto = saveto
+            self.videowriter = None
+        else:
+            self.saveto = None
         
     def delta_image_callback(self, delta_vid):
         if self.background_img_filename != delta_vid.background_image:
@@ -91,6 +97,14 @@ class DeCompressor:
             #print delta_vid.header.stamp.secs + delta_vid.header.stamp.nsecs*1e-9
             t = delta_vid.header.stamp.secs + delta_vid.header.stamp.nsecs*1e-9
             self.config.draw(new_image, t)
+            
+        if self.saveto is not None:
+            if self.videowriter is not None:
+                self.videowriter.write(new_image)
+                print 'wrote new image'
+            else:
+                self.videowriter = cv2.VideoWriter()
+                self.videowriter.open(self.saveto, cv.CV_FOURCC('P','I','M','1'), 30, (new_image.shape[0], new_image.shape[1]))
 
         if self.mode == 'mono':
             image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="mono8")
@@ -101,7 +115,8 @@ class DeCompressor:
     
     def Main(self):
         rospy.spin()
-
+        if self.videowriter is not None:
+            self.videowriter.close()
 #####################################################################################################
     
 if __name__ == '__main__':
@@ -116,7 +131,8 @@ if __name__ == '__main__':
                         help="configuration file, which should describe a class that has a method draw")
     parser.add_option("--mode", type="str", dest="mode", default='mono',
                         help="color if desired to convert to color image")
-    
+    parser.add_option("--saveto", type="str", dest="saveto", default='',
+                        help="filename where to save video, default is none")
     
     (options, args) = parser.parse_args()
     
@@ -126,5 +142,5 @@ if __name__ == '__main__':
     else:
         c = None
         
-    decompressor = DeCompressor(options.input, options.output, options.directory, c, options.mode)
+    decompressor = DeCompressor(options.input, options.output, options.directory, c, options.mode, options.saveto)
     decompressor.Main()
