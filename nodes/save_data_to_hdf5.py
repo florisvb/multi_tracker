@@ -29,7 +29,7 @@ class DataListener:
         self.lockParams = threading.Lock()
         self.lockBuffer = threading.Lock()
         
-        self.chunk_size = 1000
+        self.chunk_size = 5000
         self.hdf5 = h5py.File(filename, 'w')
         self.hdf5.attrs.create("info", info)
         
