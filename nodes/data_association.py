@@ -5,7 +5,7 @@ import rospy
 import rosparam
 import copy
 import numpy as np
-import os
+import os, sys
 
 from std_msgs.msg import Float32, Header, String                                                                                                                                  
 from geometry_msgs.msg import Point, Vector3
@@ -71,8 +71,12 @@ class DataAssociator(object):
                 tracked_object['measurement'] = np.hstack( (tracked_object['measurement'], measurement) ) # add object's data to the tracked object
                 xhat, P, K = tracked_object['kalmanfilter'].update( tracked_object['measurement'][:,-1] ) # run kalman filter
             tracked_object['frames'].append(int(contourlist.header.frame_id))
+            tracked_object['frames'].pop(0)
+            tracked_object['nframes'] += 1
             tracked_object['timestamp'].append(contourlist.header.stamp)
-            tracked_object['state'] = np.hstack( (tracked_object['state'], xhat) )
+            tracked_object['timestamp'].pop(0)
+            tracked_object['state'] = np.hstack( (tracked_object['state'][:,-1], xhat) )
+            
         
         # iterate through objects first
         # get order of persistence
@@ -81,7 +85,7 @@ class DataAssociator(object):
             persistance = []
             objids = []
             for objid, tracked_object in self.tracked_objects.items():
-                 persistance.append(len(tracked_object['frames']))
+                 persistance.append(tracked_object['nframes'])
                  objids.append(objid)
             order = np.argsort(persistance)[::-1]
             objid_in_order_of_persistance = [objids[o] for o in order]
@@ -167,7 +171,8 @@ class DataAssociator(object):
                                                                         Q       = self.kalman_parameters.Q, 
                                                                         R       = self.kalman_parameters.R, 
                                                                         gammaW  = self.kalman_parameters.gammaW,
-                                                                        )
+                                                                        ),
+                            'nframes':      0,
                           }
                 self.tracked_objects.setdefault(new_obj['objid'], new_obj)
                 self.current_objid += 1
@@ -224,7 +229,7 @@ class DataAssociator(object):
                     tracked_object_covariance = np.linalg.norm( (tracked_object['kalmanfilter'].H*tracked_object['kalmanfilter'].P).T*self.association_matrix )
                     data.covariance     = tracked_object_covariance # position covariance only
                     data.objid          = tracked_object['objid']
-                    data.persistence    = len(tracked_object['frames'])
+                    data.persistence    = tracked_object['nframes']
                     object_info_to_publish.append(data)
             header = Header(stamp=t)
             self.pubTrackedObjects.publish( Trackedobjectlist(header=header, tracked_objects=object_info_to_publish) )
@@ -238,7 +243,6 @@ class DataAssociator(object):
                 pt = (rospy.Time.now()-time_now).to_sec()
                 if len(self.contour_buffer) > 9:
                     rospy.logwarn("Data association processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.contour_buffer))
-                
                 
 if __name__ == '__main__':
     data_associator = DataAssociator()
