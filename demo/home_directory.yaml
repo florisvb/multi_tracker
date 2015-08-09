@@ -1,2 +1,2 @@
-/multi_tracker/home_directory: '~/demo'
-/multi_tracker/data_directory: '~/demo'
+/multi_tracker/home_directory: '~/orchard/src'
+/multi_tracker/data_directory: '~/orchard/data'
