@@ -36,39 +36,39 @@ class DataListener:
         self.data_to_save = [   'header.stamp.secs',
                                 'header.stamp.nsecs', 
                                 'header.frame_id', 
-                                'position', 
-                                'velocity',
+                                'position.x', 
+                                'position.y', 
+                                'position.z', 
+                                'velocity.x',
+                                'velocity.y',
+                                'velocity.z',
                                 'angle',
                                 'size',
                                 'covariance',
-                                'measurement',
+                                'measurement.x',
+                                'measurement.y',
                                 ]
         self.data_format = {    'header.stamp.secs': 'int',
                                 'header.stamp.nsecs': 'int', 
                                 'header.frame_id': 'int', 
-                                'position': 'float', 
-                                'velocity': 'float',
+                                'position.x': 'float', 
+                                'position.y': 'float', 
+                                'position.z': 'float', 
+                                'velocity.x': 'float',
+                                'velocity.y': 'float',
+                                'velocity.z': 'float',
                                 'angle': 'float',
                                 'size': 'float',
                                 'covariance': 'float',
-                                'measurement': 'float',
+                                'measurement.x': 'float',
+                                'measurement.y': 'float',
                             }
-        self.data_shape = {    'header.stamp.secs': 1,
-                                'header.stamp.nsecs': 1, 
-                                'header.frame_id': 1, 
-                                'position': 3, 
-                                'velocity': 3,
-                                'angle': 1,
-                                'size': 1,
-                                'covariance': 1,
-                                'measurement': 2,
-                            }
-        formats = [self.data_format[data] for data in self.data_to_save]
-        
+                            
+        self.dtype = [(data,self.data_format[data]) for data in self.data_to_save]
         rospy.init_node('save_data_to_hdf5')
         
     def create_hdf5_object(self, objid, frame_camera):
-        self.hdf5.create_dataset(objid, (self.chunk_size, 14), maxshape=(None, 14), dtype=float)
+        self.hdf5.create_dataset(objid, (self.chunk_size, len(self.data_to_save)), maxshape=(None, len(self.data_to_save)), dtype=self.dtype)
         self.hdf5[objid].attrs.create('objid', objid)
         self.hdf5[objid].attrs.create('current_frame', 0)
         self.hdf5[objid].attrs.create('first_camera_frame', frame_camera)
@@ -81,7 +81,9 @@ class DataListener:
         obj.attrs.modify('length', new_length)
             
     def save_data(self, obj, tracked_object, frame):
-        obj[frame] = [  tracked_object.header.stamp.secs,
+        obj[frame] = [  tracked_object.__getattribute__(data) for data in self.data_to_save ]
+        '''
+        header.stamp.secs,
                         tracked_object.header.stamp.nsecs,
                         float(tracked_object.header.frame_id),
                         tracked_object.position.x, tracked_object.position.y, tracked_object.position.z,
@@ -91,7 +93,7 @@ class DataListener:
                         tracked_object.covariance,
                         tracked_object.measurement.x, tracked_object.measurement.y,
                         ]
-        
+        '''
     def tracked_object_callback(self, tracked_objects):
         with self.lockBuffer:
             self.buffer.append(tracked_objects)
