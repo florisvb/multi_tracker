@@ -83,7 +83,7 @@ class DataListener:
     def save_data(self, obj, tracked_object, frame):
         obj[frame] = np.array([(    tracked_object.header.stamp.secs,
                                     tracked_object.header.stamp.nsecs,
-                                    float(tracked_object.header.frame_id),
+                                    tracked_object.header.frame_id,
                                     tracked_object.position.x, tracked_object.position.y, tracked_object.position.z,
                                     tracked_object.velocity.x, tracked_object.velocity.y, tracked_object.velocity.z,
                                     tracked_object.angle,
