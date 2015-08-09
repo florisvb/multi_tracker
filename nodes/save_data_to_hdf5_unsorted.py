@@ -48,27 +48,27 @@ class DataListener:
                                 'measurement.x',
                                 'measurement.y',
                                 ]
-        self.data_format = {    'header.stamp.secs': 'int',
-                                'header.stamp.nsecs': 'int', 
-                                'header.frame_id': 'int', 
-                                'position.x': 'float', 
-                                'position.y': 'float', 
-                                'position.z': 'float', 
-                                'velocity.x': 'float',
-                                'velocity.y': 'float',
-                                'velocity.z': 'float',
-                                'angle': 'float',
-                                'size': 'float',
-                                'covariance': 'float',
-                                'measurement.x': 'float',
-                                'measurement.y': 'float',
+        self.data_format = {    'header.stamp.secs': int,
+                                'header.stamp.nsecs': int, 
+                                'header.frame_id': int, 
+                                'position.x': float, 
+                                'position.y': float, 
+                                'position.z': float, 
+                                'velocity.x': float,
+                                'velocity.y': float,
+                                'velocity.z': float,
+                                'angle': float,
+                                'size': float,
+                                'covariance': float,
+                                'measurement.x': float,
+                                'measurement.y': float,
                             }
                             
         self.dtype = [(data,self.data_format[data]) for data in self.data_to_save]
         rospy.init_node('save_data_to_hdf5')
         
     def create_hdf5_object(self, objid, frame_camera):
-        self.hdf5.create_dataset(objid, (self.chunk_size, len(self.data_to_save)), maxshape=(None, len(self.data_to_save)), dtype=self.dtype)
+        self.hdf5.create_dataset(objid, (self.chunk_size, 1), maxshape=(None,1), dtype=self.dtype)
         self.hdf5[objid].attrs.create('objid', objid)
         self.hdf5[objid].attrs.create('current_frame', 0)
         self.hdf5[objid].attrs.create('first_camera_frame', frame_camera)
@@ -81,25 +81,21 @@ class DataListener:
         obj.attrs.modify('length', new_length)
             
     def save_data(self, obj, tracked_object, frame):
-        obj[frame] = [  tracked_object.__getattribute__(data) for data in self.data_to_save ]
-        '''
-        header.stamp.secs,
-                        tracked_object.header.stamp.nsecs,
-                        float(tracked_object.header.frame_id),
-                        tracked_object.position.x, tracked_object.position.y, tracked_object.position.z,
-                        tracked_object.velocity.x, tracked_object.velocity.y, tracked_object.velocity.z,
-                        tracked_object.angle,
-                        tracked_object.size,
-                        tracked_object.covariance,
-                        tracked_object.measurement.x, tracked_object.measurement.y,
-                        ]
-        '''
+        obj[frame] = np.array([(    tracked_object.header.stamp.secs,
+                                    tracked_object.header.stamp.nsecs,
+                                    float(tracked_object.header.frame_id),
+                                    tracked_object.position.x, tracked_object.position.y, tracked_object.position.z,
+                                    tracked_object.velocity.x, tracked_object.velocity.y, tracked_object.velocity.z,
+                                    tracked_object.angle,
+                                    tracked_object.size,
+                                    tracked_object.covariance,
+                                    tracked_object.measurement.x, tracked_object.measurement.y,
+                               )], dtype=self.dtype)
     def tracked_object_callback(self, tracked_objects):
         with self.lockBuffer:
             self.buffer.append(tracked_objects)
         
     def process_buffer(self, tracked_objects):
-        print 'n obj: ', len(tracked_objects.tracked_objects)
         for tracked_object in tracked_objects.tracked_objects:
             
             frame_camera = int(tracked_object.header.frame_id)
@@ -127,8 +123,8 @@ class DataListener:
                 if len(self.buffer) > 0:
                     self.process_buffer(self.buffer.pop(0))
                 pt = (rospy.Time.now()-time_now).to_sec()
-                #if len(self.buffer) > 9:
-                rospy.logwarn("Data saving processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.buffer))
+                if len(self.buffer) > 9:
+                    rospy.logwarn("Data saving processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.buffer))
         
     def stop_saving_data(self):
         self.hdf5.close()
