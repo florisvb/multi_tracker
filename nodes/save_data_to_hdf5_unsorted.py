@@ -68,9 +68,7 @@ class DataListener:
         rospy.init_node('save_data_to_hdf5')
         
     def create_hdf5_object(self, objid, frame_camera):
-        self.hdf5.create_group(objid)
-        for attribute in self.data_to_save:
-            self.hdf5[objid].create_dataset(attribute, (self.chunk_size,self.data_shape[attribute]), maxshape=(None,self.data_shape[attribute]), dtype=self.data_format[attribute], chunks=True)
+        self.hdf5.create_dataset(objid, (self.chunk_size, 14), maxshape=(None, 14), dtype=float)
         self.hdf5[objid].attrs.create('objid', objid)
         self.hdf5[objid].attrs.create('current_frame', 0)
         self.hdf5[objid].attrs.create('first_camera_frame', frame_camera)
@@ -79,20 +77,20 @@ class DataListener:
     def add_chunk(self, obj):
         length = obj.attrs.get('length')
         new_length = length + self.chunk_size
-        for attribute in self.data_to_save:
-            obj[attribute].resize(new_length, axis=0)
+        obj.resize(new_length, axis=0)
         obj.attrs.modify('length', new_length)
             
     def save_data(self, obj, tracked_object, frame):
-        obj['header.stamp.secs'][frame] = tracked_object.header.stamp.secs
-        obj['header.stamp.nsecs'][frame] = tracked_object.header.stamp.nsecs
-        obj['header.frame_id'][frame] = int(tracked_object.header.frame_id)
-        obj['position'][frame] = [tracked_object.position.x, tracked_object.position.y, tracked_object.position.z]
-        obj['velocity'][frame] = [tracked_object.velocity.x, tracked_object.velocity.y, tracked_object.velocity.z]
-        obj['angle'][frame] = tracked_object.angle
-        obj['size'][frame] = tracked_object.size
-        obj['covariance'][frame] = tracked_object.covariance
-        obj['measurement'][frame] = [tracked_object.measurement.x, tracked_object.measurement.y]
+        obj[frame] = [  tracked_object.header.stamp.secs,
+                        tracked_object.header.stamp.nsecs,
+                        float(tracked_object.header.frame_id),
+                        tracked_object.position.x, tracked_object.position.y, tracked_object.position.z,
+                        tracked_object.velocity.x, tracked_object.velocity.y, tracked_object.velocity.z,
+                        tracked_object.angle,
+                        tracked_object.size,
+                        tracked_object.covariance,
+                        tracked_object.measurement.x, tracked_object.measurement.y,
+                        ]
         
     def tracked_object_callback(self, tracked_objects):
         with self.lockBuffer:
