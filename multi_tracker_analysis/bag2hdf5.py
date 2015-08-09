@@ -116,7 +116,7 @@ def make_dtype(msg, max_strlen=None):
             p = getattr(msg, attr)
             length_of_msg = len(p)
         
-        if rostype == 'Header':
+        if rostype == 'Header' or rostype == 'std_msgs/Header':
             result.extend([('header_seq', np.uint32),
                            ('header_stamp_secs', np.int32),
                            ('header_stamp_nsecs', np.int32),

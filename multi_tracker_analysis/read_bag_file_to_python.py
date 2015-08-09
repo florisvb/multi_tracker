@@ -22,7 +22,11 @@ def convert_bag_to_object(bagfile):
     print 'Loaded: ', bagfile
     data = {}
     
+    nmsgs = float(bag.get_message_count())
+    n = 0
     for topic, msg, t in bag.read_messages():
+        print n / nmsgs 
+        n += 1
         for tracked_object in msg.tracked_objects:
             if tracked_object.objid in data.keys():
                 trajec = data[tracked_object.objid]
