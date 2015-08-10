@@ -72,7 +72,6 @@ class DataListener:
         self.hdf5.create_dataset('data', (self.chunk_size, 1), maxshape=(None,1), dtype=self.dtype)
         self.hdf5['data'].attrs.create('current_frame', 0)
         self.hdf5['data'].attrs.create('line', 0)
-        self.hdf5['data'].attrs.create('first_camera_frame', frame_camera)
         self.hdf5['data'].attrs.create('length', self.chunk_size)
         
     def add_chunk(self):
@@ -86,7 +85,7 @@ class DataListener:
         self.hdf5['data'].attrs.modify('line', newline)
         if newline >= self.hdf5['data'].attrs.get('length')-50:
                 self.add_chunk()
-        self.hdf5['data']obj[newline] = np.array([(     tracked_object.objid
+        self.hdf5['data'][newline] = np.array([(     tracked_object.objid,
                                                         tracked_object.header.stamp.secs,
                                                         tracked_object.header.stamp.nsecs,
                                                         tracked_object.header.frame_id,
