@@ -7,3 +7,4 @@ import read_hdf5_file_to_python
 import read_bag_file_to_python
 import stitch_trajectories
 import bag2hdf5
+import hdf5_data_wrapper
