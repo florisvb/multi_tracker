@@ -101,11 +101,11 @@ class Tracker:
         self.framestamp = None
         
         # Publishers - publish contours
-        self.pubContours = rospy.Publisher('/multi_tracker/contours', Contourlist, queue_size=30)
+        self.pubContours = rospy.Publisher('/multi_tracker/contours', Contourlist, queue_size=300)
         
         # Subscriptions - subscribe to images, and tracked objects
         sizeImage = 128+1024*1024*3 # Size of header + data.
-        self.subImage = rospy.Subscriber(self.params['image_topic'], Image, self.image_callback, queue_size=5, buff_size=2*sizeImage, tcp_nodelay=True)
+        self.subImage = rospy.Subscriber(self.params['image_topic'], Image, self.image_callback, queue_size=60, buff_size=2*sizeImage, tcp_nodelay=True)
 
     def image_callback(self, rosimg):
         with self.lockBuffer:

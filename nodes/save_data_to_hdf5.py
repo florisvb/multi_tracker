@@ -15,7 +15,7 @@ import atexit
 
 class DataListener:
     def __init__(self, info='data information'):
-        self.subTrackedObjects = rospy.Subscriber('multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
+        self.subTrackedObjects = rospy.Subscriber('multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback, queue_size=300)
         
         filename = rospy.get_param('/multi_tracker/csv_data_filename')
         if filename == 'none':
@@ -29,7 +29,7 @@ class DataListener:
         self.lockParams = threading.Lock()
         self.lockBuffer = threading.Lock()
         
-        self.chunk_size = 5000
+        self.chunk_size = 10000
         self.hdf5 = h5py.File(filename, 'w')
         self.hdf5.attrs.create("info", info)
         

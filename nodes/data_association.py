@@ -47,10 +47,10 @@ class DataAssociator(object):
         rospy.init_node('data_associator')
         
         # Publishers.
-        self.pubTrackedObjects = rospy.Publisher('/multi_tracker/tracked_objects', Trackedobjectlist, queue_size=30)
+        self.pubTrackedObjects = rospy.Publisher('/multi_tracker/tracked_objects', Trackedobjectlist, queue_size=300)
         
         # Subscriptions.
-        self.subImage = rospy.Subscriber('/multi_tracker/contours', Contourlist, self.contour_callback)
+        self.subImage = rospy.Subscriber('/multi_tracker/contours', Contourlist, self.contour_callback, queue_size=300)
         
     def contour_callback(self, contourlist):
         with self.lockBuffer:
