@@ -163,7 +163,7 @@ class LiveViewer:
         
     def on_mouse_click(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONUP:
-            print [x, y]
+            print 'clicked pixel: ', [x, y]
                 
     def Main(self):
         while (not rospy.is_shutdown()):
