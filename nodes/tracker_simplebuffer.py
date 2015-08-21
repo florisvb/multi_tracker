@@ -30,23 +30,6 @@ import image_processing
 # rosrun pointgrey_camera_driver camera_node
 # default image: /camera/image_mono
 
-# Trajectory class to aid in drawing colored tracked trajectories with opencv
-class Trajectory(object):
-    def __init__(self, objid):
-        self.objid = objid
-        self.positions = []
-        self.color = None
-        self.covariances = []
-        self.popout = 0
-
-def draw_trajectory(img, pts, color, thickness):
-    for i in range(len(pts)-3):
-        try:
-            cv2.line(img, (int(pts[i][0]), int(pts[i][1])), (int(pts[i+1][0]), int(pts[i+1][1])), color, thickness)
-        except:
-            pass
-            print 'could not draw trajectory line, length pts: ', len(pts), 'i: ', i
-            
 # The main tracking class, a ROS node
 class Tracker:
     def __init__(self):
@@ -93,7 +76,6 @@ class Tracker:
         self.cvbridge = CvBridge()
         self.imgScaled      = None
         self.backgroundImage = None
-        self.tracked_trajectories = {}
         
         # buffer locking
         self.lockBuffer = threading.Lock()
