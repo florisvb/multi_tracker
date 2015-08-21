@@ -166,7 +166,20 @@ def dark_objects_only(self):
     
     if self.params['backgroundupdate'] != 0:
         cv2.accumulateWeighted(np.float32(self.imgScaled), self.backgroundImage, self.params['backgroundupdate']) # this needs to be here, otherwise there's an accumulation of something in the background
-      
+    if self.params['medianbgupdateinterval'] != 0:
+        t = rospy.Time.now().secs
+        if not self.__dict__.has_key('medianbgimages'):
+            self.medianbgimages = [self.imgScaled]
+            self.medianbgimages_times = [t]
+        if t-self.medianbgimages_times[-1] > self.params['medianbgupdateinterval']:
+            self.medianbgimages.append(self.imgScaled)
+            self.medianbgimages_times.append(t)
+        if len(self.medianbgimages) > 3:
+            self.backgroundImage = copy.copy(np.float32(np.median(self.medianbgimages, axis=0)))
+            self.medianbgimages.pop(0)
+            self.medianbgimages_times.pop(0)
+            print 'reset background with median image'
+            
     self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
     
     

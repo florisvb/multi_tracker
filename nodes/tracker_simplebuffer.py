@@ -41,10 +41,11 @@ class Tracker:
         '''
         self.nodenum = nodenum
         # default parameters (parameter server overides them)
-        self.params = { 'image_topic'       : '/camera/image_mono',
-                        'threshold'         : 20,
-                        'backgroundupdate'  : 0.001,
-                        'camera_encoding'   : 'mono8', # fireflies are bgr8, basler gige cams are mono8
+        self.params = { 'image_topic'               : '/camera/image_mono',
+                        'threshold'                 : 20,
+                        'backgroundupdate'          : 0.001,
+                        'medianbgupdateinterval'    : 30,
+                        'camera_encoding'           : 'mono8', # fireflies are bgr8, basler gige cams are mono8
                         'erode'                     : 1,
                         'dilate'                    : 2,
                         'max_change_in_frame'       : 0.2,
