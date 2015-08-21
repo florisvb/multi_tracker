@@ -1,0 +1,14 @@
+<launch>
+
+<rosparam command="load" file="home_directory.yaml"/>
+<rosparam command="load" file="csv_data_filename.yaml"/>
+
+<rosparam command="load" file="tracker_parameters.yaml"/>
+<rosparam command="load" file="data_association_parameters.yaml"/>
+
+<node name="tracker_1" pkg="multi_tracker" type="tracker_simplebuffer.py" output="screen" args="--nodenum=1" />
+<node name="data_association_1" pkg="multi_tracker" type="data_association.py" output="screen" args="--nodenum=1" />
+<node name="save_hdf5_data_1" pkg="multi_tracker" type="save_data_to_hdf5.py" output="screen" args="--nodenum=1" />
+<node name="liveview_1" pkg="multi_tracker" type="liveviewer.py" output="screen" args="--nodenum=1" />
+
+</launch>
