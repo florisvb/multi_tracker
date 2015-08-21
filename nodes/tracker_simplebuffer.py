@@ -84,12 +84,7 @@ class Tracker:
         self.reset_background_flag = False
         self.reset_background_service = rospy.Service("/multi_tracker/reset_background", resetBackgroundService, self.reset_background)
         
-        # initialize display
-        if self.params['liveview']:
-            self.window_name = 'output'
-            cv2.namedWindow(self.window_name,1)
-            self.subTrackedObjects = rospy.Subscriber('/multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
-            
+        # init cvbridge
         self.cvbridge = CvBridge()
         self.imgScaled      = None
         self.backgroundImage = None
@@ -115,31 +110,6 @@ class Tracker:
         self.reset_background_flag = True
         return 1
         
-    def tracked_object_callback(self, tracked_objects):
-        for trajec in self.tracked_trajectories.values():
-            trajec.popout = 1
-            
-        for tracked_object in tracked_objects.tracked_objects:
-            if tracked_object.persistence > self.params['min_persistence_to_draw']:
-                if tracked_object.objid not in self.tracked_trajectories.keys(): # create new object
-                    self.tracked_trajectories.setdefault(tracked_object.objid, Trajectory(tracked_object.objid))
-                    self.tracked_trajectories[tracked_object.objid].color = np.random.randint(0,255,3).tolist()
-                # update tracked objects
-                self.tracked_trajectories[tracked_object.objid].covariances.append(tracked_object.covariance)
-                self.tracked_trajectories[tracked_object.objid].positions.append([tracked_object.position.x, tracked_object.position.y])
-                
-                # if it is a young object, let it grow to length 100
-                if len(self.tracked_trajectories[tracked_object.objid].positions) < self.params['max_frames_to_draw']:
-                    self.tracked_trajectories[tracked_object.objid].popout = 0
-        
-        # cull old objects
-        for objid, trajec in self.tracked_trajectories.items():
-            if trajec.popout:
-                trajec.positions.pop(0)
-                trajec.covariances.pop(0)
-                if len(trajec.positions) <= 1:
-                    del(self.tracked_trajectories[objid])
-
     def process_image_buffer(self, rosimg):
         if self.framestamp is not None:
             self.dtCamera = (rosimg.header.stamp - self.framestamp).to_sec()
