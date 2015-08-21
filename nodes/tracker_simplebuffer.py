@@ -68,6 +68,10 @@ class Tracker:
                         'min_size'                  : 5,
                         'max_size'                  : 200,
                         'liveview'                  : False,
+                        'roi_l'                     : 0,
+                        'roi_r'                     : -1,
+                        'roi_b'                     : 0,
+                        'roi_t'                     : -1,
                         }
         for parameter, value in self.params.items():
             try:
@@ -128,26 +132,10 @@ class Tracker:
         self.imgScaled = img
         self.shapeImage = self.imgScaled.shape # (height,width)
         
-        # Image for display
-        if self.params['liveview']:
-            if self.params['camera_encoding'] == 'mono8':
-                self.imgOutput = cv2.cvtColor(self.imgScaled, cv2.COLOR_GRAY2RGB)
-            else:
-                self.imgOutput = self.imgScaled
-        
 ########### Call to image processing function ##############################################################
         self.process_image() # must be defined seperately - see "main" code at the bottom of this script
 ############################################################################################################
         
-        # Display the image | Draw the tracked trajectories
-        if self.params['liveview']:
-            for objid, trajec in self.tracked_trajectories.items():
-                if len(trajec.positions) > 5:
-                    draw_trajectory(self.imgOutput, trajec.positions, trajec.color, 2)
-                    cv2.circle(self.imgOutput,(int(trajec.positions[-1][0]),int(trajec.positions[-1][1])),int(trajec.covariances[-1]),trajec.color,2)
-            cv2.imshow('output', self.imgOutput)
-            cv2.waitKey(1)
-    
     def Main(self):
         while (not rospy.is_shutdown()):
             with self.lockBuffer:
