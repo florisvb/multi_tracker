@@ -66,7 +66,7 @@ class Compressor:
         self.nodename = rospy.get_name().rstrip('/')
         
         # Publishers - publish pixel changes
-        self.pubDeltaVid = rospy.Publisher('/multi_tracker/delta_video', DeltaVid, queue_size=30)
+        self.pubDeltaVid = rospy.Publisher('/multi_tracker/' + nodenum + '/delta_video', DeltaVid, queue_size=30)
         
         # background reset service
         self.reset_background_flag = False
