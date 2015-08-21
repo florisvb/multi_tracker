@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import division
+from optparse import OptionParser
 import roslib
 import rospy
 import rosparam
@@ -36,24 +37,35 @@ import matplotlib.pyplot as plt
 
 # The main tracking class, a ROS node
 class Compressor:
-    def __init__(self):
+    def __init__(self, nodenum):
         '''
         Default image_topic for:
             Basler ace cameras with camera_aravis driver: camera/image_raw
             Pt Grey Firefly cameras with pt grey driver : camera/image_mono
         '''
         # default parameters (parameter server overides them)
+        self.nodenum = nodenum
         self.params = { 'image_topic'       : '/camera/image_raw',
                         'threshold'         : 10,
                         'camera_encoding'   : 'mono8', # fireflies are bgr8, basler gige cams are mono8
                         'max_change_in_frame'       : 0.2,
+                        'roi_l'                     : 0,
+                        'roi_r'                     : -1,
+                        'roi_b'                     : 0,
+                        'roi_t'                     : -1,
                         }
-                        
+        for parameter, value in self.params.items():
+            try:
+                p = '/multi_tracker/' + nodenum + '/delta_video/' + parameter
+                self.params[parameter] = rospy.get_param(p)
+            except:
+                print 'Using default parameter: ', parameter, ' = ', value
+                
         # initialize the node
-        rospy.init_node('delta_compressor')
+        rospy.init_node('delta_compressor_' + nodenum)
         self.nodename = rospy.get_name().rstrip('/')
         
-        # Publishers - publish contours
+        # Publishers - publish pixel changes
         self.pubDeltaVid = rospy.Publisher('/multi_tracker/delta_video', DeltaVid, queue_size=30)
         
         # background reset service
@@ -99,7 +111,7 @@ class Compressor:
             rospy.logwarn ('Exception converting background image from ROS to opencv:  %s' % e)
             img = np.zeros((320,240))
 
-        self.imgScaled = img
+        self.imgScaled = img[self.params['roi_b']:self.params['roi_t'], self.params['roi_l']:self.params['roi_r']]
         self.shapeImage = self.imgScaled.shape # (height,width)
         
 ########### image processing function ##############################################################
@@ -107,7 +119,7 @@ class Compressor:
         # If there is no background image, grab one, and move on to the next frame
         if self.backgroundImage is None:
             self.backgroundImage = copy.copy(self.imgScaled)
-            self.background_img_filename = time.strftime("%Y%m%d_%H%M", time.localtime()) + '.png'
+            self.background_img_filename = time.strftime("%Y%m%d_%H%M_deltavideo_bgimg_N" + self.nodenum, time.localtime()) + '.png'
             home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
             self.background_img_filename = os.path.join(home_directory, self.background_img_filename)
             
@@ -116,7 +128,7 @@ class Compressor:
             return
         if self.reset_background_flag:
             self.backgroundImage = copy.copy(self.imgScaled)
-            self.background_img_filename = time.strftime("%Y%m%d_%H%M", time.localtime()) + '.png'
+            self.background_img_filename = time.strftime("%Y%m%d_%H%M_deltavideo_bgimg_N" + self.nodenum, time.localtime()) + '.png'
             home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
             self.background_img_filename = os.path.join(home_directory, self.background_img_filename)
             cv2.imwrite(self.background_img_filename, self.backgroundImage)
@@ -161,6 +173,10 @@ class Compressor:
 #####################################################################################################
     
 if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option("--nodenum", type="str", dest="nodenum", default='1',
+                        help="node number, for example, if running multiple tracker instances on one computer")
+    (options, args) = parser.parse_args()
     
-    compressor = Compressor()
+    compressor = Compressor(options.nodenum)
     compressor.Main()

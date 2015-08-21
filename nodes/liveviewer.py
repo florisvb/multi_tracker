@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import division
+from optparse import OptionParser
 import roslib
 import rospy
 import rosparam
@@ -49,7 +50,7 @@ def draw_trajectory(img, pts, color, thickness):
             
 # The main tracking class, a ROS node
 class LiveViewer:
-    def __init__(self):
+    def __init__(self, nodenum):
         '''
         Default image_topic for:
             Basler ace cameras with camera_aravis driver: camera/image_raw
@@ -57,38 +58,35 @@ class LiveViewer:
         '''
         # default parameters (parameter server overides them)
         self.params = { 'image_topic'       : '/camera/image_mono',
-                        'threshold'         : 20,
-                        'backgroundupdate'  : 0.001,
-                        'camera_encoding'   : 'mono8', # fireflies are bgr8, basler gige cams are mono8
                         'min_persistence_to_draw'   : 10,
                         'max_frames_to_draw'        : 50,
-                        'erode'                     : 1,
-                        'dilate'                    : 2,
-                        'max_change_in_frame'       : 0.2,
-                        'min_size'                  : 5,
-                        'max_size'                  : 200,
-                        'liveview'                  : False,
+                        'camera_encoding'   : 'mono8', # fireflies are bgr8, basler gige cams are mono8
+                        'roi_l'                     : 0,
+                        'roi_r'                     : -1,
+                        'roi_b'                     : 0,
+                        'roi_t'                     : -1,
                         }
         for parameter, value in self.params.items():
             try:
-                p = '/multi_tracker/tracker/' + parameter
+                p = '/multi_tracker/' + nodenum + '/tracker/' + parameter
                 self.params[parameter] = rospy.get_param(p)
             except:
                 print 'Using default parameter: ', parameter, ' = ', value
                 
         # initialize the node
-        rospy.init_node('liveviewer')
+        rospy.init_node('liveviewer_' + nodenum)
         self.nodename = rospy.get_name().rstrip('/')
         
         # initialize display
         self.window_name = 'output'
         cv2.namedWindow(self.window_name,1)
-        self.subTrackedObjects = rospy.Subscriber('/multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
-        self.subContours = rospy.Subscriber('/multi_tracker/contours', Contourlist, self.contour_callback)
+        self.subTrackedObjects = rospy.Subscriber('/multi_tracker/' + nodenum + '/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
+        self.subContours = rospy.Subscriber('/multi_tracker/' + nodenum + '/contours', Contourlist, self.contour_callback)
             
         self.cvbridge = CvBridge()
         self.tracked_trajectories = {}
         self.contours = None
+        cv2.setMouseCallback(self.window_name, self.on_mouse_click)
         
         # Subscriptions - subscribe to images, and tracked objects
         sizeImage = 128+1024*1024*3 # Size of header + data.
@@ -134,7 +132,7 @@ class LiveViewer:
             rospy.logwarn ('Exception converting background image from ROS to opencv:  %s' % e)
             img = np.zeros((320,240))
 
-        self.imgScaled = img
+        self.imgScaled = img[self.params['roi_b']:self.params['roi_t'], self.params['roi_l']:self.params['roi_r']]
         self.shapeImage = self.imgScaled.shape # (height,width)
         
         # Image for display
@@ -162,7 +160,11 @@ class LiveViewer:
                 cv2.circle(self.imgOutput,(int(trajec.positions[-1][0]),int(trajec.positions[-1][1])),int(trajec.covariances[-1]),trajec.color,2)
         cv2.imshow('output', self.imgOutput)
         cv2.waitKey(1)
-    
+        
+    def on_mouse_click(self, event, x, y, flags, param):
+        if event == cv2.EVENT_LBUTTONUP:
+            print [x, y]
+                
     def Main(self):
         while (not rospy.is_shutdown()):
             rospy.spin()
@@ -171,6 +173,10 @@ class LiveViewer:
 #####################################################################################################
     
 if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option("--nodenum", type="str", dest="nodenum", default='1',
+                        help="node number, for example, if running multiple tracker instances on one computer")
+    (options, args) = parser.parse_args()
     
-    liveviewer = LiveViewer()
+    liveviewer = LiveViewer(options.nodenum)
     liveviewer.Main()

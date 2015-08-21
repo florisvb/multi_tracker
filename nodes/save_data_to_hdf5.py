@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import division
+from optparse import OptionParser
 import roslib
 import rospy
 import os
@@ -14,12 +15,12 @@ import h5py
 import atexit
 
 class DataListener:
-    def __init__(self, info='data information'):
-        self.subTrackedObjects = rospy.Subscriber('multi_tracker/tracked_objects', Trackedobjectlist, self.tracked_object_callback, queue_size=300)
+    def __init__(self, nodenum, info='data information'):
+        self.subTrackedObjects = rospy.Subscriber('multi_tracker/' + nodenum + '/tracked_objects', Trackedobjectlist, self.tracked_object_callback, queue_size=300)
         
-        filename = rospy.get_param('/multi_tracker/csv_data_filename')
+        filename = rospy.get_param('/multi_tracker/' + nodenum + '/csv_data_filename')
         if filename == 'none':
-            filename = time.strftime("%Y%m%d_%H%M_rotpaddata", time.localtime()) + '.hdf5'
+            filename = time.strftime("%Y%m%d_%H%M_N" + nodenum, time.localtime()) + '.hdf5'
         home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
         filename = os.path.join(home_directory, filename)
         print 'Saving hdf5 data to: ', filename
@@ -67,7 +68,7 @@ class DataListener:
                             }
                             
         self.dtype = [(data,self.data_format[data]) for data in self.data_to_save]
-        rospy.init_node('save_data_to_hdf5_unsorted')
+        rospy.init_node('save_data_to_hdf5_' + nodenum)
         
         self.hdf5.create_dataset('data', (self.chunk_size, 1), maxshape=(None,1), dtype=self.dtype)
         self.hdf5['data'].attrs.create('current_frame', 0)
@@ -121,6 +122,10 @@ class DataListener:
         print 'shut down nicely'
         
 if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option("--nodenum", type="str", dest="nodenum", default='1',
+                        help="node number, for example, if running multiple tracker instances on one computer")
+    (options, args) = parser.parse_args()
     
-    datalistener = DataListener()
+    datalistener = DataListener(options.nodenum)
     datalistener.main()
