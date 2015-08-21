@@ -72,6 +72,7 @@ class Tracker:
                         'roi_r'                     : -1,
                         'roi_b'                     : 0,
                         'roi_t'                     : -1,
+                        'nodenum'                   : 1,
                         }
         for parameter, value in self.params.items():
             try:
@@ -129,7 +130,7 @@ class Tracker:
             rospy.logwarn ('Exception converting background image from ROS to opencv:  %s' % e)
             img = np.zeros((320,240))
 
-        self.imgScaled = img
+        self.imgScaled = img[self.params['roi_b']:self.params['roi_t'], self.params['roi_l']:self.params['roi_r'], :]
         self.shapeImage = self.imgScaled.shape # (height,width)
         
 ########### Call to image processing function ##############################################################
