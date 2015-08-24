@@ -69,9 +69,11 @@ class DeCompressor:
             self.videowriter = None
         else:
             self.saveto = None
+            self.videowriter = None
+            
         
     def delta_image_callback(self, delta_vid):
-        if self.background_img_filename != delta_vid.background_image:
+        if (self.background_img_filename != delta_vid.background_image) or (self.backgroundImage is None):
             self.background_img_filename = delta_vid.background_image
             basename = os.path.basename(self.background_img_filename)
             directory_with_basename = os.path.join(self.directory, basename)
@@ -81,37 +83,38 @@ class DeCompressor:
             except:
                 pass # for indigo
                 
-        new_image = copy.copy(self.backgroundImage)
-        
-        if delta_vid.values is not None:
-            if len(delta_vid.values) > 0:
-                try:
-                    new_image[delta_vid.xpixels, delta_vid.ypixels, 0] = delta_vid.values # for hydro
-                except:
-                    new_image[delta_vid.xpixels, delta_vid.ypixels] = delta_vid.values # for indigo
-        
-        if self.mode == 'color':
-            new_image = cv2.cvtColor(new_image, cv2.COLOR_GRAY2RGB)
-
-        if self.config is not None:
-            #print delta_vid.header.stamp.secs + delta_vid.header.stamp.nsecs*1e-9
-            t = delta_vid.header.stamp.secs + delta_vid.header.stamp.nsecs*1e-9
-            self.config.draw(new_image, t)
+        if self.backgroundImage is not None:
+            new_image = copy.copy(self.backgroundImage)
             
-        if self.saveto is not None:
-            if self.videowriter is not None:
-                self.videowriter.write(new_image)
-                print 'wrote new image'
-            else:
-                self.videowriter = cv2.VideoWriter()
-                self.videowriter.open(self.saveto, cv.CV_FOURCC('P','I','M','1'), 30, (new_image.shape[0], new_image.shape[1]))
+            if delta_vid.values is not None:
+                if len(delta_vid.values) > 0:
+                    try:
+                        new_image[delta_vid.xpixels, delta_vid.ypixels, 0] = delta_vid.values # for hydro
+                    except:
+                        new_image[delta_vid.xpixels, delta_vid.ypixels] = delta_vid.values # for indigo
+            
+            if self.mode == 'color':
+                new_image = cv2.cvtColor(new_image, cv2.COLOR_GRAY2RGB)
 
-        if self.mode == 'mono':
-            image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="mono8")
-        elif self.mode == 'color':
-            image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="bgr8")
-        image_message.header = delta_vid.header
-        self.pubDeltaVid.publish(image_message)
+            if self.config is not None:
+                #print delta_vid.header.stamp.secs + delta_vid.header.stamp.nsecs*1e-9
+                t = delta_vid.header.stamp.secs + delta_vid.header.stamp.nsecs*1e-9
+                self.config.draw(new_image, t)
+                
+            if self.saveto is not None:
+                if self.videowriter is not None:
+                    self.videowriter.write(new_image)
+                    print 'wrote new image'
+                else:
+                    self.videowriter = cv2.VideoWriter()
+                    self.videowriter.open(self.saveto, cv.CV_FOURCC('P','I','M','1'), 30, (new_image.shape[0], new_image.shape[1]))
+
+            if self.mode == 'mono':
+                image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="mono8")
+            elif self.mode == 'color':
+                image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="bgr8")
+            image_message.header = delta_vid.header
+            self.pubDeltaVid.publish(image_message)
     
     def Main(self):
         rospy.spin()

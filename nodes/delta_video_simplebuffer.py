@@ -70,7 +70,7 @@ class Compressor:
         
         # background reset service
         self.reset_background_flag = False
-        self.reset_background_service = rospy.Service("/multi_tracker/reset_background", resetBackgroundService, self.reset_background)
+        self.reset_background_service = rospy.Service('/multi_tracker/' + nodenum + '/reset_background', resetBackgroundService, self.reset_background)
         
         self.cvbridge = CvBridge()
         self.imgScaled      = None
