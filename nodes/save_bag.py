@@ -21,7 +21,12 @@ class SaveBag:
         basename = config.basename
         directory = config.directory
         self.topics = config.topics
-        filename = basename + '_' + time.strftime('%Y_%m_%d_%H_%M_%S') + '.bag'
+        
+        experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
+        if experiment_basename == 'none':
+            experiment_basename = time.strftime("%Y%m%d_%H%M%S_N" + nodenum, time.localtime())
+        
+        filename = experiment_basename + '_' + basename + '.bag'
 
         # Make sure path exists.
         try:

@@ -18,9 +18,11 @@ class DataListener:
     def __init__(self, nodenum, info='data information'):
         self.subTrackedObjects = rospy.Subscriber('multi_tracker/' + nodenum + '/tracked_objects', Trackedobjectlist, self.tracked_object_callback, queue_size=300)
         
-        filename = rospy.get_param('/multi_tracker/' + nodenum + '/csv_data_filename')
-        if filename == 'none':
-            filename = time.strftime("%Y%m%d_%H%M_N" + nodenum, time.localtime()) + '.hdf5'
+        experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
+        if experiment_basename == 'none':
+            experiment_basename = time.strftime("%Y%m%d_%H%M%S_N" + nodenum, time.localtime())
+           
+        filename = experiment_basename + '_trackedobjects.hdf5'
         home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
         filename = os.path.join(home_directory, filename)
         print 'Saving hdf5 data to: ', filename
