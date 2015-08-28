@@ -1,0 +1,17 @@
+auto lo eth2 eth3 eth4
+iface lo inet loopback
+
+iface eth2 inet dhcp
+
+iface eth3 inet static
+address 192.168.93.1
+netmask 255.255.255.0
+broadcast 192.168.93.255
+mtu 9000
+
+iface eth4 inet static
+address 192.168.94.1
+netmask 255.255.255.0
+broadcast 192.168.94.255
+mtu 9000
+
