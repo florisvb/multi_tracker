@@ -163,7 +163,7 @@ def h5append(dset, arr):
     dset[n_old_rows:] = arr
 
 
-def bag2hdf5(fname, out_fname, topics=None, max_strlen=None):
+def bag2hdf5(fname, out_fname, topics=None, max_strlen=None, skip_messages=[]):
     assert max_strlen is not None  # don't accept default
 
     bag = rosbag.Bag(fname)
@@ -177,12 +177,18 @@ def bag2hdf5(fname, out_fname, topics=None, max_strlen=None):
 
     try:
         with h5py.File(out_fname, mode='w') as out_f:
-
+            m = -1
             for topic, msg, t in bag.read_messages(topics=topics):
+                m += 1
                 # update progressbar
                 pbar.update(bag._file.tell())
                 # get the data
                 this_row = flatten_msg(msg, t, max_strlen=max_strlen)
+                
+                if m in skip_messages:
+                    print 'skipping message: ', m
+                    continue
+                
                 # convert it to numpy element (and dtype)
                 if topic not in results2:
                     try:
