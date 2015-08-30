@@ -13,6 +13,7 @@ import dynamic_reconfigure.server
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 from std_msgs.msg import Float32, Header, String
+import time
 
 from multi_tracker.msg import Contourinfo, Contourlist
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
@@ -63,7 +64,11 @@ class Tracker:
                 self.params[parameter] = rospy.get_param(p)
             except:
                 print 'Using default parameter: ', parameter, ' = ', value
-                
+	
+        experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
+        if experiment_basename == 'none':
+            self.experiment_basename = time.strftime("%Y%m%d_%H%M%S_N" + nodenum, time.localtime())
+
         # initialize the node
         rospy.init_node('multi_tracker_' + nodenum)
         self.nodename = rospy.get_name().rstrip('/')
