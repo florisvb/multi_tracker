@@ -34,7 +34,7 @@ class Dataset(object):
             return np.argmin(self.pd['time_epoch'] - t)
         
 def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
-    data = h5py.File(filename, 'r')['data']
+    data = h5py.File(filename, 'r', swmr=True)['data']
     if attributes is None:
         attributes = {   'objid'                : 'objid',
                          'time_epoch_secs'      : 'header.stamp.secs',
