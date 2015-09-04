@@ -1,7 +1,6 @@
 <launch>
 
 <rosparam command="load" file="home_directory.yaml"/>
-<rosparam command="load" file="csv_data_filename.yaml"/>
 
 <rosparam command="load" file="tracker_parameters.yaml"/>
 <rosparam command="load" file="data_association_parameters.yaml"/>
