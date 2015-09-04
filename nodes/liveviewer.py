@@ -16,7 +16,7 @@ from std_msgs.msg import Float32, Header, String
 
 from multi_tracker.msg import Contourinfo, Contourlist
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
-from multi_tracker.srv import resetBackgroundService
+from multi_tracker.srv import resetBackgroundService, addImageToBackgroundService
 
 import image_processing
 
@@ -76,6 +76,7 @@ class LiveViewer:
         # initialize the node
         rospy.init_node('liveviewer_' + nodenum)
         self.nodename = rospy.get_name().rstrip('/')
+        self.nodenum = nodenum
         
         # initialize display
         self.window_name = 'output'
@@ -91,6 +92,13 @@ class LiveViewer:
         # Subscriptions - subscribe to images, and tracked objects
         sizeImage = 128+1024*1024*3 # Size of header + data.
         self.subImage = rospy.Subscriber(self.params['image_topic'], Image, self.image_callback, queue_size=5, buff_size=2*sizeImage, tcp_nodelay=True)
+
+        # for adding images to background
+        add_image_to_background_service_name = '/multi_tracker/' + self.nodenum + '/' + 'tracker/' + "add_image_to_background"
+        rospy.wait_for_service(add_image_to_background_service_name)
+        try:
+            self.add_image_to_background = rospy.ServiceProxy(add_image_to_background_service_name, addImageToBackgroundService)
+            
 
     def reset_background(self, service_call):
         self.reset_background_flag = True
@@ -159,12 +167,20 @@ class LiveViewer:
                 draw_trajectory(self.imgOutput, trajec.positions, trajec.color, 2)
                 cv2.circle(self.imgOutput,(int(trajec.positions[-1][0]),int(trajec.positions[-1][1])),int(trajec.covariances[-1]),trajec.color,2)
         cv2.imshow('output', self.imgOutput)
-        cv2.waitKey(1)
+        ascii_key = cv2.waitKey(1)
+        if ascii_key != -1:
+            self.on_key_press(ascii_key)
         
     def on_mouse_click(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONUP:
             print 'clicked pixel: ', [x, y]
-                
+    
+    def on_key_press(self, ascii_key):
+        key = chr(ascii_key)
+        if key == 'a':
+            resp = self.add_image_to_background()
+            print 'added image to background'
+            
     def Main(self):
         while (not rospy.is_shutdown()):
             rospy.spin()
