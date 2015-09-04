@@ -118,6 +118,19 @@ def reset_background(self):
         print 'Background reset: ', filename
     except:
         print 'failed to save background image, might need opencv 2.4.9?'
+
+def add_image_to_background(self):
+    tmp_backgroundImage = copy.copy(np.float32(self.imgScaled))
+    self.backgroundImage = np.min([self.backgroundImage, tmp_backgroundImage], axis=0)
+    filename = self.experiment_basename + '_' + time.strftime("%Y%m%d_%H%M%S_bgimg_N" + self.nodenum, time.localtime()) + '.png'
+    home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
+    filename = os.path.join(home_directory, filename)
+    
+    try:
+        cv2.imwrite(filename, self.backgroundImage) # requires opencv > 2.4.9
+        print 'Background reset: ', filename
+    except:
+        print 'failed to save background image, might need opencv 2.4.9?'
 ###########################################################################################################
 
 ###########################################################################################################
@@ -161,6 +174,11 @@ def dark_objects_only(self):
         reset_background(self)
         self.reset_background_flag = False
         return
+    if self.add_image_to_background_flag:
+        add_image_to_background(self)
+        self.add_image_to_background_flag = False
+        return 
+    
     
     if self.params['backgroundupdate'] != 0:
         cv2.accumulateWeighted(np.float32(self.imgScaled), self.backgroundImage, self.params['backgroundupdate']) # this needs to be here, otherwise there's an accumulation of something in the background

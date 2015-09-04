@@ -17,7 +17,7 @@ import time
 
 from multi_tracker.msg import Contourinfo, Contourlist
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
-from multi_tracker.srv import resetBackgroundService
+from multi_tracker.srv import resetBackgroundService, addImageToBackgroundService
 
 import image_processing
 
@@ -76,6 +76,7 @@ class Tracker:
         # background reset service
         self.reset_background_flag = False
         self.reset_background_service = rospy.Service('/multi_tracker/' + nodenum + '/' + 'tracker/' + "reset_background", resetBackgroundService, self.reset_background)
+        self.add_image_to_background_service = rospy.Service('/multi_tracker/' + nodenum + '/' + 'tracker/' + "add_image_to_background", addImageToBackgroundService, self.add_image_to_background)
         
         # init cvbridge
         self.cvbridge = CvBridge()
@@ -100,6 +101,10 @@ class Tracker:
 
     def reset_background(self, service_call):
         self.reset_background_flag = True
+        return 1
+    
+    def add_image_to_background(self, service_call):
+        self.add_image_to_background_flag = True
         return 1
         
     def process_image_buffer(self, rosimg):
