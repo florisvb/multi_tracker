@@ -75,6 +75,7 @@ class Tracker:
         
         # background reset service
         self.reset_background_flag = False
+        self.add_image_to_background_flag = False
         self.reset_background_service = rospy.Service('/multi_tracker/' + nodenum + '/' + 'tracker/' + "reset_background", resetBackgroundService, self.reset_background)
         self.add_image_to_background_service = rospy.Service('/multi_tracker/' + nodenum + '/' + 'tracker/' + "add_image_to_background", addImageToBackgroundService, self.add_image_to_background)
         

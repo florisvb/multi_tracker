@@ -60,6 +60,7 @@ add_message_files(
 add_service_files(
    FILES
    resetBackgroundService.srv
+   addImageToBackgroundService.srv
 #   Service1.srv
 #   Service2.srv
 )
