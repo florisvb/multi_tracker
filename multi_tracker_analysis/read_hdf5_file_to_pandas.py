@@ -2,6 +2,21 @@ import numpy as np
 import h5py
 import copy
 import pandas
+import os
+
+def get_filenames(path, contains):
+    cmd = 'ls ' + path
+    ls = os.popen(cmd).read()
+    all_filelist = ls.split('\n')
+    try:
+        all_filelist.remove('')
+    except:
+        pass
+    filelist = []
+    for i, filename in enumerate(all_filelist):
+        if contains in filename:
+            filelist.append( os.path.join(path, filename) )
+    return filelist
 
 class Trajectory(object):
     def __init__(self, pd, objid):
@@ -51,6 +66,7 @@ def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
         d.setdefault(attribute, data[name].flat)
     pd = pandas.DataFrame(d, index=index)
     pd = pd.drop(pd.index==[0]) # delete 0 frames (frames with no data)
+    pd = calc_additional_columns(pd)
     # pd_subset = pd[pd.objid==key]
     return pd
     
@@ -78,10 +94,25 @@ def pixels_to_units(pd, pixels_per_unit, center=[0,0]):
     
     return pd
 
+def load_multiple_datasets_into_single_pandas_data_frame(filenames, sync_frames=None):
+    '''
+    filenames   - list of hdf5 files to load, full path name
+    sync_frames - list of frames, one for each filename, these sync_frames will all be set to zero
+                  defaults to using first frame for each dataset as sync
 
+    '''
 
-
-
+    pds = [load_data_as_pandas_dataframe_from_hdf5_file(filename) for filename in filenames]
+    if sync_frames is None:
+        sync_frames = [np.min(pd.frames) for pd in pds]
+        
+    for i, pd in enumerate(pds):
+        pd.index -= sync_frames[i]
+        pd.frames -= sync_frames[i]
+    
+    combined_pd = pandas.concat(pds)
+    
+    return combined_pd
 
 
 
