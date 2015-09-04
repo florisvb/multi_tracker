@@ -34,6 +34,7 @@ class DataListener:
         
         self.chunk_size = 10000
         self.hdf5 = h5py.File(filename, 'w')
+        self.hdf5.swmr_mode = True # helps prevent file corruption if closed improperly
         self.hdf5.attrs.create("info", info)
         
         self.data_to_save = [   'objid',
