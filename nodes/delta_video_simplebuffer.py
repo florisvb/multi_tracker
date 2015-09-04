@@ -65,6 +65,11 @@ class Compressor:
         rospy.init_node('delta_compressor_' + nodenum)
         self.nodename = rospy.get_name().rstrip('/')
         
+        # experiment basename
+        self.experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
+        if self.experiment_basename == 'none':
+            self.experiment_basename = time.strftime("%Y%m%d_%H%M%S_N" + nodenum, time.localtime())
+        
         # Publishers - publish pixel changes
         self.pubDeltaVid = rospy.Publisher('/multi_tracker/' + nodenum + '/delta_video', DeltaVid, queue_size=30)
         
@@ -119,7 +124,7 @@ class Compressor:
         # If there is no background image, grab one, and move on to the next frame
         if self.backgroundImage is None:
             self.backgroundImage = copy.copy(self.imgScaled)
-            self.background_img_filename = time.strftime("%Y%m%d_%H%M_deltavideo_bgimg_N" + self.nodenum, time.localtime()) + '.png'
+            self.background_img_filename = self.experiment_basename + '_deltavideo_bgimg_' + time.strftime("%Y%m%d_%H%M.png", time.localtime())
             home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
             self.background_img_filename = os.path.join(home_directory, self.background_img_filename)
             

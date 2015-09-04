@@ -17,7 +17,7 @@ import imp
 ###############################################################################
 #
 class SaveBag:
-    def __init__(self, config):
+    def __init__(self, config, nodenum):
         basename = config.basename
         directory = config.directory
         self.topics = config.topics
@@ -63,13 +63,16 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("--config", type="str", dest="config", default='',
                         help="filename of configuration file")
+    parser.add_option("--nodenum", type="str", dest="nodenum", default='1',
+                        help="node number, for example, if running multiple tracker instances on one computer")
     (options, args) = parser.parse_args()
     
+    print "Loading configuration: ", options.config
     configuration = imp.load_source('configuration', options.config)
     config = configuration.Config()
 
     rospy.init_node('SaveBag', log_level=rospy.INFO)
     rospy.sleep(1)
-    savebag = SaveBag(config)
+    savebag = SaveBag(config, nodenum=options.nodenum)
     savebag.Main()
     

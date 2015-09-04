@@ -65,8 +65,8 @@ class Tracker:
             except:
                 print 'Using default parameter: ', parameter, ' = ', value
 	
-        experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
-        if experiment_basename == 'none':
+        self.experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
+        if self.experiment_basename == 'none':
             self.experiment_basename = time.strftime("%Y%m%d_%H%M%S_N" + nodenum, time.localtime())
 
         # initialize the node
