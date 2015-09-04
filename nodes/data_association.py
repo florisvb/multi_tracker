@@ -122,7 +122,7 @@ class DataAssociator(object):
                 if error < self.n_covariances_to_reject_data*np.sqrt(tracked_object_covariance):
                     contour_to_object_error.append([error, objid, c])
                 
-        o = []
+        #o = []
         if len(contour_to_object_error) > 0:
             contour_to_object_error = np.array(contour_to_object_error)
             sorted_indices = np.argsort(contour_to_object_error[:,0])
@@ -140,10 +140,10 @@ class DataAssociator(object):
                         update_tracked_object(tracked_object, measurement, contourlist)
                         contours_accounted_for.append(c)
                         objects_accounted_for.append(objid)
-                        e = [   tracked_object['kalmanfilter'].xhat_apriori[0] - contour.x,
-                                tracked_object['kalmanfilter'].xhat_apriori[2] - contour.y]
-                        tracked_object_covariance = np.linalg.norm( (tracked_object['kalmanfilter'].H*tracked_object['kalmanfilter'].P).T*self.association_matrix )
-                        o.append([objid, e, tracked_object_covariance])
+                        #e = [   tracked_object['kalmanfilter'].xhat_apriori[0] - contour.x,
+                        #        tracked_object['kalmanfilter'].xhat_apriori[2] - contour.y]
+                        #tracked_object_covariance = np.linalg.norm( (tracked_object['kalmanfilter'].H*tracked_object['kalmanfilter'].P).T*self.association_matrix )
+                        #o.append([objid, e, tracked_object_covariance])
                                      
         # any unnaccounted contours should spawn new objects
         for c, contour in enumerate(contourlist.contours):
