@@ -98,7 +98,8 @@ class LiveViewer:
         rospy.wait_for_service(add_image_to_background_service_name)
         try:
             self.add_image_to_background = rospy.ServiceProxy(add_image_to_background_service_name, addImageToBackgroundService)
-            
+        except:
+            print 'could not connect to add image to background service - is tracker running?'
 
     def reset_background(self, service_call):
         self.reset_background_flag = True
