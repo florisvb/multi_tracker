@@ -121,7 +121,7 @@ def reset_background(self):
 
 def add_image_to_background(self):
     tmp_backgroundImage = copy.copy(np.float32(self.imgScaled))
-    self.backgroundImage = np.min([self.backgroundImage, tmp_backgroundImage], axis=0)
+    self.backgroundImage = np.max([self.backgroundImage, tmp_backgroundImage], axis=0)
     filename = self.experiment_basename + '_' + time.strftime("%Y%m%d_%H%M%S_bgimg_N" + self.nodenum, time.localtime()) + '.png'
     home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
     filename = os.path.join(home_directory, filename)
