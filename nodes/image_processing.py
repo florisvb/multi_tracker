@@ -196,7 +196,27 @@ def dark_objects_only(self):
             self.medianbgimages_times.pop(0)
             print 'reset background with median image'
             
+    try:
+        kernel = self.kernel
+    except:
+        kernel = np.ones((3,3),np.uint8)
+        self.kernel = kernel
+                    
     self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
+    # noise removal
+    opening = cv2.morphologyEx(self.threshed,cv2.MORPH_OPEN,kernel, iterations = 2)
+
+    # sure background area
+    sure_bg = cv2.dilate(opening,kernel,iterations=3)
+
+    # Finding sure foreground area
+    dist_transform = cv2.distanceTransform(opening,cv2.DIST_L2,3)
+    ret, sure_fg = cv2.threshold(dist_transform,0.4*dist_transform.max(),255,0)
+
+    # Finding unknown region
+    sure_fg = np.uint8(sure_fg)
+    
+    self.threshed = sure_fg
     
     
     
