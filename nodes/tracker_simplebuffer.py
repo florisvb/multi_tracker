@@ -95,7 +95,8 @@ class Tracker:
         # Subscriptions - subscribe to images, and tracked objects
         sizeImage = 128+1024*1024*3 # Size of header + data.
         self.subImage = rospy.Subscriber(self.params['image_topic'], Image, self.image_callback, queue_size=60, buff_size=2*sizeImage, tcp_nodelay=True)
-
+        self.pubProcessedImage = rospy.Publisher('/multi_tracker/' + nodenum + '/processed_image', Image, queue_size=5)
+        
     def image_callback(self, rosimg):
         with self.lockBuffer:
             self.image_buffer.append(rosimg)
