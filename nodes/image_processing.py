@@ -91,9 +91,7 @@ def extract_and_publish_contours(self):
     return
 
 def convert_to_gray_if_necessary(self):
-    if self.params['camera_encoding'] == 'mono8':
-        self.threshed = np.uint8(self.threshed)
-    else:
+    if len(self.threshed.shape) == 3:
         self.threshed = np.uint8(cv2.cvtColor(self.threshed, cv2.COLOR_BGR2GRAY))
         
 def erode_and_dialate(self):
@@ -203,24 +201,30 @@ def dark_objects_only(self):
         self.kernel = kernel
                     
     self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
+    convert_to_gray_if_necessary(self)
+    
+    
     # noise removal
-    opening = cv2.morphologyEx(self.threshed,cv2.MORPH_OPEN,kernel, iterations = 2)
+    opening = cv2.morphologyEx(self.threshed,cv2.MORPH_OPEN,kernel, iterations = 1)
 
     # sure background area
-    sure_bg = cv2.dilate(opening,kernel,iterations=3)
+    #sure_bg = cv2.dilate(opening,kernel,iterations=3)
 
     # Finding sure foreground area
-    dist_transform = cv2.distanceTransform(opening,cv2.DIST_L2,3)
+    dist_transform = cv2.distanceTransform(opening,cv.CV_DIST_L2,3)
+    dist_transform = dist_transform / (np.max(dist_transform)) * 255
     ret, sure_fg = cv2.threshold(dist_transform,0.4*dist_transform.max(),255,0)
 
     # Finding unknown region
     sure_fg = np.uint8(sure_fg)
     
+    
+    # publish the processed image
+    c = cv2.cvtColor(np.uint8(dist_transform), cv2.COLOR_GRAY2BGR)
+    img = self.cvbridge.cv2_to_imgmsg(c, 'bgr8') # might need to change to bgr for color cameras
+    self.pubProcessedImage.publish(img)
+    
     self.threshed = sure_fg
-    
-    
-    
-    convert_to_gray_if_necessary(self)
     erode_and_dialate(self)
     extract_and_publish_contours(self)
     reset_background_if_difference_is_very_large(self)
