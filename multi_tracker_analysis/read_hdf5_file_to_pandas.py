@@ -42,11 +42,10 @@ class Dataset(object):
             return t
             
     def timestamp_to_framestamp(self, t):
-        try:
-            pd_subset = self.pd[self.pd['time_epoch_secs']==np.floor(t)]
-            return np.argmin(pd_subset['time_epoch'] - t)
-        except:
-            return np.argmin(self.pd['time_epoch'] - t)
+        d = self.pd['time_epoch'] - t
+        indices = np.where(d<0)
+        d.iloc[indices] = np.inf
+        return np.argmin(d)
         
 def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
     data = h5py.File(filename, 'r', swmr=True)['data']
@@ -56,6 +55,8 @@ def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
                          'time_epoch_nsecs'     : 'header.stamp.nsecs',
                          'position_x'           : 'position.x',
                          'position_y'           : 'position.y',
+                         'measurement_x'        : 'measurement.x',
+                         'measurement_y'        : 'measurement.y',
                          'velocity_x'           : 'velocity.x',
                          'velocity_y'           : 'velocity.y',
                          'angle'                : 'angle',
