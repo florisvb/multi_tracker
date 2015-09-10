@@ -52,6 +52,7 @@ class Tracker:
                         'max_change_in_frame'       : 0.2,
                         'min_size'                  : 5,
                         'max_size'                  : 200,
+                        'max_expected_area'         : 500,
                         'liveview'                  : False,
                         'roi_l'                     : 0,
                         'roi_r'                     : -1,
@@ -123,9 +124,17 @@ class Tracker:
         except CvBridgeError, e:
             rospy.logwarn ('Exception converting background image from ROS to opencv:  %s' % e)
             img = np.zeros((320,240))
-
+            
+        if img is None:
+            return
+        
         self.imgScaled = img[self.params['roi_b']:self.params['roi_t'], self.params['roi_l']:self.params['roi_r']]
         self.shapeImage = self.imgScaled.shape # (height,width)
+        
+        if self.backgroundImage is not None:
+            if self.backgroundImage.shape != self.imgScaled.shape:
+                self.backgroundImage = None
+                self.reset_background_flag = True
         
 ########### Call to image processing function ##############################################################
         self.process_image() # must be defined seperately - see "main" code at the bottom of this script

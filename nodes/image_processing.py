@@ -23,6 +23,37 @@ import time, os
 # General use functions
 #######################
 
+def is_point_below_line(point, slope, intercept):
+    x = point[0]
+    y = point[1]
+    result = y-slope*x-intercept
+    if result > 0:
+        return False
+    else:
+        return True
+    
+def fit_ellipse_to_contour(contour):
+    ellipse = cv2.fitEllipse(contour)
+    (x,y), (a,b), angle = ellipse
+    a /= 2.
+    b /= 2.
+    ecc = np.min((a,b)) / np.max((a,b))
+    area = np.pi*a*b
+    return x, y, ecc, area, angle
+    
+def add_data_to_contour_info(x,y,ecc,area,angle,dtCamera,header):
+    # Prepare to publish the contour info
+    # contour message info: dt, x, y, angle, area, ecc
+    data = Contourinfo()
+    data.header  = header
+    data.dt      = dtCamera
+    data.x       = x
+    data.y       = y
+    data.area    = area
+    data.angle   = angle
+    data.ecc     = ecc
+    return data
+    
 def extract_and_publish_contours(self):
     contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # http://docs.opencv.org/trunk/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html
@@ -37,20 +68,42 @@ def extract_and_publish_contours(self):
     for contour in contours:
         # Large objects are approximated by an ellipse
         if len(contour) > 5:
-            ellipse = cv2.fitEllipse(contour)
-            (x,y), (a,b), angle = ellipse
-            a /= 2.
-            b /= 2.
-            ecc = np.min((a,b)) / np.max((a,b))
-            area = np.pi*a*b
-            if self.params['liveview']:
-                if area > self.params['min_size'] and area < self.params['max_size']:
-                    cv2.ellipse(self.imgOutput,ellipse,(0,255,0),2) # draw the ellipse, green
-                else:
-                    cv2.ellipse(self.imgOutput,ellipse,(0,0,255),2) # draw the ellipse, not green
+            x, y, ecc, area, angle = fit_ellipse_to_contour(contour)
+            
+            # if object is too large, split it in two, this helps with colliding objects, but is not 100% correct
+            if area > self.params['max_expected_area']:
+                slope = np.tan(angle)
+                intercept = y - slope*x
+                c1 = []
+                c2 = []
+                for point in contour:
+                    point = point.reshape(2)
+                    if is_point_below_line(point, slope, intercept):
+                        c1.append(point)
+                    else:
+                        c2.append(point)
+                
+                if len(c1) >= 5:
+                    x, y, ecc, area, angle = fit_ellipse_to_contour(np.array(c1))
+                    if area < self.params['max_size'] and area > self.params['min_size']:
+                        data = add_data_to_contour_info(x,y,ecc,area,angle,self.dtCamera,header)
+                        contour_info.append(data)
+                
+                if len(c2) >= 5:
+                    x, y, ecc, area, angle = fit_ellipse_to_contour(np.array(c2))
+                    if area < self.params['max_size'] and area > self.params['min_size']:
+                        data = add_data_to_contour_info(x,y,ecc,area,angle,self.dtCamera,header)
+                        contour_info.append(data)
+            else:
+                if area < self.params['max_size'] and area > self.params['min_size']:
+                    data = add_data_to_contour_info(x,y,ecc,area,angle,self.dtCamera,header)
+                    contour_info.append(data)
+            
             
         # Small ones just get a point
         else:
+            area = 0
+            '''
             moments = cv2.moments(contour, True)
             m00 = moments['m00']
             m10 = moments['m10']
@@ -69,21 +122,7 @@ def extract_and_publish_contours(self):
                     cv2.circle(self.imgOutput,(int(x),int(y)),2,(0,255,0),2) # draw a circle, green
                 else:
                     cv2.circle(self.imgOutput,(int(x),int(y)),2,(0,0,255),2) # draw a circle, not green
-            
-        if area > self.params['min_size'] and area < self.params['max_size']:
-            # Prepare to publish the contour info
-            # contour message info: dt, x, y, angle, area, ecc
-            data = Contourinfo()
-            #data.header  = Header(seq=self.iCountCamera,stamp=self.stampCamera,frame_id='BackgroundSubtraction')
-            #data.header  = Header(seq=self.framenumber,stamp=self.framestamp,frame_id='BackgroundSubtraction')
-            data.header  = header
-            data.dt      = self.dtCamera
-            data.x       = x
-            data.y       = y
-            data.area    = area
-            data.angle   = angle
-            data.ecc     = ecc
-            contour_info.append(data)
+            '''
             
     # publish the contours
     self.pubContours.publish( Contourlist(header = header, contours=contour_info) )  
@@ -95,7 +134,7 @@ def convert_to_gray_if_necessary(self):
         self.threshed = np.uint8(cv2.cvtColor(self.threshed, cv2.COLOR_BGR2GRAY))
         
 def erode_and_dialate(self):
-    kernel = np.ones((5,5),np.uint8)
+    kernel = np.ones((3,3),np.uint8)
     self.threshed = cv2.dilate(self.threshed, kernel, iterations=self.params['dilate'])
     self.threshed = cv2.erode(self.threshed, kernel, iterations=self.params['erode'])
     
@@ -107,6 +146,7 @@ def reset_background_if_difference_is_very_large(self):
         
 def reset_background(self):
     self.backgroundImage = copy.copy(np.float32(self.imgScaled))
+    print self.imgScaled.shape, self.backgroundImage.shape
     filename = self.experiment_basename + '_' + time.strftime("%Y%m%d_%H%M%S_bgimg_N" + self.nodenum, time.localtime()) + '.png'
     home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
     filename = os.path.join(home_directory, filename)
@@ -197,7 +237,7 @@ def dark_objects_only(self):
     try:
         kernel = self.kernel
     except:
-        kernel = np.ones((3,3),np.uint8)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
         self.kernel = kernel
                     
     self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
@@ -205,79 +245,26 @@ def dark_objects_only(self):
     
     
     # noise removal
-    opening = cv2.morphologyEx(self.threshed,cv2.MORPH_OPEN,kernel, iterations = 1)
+    self.threshed = cv2.morphologyEx(self.threshed,cv2.MORPH_OPEN,kernel, iterations = 1)
 
     # sure background area
     #sure_bg = cv2.dilate(opening,kernel,iterations=3)
 
     # Finding sure foreground area
-    dist_transform = cv2.distanceTransform(opening,cv.CV_DIST_L2,3)
-    dist_transform = dist_transform / (np.max(dist_transform)) * 255
-    ret, sure_fg = cv2.threshold(dist_transform,0.4*dist_transform.max(),255,0)
+    #dist_transform = cv2.distanceTransform(opening,cv.CV_DIST_L2,3)
+    #dist_transform = dist_transform / (np.max(dist_transform)) * 255
+    #ret, sure_fg = cv2.threshold(dist_transform,0.2*dist_transform.max(),255,0)
 
     # Finding unknown region
-    sure_fg = np.uint8(sure_fg)
-    
+    #sure_fg = np.uint8(sure_fg)
     
     # publish the processed image
-    c = cv2.cvtColor(np.uint8(dist_transform), cv2.COLOR_GRAY2BGR)
+    c = cv2.cvtColor(np.uint8(self.threshed), cv2.COLOR_GRAY2BGR)
     img = self.cvbridge.cv2_to_imgmsg(c, 'bgr8') # might need to change to bgr for color cameras
     self.pubProcessedImage.publish(img)
     
-    self.threshed = sure_fg
+    #self.threshed = sure_fg
     erode_and_dialate(self)
     extract_and_publish_contours(self)
     reset_background_if_difference_is_very_large(self)
         
-###########################################################################################################
-# Track objects based on mean absolute difference, and standard deviations. 
-# Good for highly sensitive tracking in a noisy environment. Loses objects that stop moving. 
-##########################
-
-def background_subtraction_with_standard_deviations(self):
-    '''
-    calculate difference between current img and background, and compare this difference to the mean difference between the img and background. If the current difference is more then *threshold*  away from the mean difference, then it is a pixel of interest. 
-    
-    Originally I intended to multiply the threshold by the standard deviations of each pixel, but this produced some strange compounding error I do not understand, so that part has been removed.
-    
-    '''
-    # If there is no background image, grab one, and move on to the next frame
-    if self.backgroundImage is None:
-        self.backgroundImage = copy.copy(np.float32(self.imgScaled))
-        self.meanDifference = np.zeros_like(self.backgroundImage)
-        #self.stdDifference = 0.6*np.ones_like(self.meanDifference)
-        self.stdDevUpdate = rospy.get_param('/multi_tracker/tracker/std_dev_update')
-        return
-    if self.reset_background_flag:
-        self.backgroundImage = copy.copy(np.float32(self.imgScaled))
-        self.meanDifference = copy.copy(self.backgroundImage)
-        #self.stdDifference = 0.6*np.ones_like(self.meanDifference)
-        self.stdDevUpdate = rospy.get_param('/multi_tracker/tracker/std_dev_update')
-        self.reset_background_flag = False
-        return
-    
-    
-    # calculate difference between img and background, and compare this 
-    #self.difference = cv2.add(np.float32(self.imgScaled), -1*np.float32(self.backgroundImage))
-    self.difference = cv2.absdiff(np.float32(self.imgScaled), np.float32(self.backgroundImage))
-    cv2.accumulateWeighted(np.float32(self.imgScaled), self.backgroundImage, self.params['backgroundupdate']) # this needs to be here, otherwise there's an accumulation of something in the background
-    #stdDifference_tmp = cv2.absdiff(self.difference, -1*self.meanDifference) # hacked way to get some kind of variance measurement
-    
-
-    tmp = cv2.absdiff(self.difference, self.meanDifference)
-    self.threshed = cv2.compare(tmp, self.params['threshold'], cv2.CMP_GT)
-    
-    self.imgproc = copy.copy(np.uint8(tmp*20))
-    
-    #cv2.accumulateWeighted(stdDifference_tmp, self.stdDifference, self.stdDevUpdate)
-    cv2.accumulateWeighted(self.difference, self.meanDifference, self.stdDevUpdate)
-
-    convert_to_gray_if_necessary(self)
-    erode_and_dialate(self)
-    extract_and_publish_contours(self)
-    
-    
-    
-    
-    
-####################################################################################
