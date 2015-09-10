@@ -115,7 +115,7 @@ class DeCompressor:
                 image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="bgr8")
             image_message.header = delta_vid.header
             self.pubDeltaVid.publish(image_message)
-    
+            
     def Main(self):
         rospy.spin()
         if self.videowriter is not None:
