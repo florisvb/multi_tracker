@@ -9,6 +9,10 @@ def get_frames_for_key(pd, key):
 def get_data_in_framerange(pd, framerange):
     # pd_subset
     return pd.ix[framerange[0]:framerange[-1]]
+
+def get_data_in_epoch_timerange(pd, timerange):
+    # pd_subset
+    return pd[(pd.time_epoch>timerange[0]) & (pd.time_epoch<timerange[1])]
     
 def get_nframes_per_key(pd):
     first_key = np.min(pd.objid)
