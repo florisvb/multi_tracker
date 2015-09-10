@@ -14,7 +14,7 @@ from multi_tracker.msg import Contourinfo, Contourlist
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
 
 import matplotlib.pyplot as plt
-import Kalman
+import multi_tracker_analysis.Kalman as Kalman
 import imp
 
 import threading
