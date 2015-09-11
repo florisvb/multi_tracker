@@ -43,13 +43,34 @@ def calc_frames_with_object_in_circular_region(pd, center, radius, region_name='
     pd[region_name].iloc[indices] = 1
     return pd
     
-def calc_frames_with_object_in_rectangular_region(pd, x_range, y_range, region_name='region'):
+def calc_frames_with_object_in_rectangular_region(pd, x_range, y_range, z_range=None, region_name='region'):
     '''
     center  - list (x,y) units should match units of position_x and position_y
     '''
-    x = pd.position_x
-    y = pd.position_y
-    indices = np.where( (x>x_range[0]) & (x<x_range[-1]) & (y>y_range[0]) & (y<y_range[-1]) )
+    if z_range is None:
+        x = pd.position_x
+        y = pd.position_y
+        indices = np.where( (x>x_range[0]) & (x<x_range[-1]) & (y>y_range[0]) & (y<y_range[-1]) )
+    else:
+        x = pd.position_x
+        y = pd.position_y
+        z = pd.position_z
+        indices = np.where( (x>x_range[0]) & (x<x_range[-1]) & (y>y_range[0]) & (y<y_range[-1]) & (z>z_range[0]) & (z<z_range[-1]) )
+    
     pd[region_name] = np.zeros_like(pd.position_x)
     pd[region_name].iloc[indices] = 1
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     return pd
