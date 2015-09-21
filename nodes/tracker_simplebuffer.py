@@ -73,6 +73,7 @@ class Tracker:
         # initialize the node
         rospy.init_node('multi_tracker_' + nodenum)
         self.nodename = rospy.get_name().rstrip('/')
+        self.time_start = time.time()
         
         # background reset service
         self.reset_background_flag = False
@@ -142,6 +143,9 @@ class Tracker:
         
     def Main(self):
         while (not rospy.is_shutdown()):
+            t = time.time() - self.time_start
+            if t > 24*3600:
+                return
             with self.lockBuffer:
                 time_now = rospy.Time.now()
                 if len(self.image_buffer) > 0:
@@ -150,6 +154,8 @@ class Tracker:
                 if len(self.image_buffer) > 9:
                     rospy.logwarn("Tracking processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.image_buffer))
         cv2.destroyAllWindows()
+    
+            
 
 #####################################################################################################
     

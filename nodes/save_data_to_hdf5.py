@@ -26,6 +26,7 @@ class DataListener:
         home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
         filename = os.path.join(home_directory, filename)
         print 'Saving hdf5 data to: ', filename
+        self.time_start = time.time()
         
         self.buffer = []
         # set up thread locks
@@ -112,6 +113,10 @@ class DataListener:
     def main(self):
         atexit.register(self.stop_saving_data)
         while (not rospy.is_shutdown()):
+            t = time.time() - self.time_start
+            if t > 24*3600:
+                self.stop_saving_data()
+                return
             with self.lockBuffer:
                 time_now = rospy.Time.now()
                 if len(self.buffer) > 0:
@@ -119,6 +124,7 @@ class DataListener:
                 pt = (rospy.Time.now()-time_now).to_sec()
                 if len(self.buffer) > 9:
                     rospy.logwarn("Data saving processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.buffer))
+            
         
     def stop_saving_data(self):
         self.hdf5.close()

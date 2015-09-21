@@ -21,6 +21,8 @@ class SaveBag:
         basename = config.basename
         directory = config.directory
         self.topics = config.topics
+        self.record_length_seconds = config.record_length_hours*3600
+        self.time_start = time.time()
         
         experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
         if experiment_basename == 'none':
@@ -55,8 +57,12 @@ class SaveBag:
                 
     def Main(self):
         savebag.StartRecordingBag()
-        while (not rospy.is_shutdown()):
-            rospy.spin()            
+        rate = rospy.Rate(0.01)
+        while not rospy.is_shutdown():
+            t = time.time() - self.time_start
+            if t > self.record_length_seconds:
+                self.StopRecordingBag()      
+                return
         
 
 if __name__ == '__main__':

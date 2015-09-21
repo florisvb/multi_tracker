@@ -60,10 +60,11 @@ class Compressor:
                 self.params[parameter] = rospy.get_param(p)
             except:
                 print 'Using default parameter: ', parameter, ' = ', value
-                
+        
         # initialize the node
         rospy.init_node('delta_compressor_' + nodenum)
         self.nodename = rospy.get_name().rstrip('/')
+        self.time_start = time.time()
         
         # experiment basename
         self.experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
@@ -166,6 +167,10 @@ class Compressor:
     
     def Main(self):
         while (not rospy.is_shutdown()):
+            t = time.time() - self.time_start
+            if t > 24*3600:
+                cv2.destroyAllWindows()
+                return
             with self.lockBuffer:
                 time_now = rospy.Time.now()
                 if len(self.image_buffer) > 0:
@@ -173,6 +178,7 @@ class Compressor:
                 pt = (rospy.Time.now()-time_now).to_sec()
                 if len(self.image_buffer) > 3:
                     rospy.logwarn("Delta video processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.image_buffer))
+            
         cv2.destroyAllWindows()
 
 #####################################################################################################

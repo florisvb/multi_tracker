@@ -7,6 +7,7 @@ import rosparam
 import copy
 import numpy as np
 import os, sys
+import time
 
 from std_msgs.msg import Float32, Header, String                                                                                                                                  
 from geometry_msgs.msg import Point, Vector3
@@ -46,6 +47,7 @@ class DataAssociator(object):
         
         # initialize the node
         rospy.init_node('data_associator_' + nodenum)
+        self.time_start = time.time()
         
         # Publishers.
         self.pubTrackedObjects = rospy.Publisher('/multi_tracker/' + nodenum + '/tracked_objects', Trackedobjectlist, queue_size=300)
@@ -235,6 +237,9 @@ class DataAssociator(object):
         
     def main(self):
         while not rospy.is_shutdown():
+            t = time.time() - self.time_start
+            if t > 24*3600:
+                return
             with self.lockBuffer:
                 time_now = rospy.Time.now()
                 if len(self.contour_buffer) > 0:
@@ -242,6 +247,8 @@ class DataAssociator(object):
                 pt = (rospy.Time.now()-time_now).to_sec()
                 if len(self.contour_buffer) > 9:
                     rospy.logwarn("Data association processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.contour_buffer))
+            
+            
                 
 if __name__ == '__main__':
     parser = OptionParser()
