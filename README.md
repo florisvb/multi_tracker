@@ -1,7 +1,7 @@
 Multi tracker
 ============
 
-Multi tracker is a basic ROS package for tracking multiple objects in 2D.
+Multi tracker is a basic ROS package for real time tracking multiple objects in 2D. It is in constant active development, and things may break at any time, however, basic operation has remained consistent since Jan 1 2015. Primary testing has been on walking fruit flies. Only basic object-object interaction is supported by splitting objects that are larger than a specified size into two objects (thus three objects coming together will only be seen as 2 objects). Adjusting thresholds, and the image processing function can help improve robustness. System works reliably on a high end desktop from 2012 to track 10+ objects. 
 
 The package was built and tested with point grey usb firefly cameras on an Ubuntu (12.04) system, and Basler GigE cameras using the camera aravis driver on 12.04 and 14.04. However, there is no reason that it shouldn't work with other cameras.
 
