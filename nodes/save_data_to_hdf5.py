@@ -89,7 +89,9 @@ class DataListener:
         newline = self.hdf5['data'].attrs.get('line') + 1
         self.hdf5['data'].attrs.modify('line', newline)
         if newline >= self.hdf5['data'].attrs.get('length')-50:
-                self.add_chunk()
+            self.hdf5.flush()
+            print 'flushing'
+            self.add_chunk()
         self.hdf5['data'][newline] = np.array([(     tracked_object.objid,
                                                         tracked_object.header.stamp.secs,
                                                         tracked_object.header.stamp.nsecs,
