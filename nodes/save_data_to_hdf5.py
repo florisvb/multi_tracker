@@ -29,11 +29,12 @@ class DataListener:
         self.time_start = time.time()
         
         self.buffer = []
+        self.array_buffer = []
         # set up thread locks
         self.lockParams = threading.Lock()
         self.lockBuffer = threading.Lock()
         
-        self.chunk_size = 10000
+        self.chunk_size = 5000
         self.hdf5 = h5py.File(filename, 'w')
         self.hdf5.swmr_mode = True # helps prevent file corruption if closed improperly
         self.hdf5.attrs.create("info", info)
@@ -85,32 +86,36 @@ class DataListener:
         self.hdf5['data'].resize(new_length, axis=0)
         self.hdf5['data'].attrs.modify('length', new_length)
             
-    def save_data(self, tracked_object):
+    def save_array_data(self):
         newline = self.hdf5['data'].attrs.get('line') + 1
-        self.hdf5['data'].attrs.modify('line', newline)
-        if newline >= self.hdf5['data'].attrs.get('length')-50:
+        nrows_to_add = len(self.array_buffer)
+        
+        self.hdf5['data'].attrs.modify('line', newline+nrows_to_add)
+        if newline+nrows_to_add >= self.hdf5['data'].attrs.get('length')-50:
             self.hdf5.flush()
-            print 'flushing'
             self.add_chunk()
-        self.hdf5['data'][newline] = np.array([(     tracked_object.objid,
-                                                        tracked_object.header.stamp.secs,
-                                                        tracked_object.header.stamp.nsecs,
-                                                        tracked_object.header.frame_id,
-                                                        tracked_object.position.x, tracked_object.position.y, tracked_object.position.z,
-                                                        tracked_object.velocity.x, tracked_object.velocity.y, tracked_object.velocity.z,
-                                                        tracked_object.angle,
-                                                        tracked_object.size,
-                                                        tracked_object.covariance,
-                                                        tracked_object.measurement.x, tracked_object.measurement.y,
-                                                   )], dtype=self.dtype)
+        
+        self.hdf5['data'][newline:newline+nrows_to_add] = self.array_buffer
+        self.array_buffer = []
                                                    
     def tracked_object_callback(self, tracked_objects):
         with self.lockBuffer:
-            self.buffer.append(tracked_objects)
+            for tracked_object in tracked_objects.tracked_objects:
+                a = np.array([(     tracked_object.objid,
+                                    tracked_object.header.stamp.secs,
+                                    tracked_object.header.stamp.nsecs,
+                                    tracked_object.header.frame_id,
+                                    tracked_object.position.x, tracked_object.position.y, tracked_object.position.z,
+                                    tracked_object.velocity.x, tracked_object.velocity.y, tracked_object.velocity.z,
+                                    tracked_object.angle,
+                                    tracked_object.size,
+                                    tracked_object.covariance,
+                                    tracked_object.measurement.x, tracked_object.measurement.y,
+                               )], dtype=self.dtype)
+                self.array_buffer.append(a)
         
-    def process_buffer(self, tracked_objects):
-        for tracked_object in tracked_objects.tracked_objects:
-            self.save_data(tracked_object)
+    def process_buffer(self):
+        self.save_array_data()
             
     def main(self):
         atexit.register(self.stop_saving_data)
@@ -121,8 +126,8 @@ class DataListener:
                 return
             with self.lockBuffer:
                 time_now = rospy.Time.now()
-                if len(self.buffer) > 0:
-                    self.process_buffer(self.buffer.pop(0))
+                if len(self.array_buffer) > 0:
+                    self.process_buffer()
                 pt = (rospy.Time.now()-time_now).to_sec()
                 if len(self.buffer) > 9:
                     rospy.logwarn("Data saving processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.buffer))
