@@ -23,7 +23,7 @@ class Trajectory(object):
         self.pd = pd[pd['objid']==objid]
         
         for column in self.pd.columns:
-            self.__setattr__(column, self.pd[column])
+            self.__setattr__(column, self.pd[column].values)
         
 class Dataset(object):
     def __init__(self, pd):
@@ -46,6 +46,9 @@ class Dataset(object):
         indices = np.where(d<0)
         d.iloc[indices] = np.inf
         return np.argmin(d)
+        
+    def load_keys(self):
+        self.keys = np.unique(self.pd.objid).tolist()
         
 def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
     data = h5py.File(filename, 'r', swmr=True)['data']
@@ -73,7 +76,7 @@ def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
     
 def calc_additional_columns(pd):
     pd['time_epoch'] = pd['time_epoch_secs'] + pd['time_epoch_nsecs']*1e-9
-    pd['speed'] = np.linalg.norm( [pd['velocity_x'], pd['velocity_y']] )
+    pd['speed'] = np.linalg.norm( [pd['velocity_x'], pd['velocity_y']], axis=0 )
     return pd
     
 def framestamp_to_timestamp(pd, frame):
@@ -115,10 +118,26 @@ def load_multiple_datasets_into_single_pandas_data_frame(filenames, sync_frames=
     
     return combined_pd
 
+def cull_short_trajectories(pd, min_length=4):
+    key_length_dict = get_objid_lengths(pd)
+    keys, lengths = zip(*key_length_dict.items())
+    keys = list(keys)
+    lengths = list(lengths)
+    indices = np.where(np.array(lengths)>min_length)[0]    
+    keys_ok = np.array(keys)[indices]
+    
+    culled_pd = pd.query('objid in keys_ok')
+    
+    return culled_pd
 
-
-
-
+def get_objid_lengths(pd):
+    keys = np.unique(pd.objid)
+    lengths = np.bincount(pd.objid)
+    
+    true_lengths = lengths[np.nonzero(lengths)[0]]
+    
+    key_length_dict = dict(zip(keys,true_lengths))
+    return key_length_dict
 
 
 

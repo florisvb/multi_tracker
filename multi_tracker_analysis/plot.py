@@ -4,8 +4,8 @@ import numpy as np
 def get_bins_from_backgroundimage(backgroundimage):
     if type(backgroundimage) is str:
         backgroundimage = plt.imread(backgroundimage)
-    binsx = np.arange(0, backgroundimage.shape[1], 1)
-    binsy = np.arange(0, backgroundimage.shape[0], 1)
+    binsx = np.arange(0, backgroundimage.shape[1]+1, 1)
+    binsy = np.arange(0, backgroundimage.shape[0]+1, 1)
     return binsx, binsy
     
 def get_heatmap(pd, binsx, binsy, position_x='position_x', position_y='position_y', position_z='position_z', position_z_slice=None):
@@ -29,6 +29,8 @@ def plot_heatmap(pd, binsx, binsy, ax=None, vmin=0, vmax=None, logcolorscale=Fal
     if vmax is None:
         vmax = 0.1*np.max(heatmap)
     ax.imshow(heatmap.T, cmap=plt.get_cmap('hot'), vmin=vmin, vmax=vmax, origin='lower', extent=[binsx[0],binsx[-1],binsy[0],binsy[-1]])
+    
+    return ax
     
 def plot_trajectories(pd, binsx, binsy, backgroundimage=None, ax=None, position_x='position_x',position_y='position_y', position_z='position_z', position_z_slice=None):
     if ax is None:

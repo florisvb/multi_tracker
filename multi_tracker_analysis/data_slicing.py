@@ -4,7 +4,7 @@ def get_keys_in_framerange(pd, framerange):
     return np.unique(pd.ix[framerange[0]:framerange[-1]].objid)
 
 def get_frames_for_key(pd, key):
-    return pd[pd.objid==22].frames.values
+    return pd[pd.objid==key].frames.values
     
 def get_data_in_framerange(pd, framerange):
     # pd_subset
@@ -26,9 +26,10 @@ def get_nframes_per_key(pd):
 def get_nkeys_per_frame(pd):
     first_key = np.min(pd.frames)
     last_key = np.max(pd.frames)
-    bins = np.arange(first_key, last_key+2, dtype=float)
+    bins = np.arange(first_key, last_key, dtype=float)
     bins -= 0.5
     h, b = np.histogram(pd.frames, bins)
+    # can use pd.frames.groupby(pd.frames).agg('count')
     return h
     
 def calc_frames_with_object_in_circular_region(pd, center, radius, region_name='region'):
@@ -60,17 +61,19 @@ def calc_frames_with_object_in_rectangular_region(pd, x_range, y_range, z_range=
     pd[region_name] = np.zeros_like(pd.position_x)
     pd[region_name].iloc[indices] = 1
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     return pd
+    
+def get_pd_subset_from_keys(pd, keys):
+    pd_subset = pd.query('objid in keys')
+    return pd_subset
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
