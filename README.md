@@ -66,11 +66,15 @@ Running
 Minimal steps to run:
 
 1. copy the /demo folder to your home directory
-2. from inside the demo folder, run "roslaunch example.launch"
-   This will load all the yaml (parameter) files, and launch the tracker, data_association, and save_data_to_csv nodes.
+2. get a camera running on the ROs network (see Cameras above), note the image topic it is publishing to
+3. if the camera_image topic is not /camera/image_raw, edit the /demo/demo_1/src/tracker_parameters.yaml file so that /multi_tracker/1/tracker/image_topic matches the image_topic
+2. from inside ~/demo/demo_1/src folder, run "roslaunch tracking_launcher.launch"
+   This will load all the yaml (parameter) files, and launch the tracker, data_association, save_hdf5_data, and liveviewer nodes.
 3. Hit control-c to stop the node (and cease collecting data).
 
 Now you can try editing some of the contents of the yaml files to change the file structure and tracking parameters.
+
+The two demo folders (demo_1 and demo_2) are there to illustrate how you can run two instances on one computer in parallel. You can even run them on the same camera feed, using ROI's to split a single camera feed into two experiments.
 
 Image Processing
 ============
