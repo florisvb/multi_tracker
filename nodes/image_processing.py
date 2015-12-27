@@ -19,6 +19,69 @@ from multi_tracker.srv import resetBackgroundService
 import time, os
 
 ###########################################################################################################
+# Incredibly basic image processing function (self contained), to demonstrate the format custom image processing functions should follow
+#######################
+
+def incredibly_basic(self):
+    # If there is no background image, grab one, and move on to the next frame
+    if self.backgroundImage is None:
+        if np.sum(self.threshed>0) / float(self.shapeImage[0]*self.shapeImage[1]) > self.params['max_change_in_frame']:
+            reset_background(self)
+        return
+    if self.reset_background_flag:
+        if np.sum(self.threshed>0) / float(self.shapeImage[0]*self.shapeImage[1]) > self.params['max_change_in_frame']:
+            reset_background(self)
+        self.reset_background_flag = False
+        return
+      
+    self.absdiff = cv2.absdiff(np.float32(self.imgScaled), self.backgroundImage)
+    self.imgproc = copy.copy(self.imgScaled)
+    
+    retval, self.threshed = cv2.threshold(self.absdiff, self.params['threshold'], 255, 0)
+    
+    # convert to gray if necessary
+    if len(self.threshed.shape) == 3:
+        self.threshed = np.uint8(cv2.cvtColor(self.threshed, cv2.COLOR_BGR2GRAY))
+    
+    # extract and publish contours
+    # http://docs.opencv.org/trunk/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html
+    contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    try:
+        header  = Header(stamp=self.framestamp,frame_id=str(self.framenumber))
+    except:
+        header  = Header(stamp=None,frame_id=str(self.framenumber))
+        print 'could not get framestamp, run tracker_nobuffer instead'
+        
+    contour_info = []
+    for contour in contours:
+        if len(contour) > 5: # Large objects are approximated by an ellipse
+            ellipse = cv2.fitEllipse(contour)
+            (x,y), (a,b), angle = ellipse
+            a /= 2.
+            b /= 2.
+            ecc = np.min((a,b)) / np.max((a,b))
+            area = np.pi*a*b
+            
+            data = Contourinfo()
+            data.header  = header
+            data.dt      = dtCamera
+            data.x       = x
+            data.y       = y
+            data.area    = area
+            data.angle   = angle
+            data.ecc     = ecc
+            
+            contour_info.append(data)
+            
+        else: # Small ones get ignored
+            pass
+            
+    # publish the contours
+    self.pubContours.publish( Contourlist(header = header, contours=contour_info) )  
+
+
+###########################################################################################################
 # General use functions
 #######################
 
@@ -102,26 +165,6 @@ def extract_and_publish_contours(self):
         # Small ones just get a point
         else:
             area = 0
-            '''
-            moments = cv2.moments(contour, True)
-            m00 = moments['m00']
-            m10 = moments['m10']
-            m01 = moments['m01']
-            if (m00 != 0.0):
-                x = m10/m00
-                y = m01/m00
-            else: # There was just one pixel in the contour.
-                (x,y) = contour[0][0]
-            area = 1.
-            angle = 0.
-            ecc = 1.
-            
-            if self.params['liveview']:
-                if area > self.params['min_size'] and area < self.params['max_size']:
-                    cv2.circle(self.imgOutput,(int(x),int(y)),2,(0,255,0),2) # draw a circle, green
-                else:
-                    cv2.circle(self.imgOutput,(int(x),int(y)),2,(0,0,255),2) # draw a circle, not green
-            '''
             
     # publish the contours
     self.pubContours.publish( Contourlist(header = header, contours=contour_info) )  
