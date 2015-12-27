@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import division
 from optparse import OptionParser
+import imp, os
 import roslib
 import rospy
 import rosparam
@@ -19,7 +20,7 @@ from multi_tracker.msg import Contourinfo, Contourlist
 from multi_tracker.msg import Trackedobject, Trackedobjectlist
 from multi_tracker.srv import resetBackgroundService, addImageToBackgroundService
 
-import image_processing
+#import image_processing
 
 # for basler ace cameras, use camera_aravis
 # https://github.com/ssafarik/camera_aravis
@@ -165,9 +166,16 @@ if __name__ == '__main__':
                         help="node number, for example, if running multiple tracker instances on one computer")
     (options, args) = parser.parse_args()
     
-    tracker_node_basename = '/multi_tracker/' + options.nodenum + '/tracker'
+    catkin_node_directory = os.path.dirname(os.path.realpath(__file__))
     
+    tracker_node_basename = '/multi_tracker/' + options.nodenum + '/tracker'
     image_processing_function = rospy.get_param(tracker_node_basename + '/image_processor')
+    
+    image_processing_module = rospy.get_param(tracker_node_basename + '/image_processing_module')
+    if image_processing_module == 'default':
+        image_processing_module = os.path.join(catkin_node_directory, 'image_processing.py')
+    image_processing = imp.load_source('image_processing', image_processing_module)
+    
     image_processor = image_processing.__getattribute__(image_processing_function)
     Tracker.process_image = image_processor
     tracker = Tracker(options.nodenum)
