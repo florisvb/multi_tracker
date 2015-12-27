@@ -23,7 +23,7 @@ class DataListener:
             experiment_basename = time.strftime("%Y%m%d_%H%M%S_N" + nodenum, time.localtime())
            
         filename = experiment_basename + '_trackedobjects.hdf5'
-        home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
+        home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/' + nodenum + '/data_directory') )
         filename = os.path.join(home_directory, filename)
         print 'Saving hdf5 data to: ', filename
         self.time_start = time.time()
