@@ -104,10 +104,9 @@ class DeCompressor:
             if self.saveto is not None:
                 if self.videowriter is not None:
                     self.videowriter.write(new_image)
-                    print 'wrote new image'
                 else:
-                    self.videowriter = cv2.VideoWriter()
-                    self.videowriter.open(self.saveto, cv.CV_FOURCC('P','I','M','1'), 30, (new_image.shape[0], new_image.shape[1]))
+                    self.videowriter = cv2.VideoWriter(self.saveto,cv.CV_FOURCC('m','p','4','v'), 300,(new_image.shape[1], new_image.shape[0]),True) # works on Linux and Windows
+                    #self.videowriter.open(self.saveto, cv.CV_FOURCC('P','I','M','1'), 30, (new_image.shape[0], new_image.shape[1]))
 
             if self.mode == 'mono':
                 image_message = self.cvbridge.cv2_to_imgmsg(new_image, encoding="mono8")
@@ -119,7 +118,7 @@ class DeCompressor:
     def Main(self):
         rospy.spin()
         if self.videowriter is not None:
-            self.videowriter.close()
+            self.videowriter.release()
 #####################################################################################################
     
 if __name__ == '__main__':
