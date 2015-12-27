@@ -54,5 +54,19 @@ def plot_trajectories(pd, binsx, binsy, backgroundimage=None, ax=None, position_
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_aspect('equal')
-    
+
+def plot_individual_trajectories_from_dataset_format(dataset, keys, backgroundimage, ax=None, binsx=None, binsy=None):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        
+    if backgroundimage is not None:
+        backgroundimage = plt.imread(backgroundimage)
+        binsx, binsy = plot.get_bins_from_backgroundimage(backgroundimage)
+        ax.imshow(backgroundimage, cmap=plt.get_cmap('gray'), extent=[binsx[0], binsx[-1], binsy[0], binsy[-1]])
+        
+    for key in keys:
+        trajec = dataset.trajec(key)
+        
+        ax.plot(trajec.position_x, trajec.position_y)
 
