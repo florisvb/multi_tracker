@@ -126,7 +126,7 @@ def cull_short_trajectories(pd, min_length=4):
     indices = np.where(np.array(lengths)>min_length)[0]    
     keys_ok = np.array(keys)[indices]
     
-    culled_pd = pd.query('objid in keys_ok')
+    culled_pd = pd.query('objid in @keys_ok')
     
     return culled_pd
 

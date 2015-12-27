@@ -64,7 +64,7 @@ def calc_frames_with_object_in_rectangular_region(pd, x_range, y_range, z_range=
     return pd
     
 def get_pd_subset_from_keys(pd, keys):
-    pd_subset = pd.query('objid in keys')
+    pd_subset = pd.query('objid in @keys')
     return pd_subset
     
     
