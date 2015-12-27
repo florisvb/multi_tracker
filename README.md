@@ -3,6 +3,8 @@ Multi tracker
 
 Multi tracker is a basic ROS package for real time tracking multiple objects in 2D. It is in constant active development, and things may break at any time, however, basic operation has remained consistent since Jan 1 2015. Primary testing has been on walking fruit flies. Only basic object-object interaction is supported by splitting objects that are larger than a specified size into two objects (thus three objects coming together will only be seen as 2 objects). Adjusting thresholds, and the image processing function can help improve robustness. System works reliably on a high end desktop from 2012 to track 10+ objects. 
 
+The code supports multiple tracking instances on the computer through the "nodenum" option that is available on all the tracking nodes.
+
 The package was built and tested with point grey usb firefly cameras on an Ubuntu (12.04) system, and Basler GigE cameras using the camera aravis driver on 12.04 and 14.04. However, there is no reason that it shouldn't work with other cameras.
 
 Installing
@@ -69,4 +71,21 @@ Minimal steps to run:
 3. Hit control-c to stop the node (and cease collecting data).
 
 Now you can try editing some of the contents of the yaml files to change the file structure and tracking parameters.
+
+Image Processing
+============
+
+The code supports externally defined image processing functions, so you can write your own python image processing function, and specify the tracker to use that, rather than the default functions included in this package. To define your own image processing functions, set the parameter /multi_tracker/1/tracker/image_processing_module to be the exact path to your python file, and /multi_tracker/1/tracker/image_processor to the name of the function within that file.
+
+To write your own image_processing function, look at the incredibly_basic function in image_processing.py, and start with this as a template. Don't forget to import some of the ROS specific stuff:
+
+from multi_tracker.msg import Contourinfo, Contourlist
+from multi_tracker.msg import Trackedobject, Trackedobjectlist
+from multi_tracker.srv import resetBackgroundService
+
+Alternatively, you can edit the image_processing.py file in multi_tracker/nodes, and add your function there. Then set /multi_tracker/1/tracker/image_processor to the name of your function.
+
+
+
+
 
