@@ -122,7 +122,7 @@ if __name__ == '__main__':
     parser.add_option("--filename", type="str", dest="filename", default='',
                         help="filename of image")
     parser.add_option("--analysis", type="str", dest="analysis", default='',
-                        help="pixels or circles")
+                        help="pixels or circle")
     (options, args) = parser.parse_args()
     
     if options.analysis == 'pixels':
