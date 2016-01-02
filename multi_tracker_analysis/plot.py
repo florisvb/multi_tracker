@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def get_bins_from_backgroundimage(backgroundimage):
+def get_bins_from_backgroundimage(backgroundimage, pixel_resolution=1):
     if type(backgroundimage) is str:
         backgroundimage = plt.imread(backgroundimage)
-    binsx = np.arange(0, backgroundimage.shape[1]+1, 1)
-    binsy = np.arange(0, backgroundimage.shape[0]+1, 1)
+    binsx = np.arange(0, backgroundimage.shape[1]+1, pixel_resolution)
+    binsy = np.arange(0, backgroundimage.shape[0]+1, pixel_resolution)
     return binsx, binsy
     
 def get_heatmap(pd, binsx, binsy, position_x='position_x', position_y='position_y', position_z='position_z', position_z_slice=None):
@@ -31,6 +31,42 @@ def plot_heatmap(pd, binsx, binsy, ax=None, vmin=0, vmax=None, logcolorscale=Fal
     ax.imshow(heatmap.T, cmap=plt.get_cmap('hot'), vmin=vmin, vmax=vmax, origin='lower', extent=[binsx[0],binsx[-1],binsy[0],binsy[-1]])
     
     return ax
+
+def resampling_statistics_on_heatmaps(h_ons, h_offs, iterations=1000, neff=None):
+    '''
+    neff - effective N, taking into account clustering. See: http://www.nature.com/neuro/journal/v17/n4/pdf/nn.3648.pdf
+    '''
+    if neff is None:
+        neff = len(h_ons)
+    actual_difference = np.mean(h_ons, axis=0) - np.mean(h_offs, axis=0)
+    
+    all_hs = []
+    all_hs.extend(h_ons)
+    all_hs.extend(h_offs)
+    
+    differences = []
+    for i in range(iterations):
+        indices_on = np.random.randint(0, len(all_hs), neff)
+        indices_off = np.random.randint(0, len(all_hs), neff)
+
+        fake_on = np.mean([all_hs[n] for n in indices_on], axis=0)
+        fake_off = np.mean([all_hs[n] for n in indices_off], axis=0)
+        
+        differences.append(fake_on-fake_off)
+    differences = np.array(differences)
+    
+    pvals = np.ones_like(actual_difference)
+    for r in range(0, differences.shape[1]):
+        for c in range(0, differences.shape[2]):
+            q = differences[:,r,c]
+            q.sort()
+            iq = np.argmin( np.abs(q-actual_difference[r,c]) )
+            p = 1 - np.abs((iq - iterations/2.) / (iterations/2.))
+            pvals[r,c] = p
+            
+    
+    
+    return actual_difference, pvals
     
 def plot_trajectories(pd, binsx, binsy, backgroundimage=None, ax=None, position_x='position_x',position_y='position_y', position_z='position_z', position_z_slice=None):
     if ax is None:
