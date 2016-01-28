@@ -4,5 +4,4 @@ import read_hdf5_file_to_pandas
 import plot
 import estimate_R_and_Q
 import Kalman
-import trajectory_based_analysis
 import stitch_trajectories
