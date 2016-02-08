@@ -34,6 +34,7 @@ class DataAssociator(object):
         self.association_matrix = self.kalman_parameters.association_matrix
         self.association_matrix /= np.linalg.norm(self.association_matrix)
         self.max_covariance = self.kalman_parameters.max_covariance
+        self.max_velocity = self.kalman_parameters.max_velocity
         
         self.tracked_objects = {}
         self.current_objid = 0
@@ -190,10 +191,15 @@ class DataAssociator(object):
         if len(objid_in_order_of_persistance) > self.max_tracked_objects:
             for objid in objid_in_order_of_persistance[self.max_tracked_objects:]:
                 objects_to_destroy.append(objid)
-            
+        
+        # check covariance, and velocity
         for objid, tracked_object in self.tracked_objects.items():
             tracked_object_covariance = np.linalg.norm( (tracked_object['kalmanfilter'].H*tracked_object['kalmanfilter'].P).T*self.association_matrix )
             if tracked_object_covariance > self.max_covariance:
+                if objid not in objects_to_destroy:
+                    objects_to_destroy.append(objid)
+            v = np.linalg.norm( np.array( tracked_object['state'][tracked_object['statenames']['velocity'],-1] ).flatten().tolist() )
+            if v > self.max_velocity:
                 if objid not in objects_to_destroy:
                     objects_to_destroy.append(objid)
         for objid in objects_to_destroy:
