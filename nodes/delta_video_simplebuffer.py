@@ -126,7 +126,7 @@ class Compressor:
         if self.backgroundImage is None:
             self.backgroundImage = copy.copy(self.imgScaled)
             self.background_img_filename = self.experiment_basename + '_deltavideo_bgimg_' + time.strftime("%Y%m%d_%H%M.png", time.localtime())
-            home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
+            home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/' + self.nodenum + '/data_directory') )
             self.background_img_filename = os.path.join(home_directory, self.background_img_filename)
             
             cv2.imwrite(self.background_img_filename, self.backgroundImage)
