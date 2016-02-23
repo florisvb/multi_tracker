@@ -59,6 +59,7 @@ class Tracker:
                         'roi_r'                     : -1,
                         'roi_b'                     : 0,
                         'roi_t'                     : -1,
+                        'use_moments'               : True, # use moments for x,y,area instead of fitted ellipse
                         }
         for parameter, value in self.params.items():
             try:

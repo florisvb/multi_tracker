@@ -101,7 +101,16 @@ def fit_ellipse_to_contour(contour):
     b /= 2.
     ecc = np.min((a,b)) / np.max((a,b))
     area = np.pi*a*b
+    if self.params['use_moments']:
+        x, y, area = get_centroid_from_moments(contour) # get these values from moments - might be more robust?
     return x, y, ecc, area, angle
+    
+def get_centroid_from_moments(contour):
+    M = cv2.moments(contour)
+    cx = int(M['m10']/M['m00'])
+    cy = int(M['m01']/M['m00'])
+    area = cv2.contourArea(contour)
+    return cx, cy, area
     
 def add_data_to_contour_info(x,y,ecc,area,angle,dtCamera,header):
     # Prepare to publish the contour info
