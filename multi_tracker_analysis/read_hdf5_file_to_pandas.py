@@ -63,7 +63,8 @@ def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
                          'velocity_x'           : 'velocity.x',
                          'velocity_y'           : 'velocity.y',
                          'angle'                : 'angle',
-                         'frames'               : 'header.frame_id'}
+                         'frames'               : 'header.frame_id',
+                         'area'                 : 'size',}
     index = data['header.frame_id'].flat
     d = {}
     for attribute, name in attributes.items():
@@ -130,14 +131,18 @@ def cull_short_trajectories(pd, min_length=4):
     
     return culled_pd
 
-def get_objid_lengths(pd):
-    keys = np.unique(pd.objid)
-    lengths = np.bincount(pd.objid)
+def get_objid_lengths(pd, objid_attribute='objid'):
+    keys = np.unique(pd[objid_attribute])
+    lengths = np.bincount(pd[objid_attribute])
     
     true_lengths = lengths[np.nonzero(lengths)[0]]
     
     key_length_dict = dict(zip(keys,true_lengths))
     return key_length_dict
+    
+def remove_rows_with_above_speed_threshold(pd, speed_threshold=10):
+    q = 'speed < ' + str(speed_threshold)
+    return pd.query(q)
 
 
 
