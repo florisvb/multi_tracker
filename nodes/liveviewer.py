@@ -68,6 +68,7 @@ class LiveViewer:
                         }
         for parameter, value in self.params.items():
             try:
+		# allows image processed view to be overlaid with tracked objects
                 p = '/multi_tracker/' + nodenum + '/liveviewer/' + parameter
                 self.params[parameter] = rospy.get_param(p)
             except:
