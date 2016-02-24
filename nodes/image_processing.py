@@ -199,12 +199,16 @@ def erode_and_dialate(self):
     self.threshed = cv2.dilate(self.threshed, kernel, iterations=self.params['dilate'])
     self.threshed = cv2.erode(self.threshed, kernel, iterations=self.params['erode'])
     
-def reset_background_if_difference_is_very_large(self):
-    # if the thresholded absolute difference is too large, reset the background
-    if np.sum(self.threshed>0) / float(self.shapeImage[0]*self.shapeImage[1]) > self.params['max_change_in_frame']:
-        reset_background(self)
-        return
-        
+def reset_background_if_difference_is_very_large(self, color='dark'):
+    if color == 'dark':
+        # if the thresholded absolute difference is too large, reset the background
+        if np.sum(self.threshed>0) / float(self.shapeImage[0]*self.shapeImage[1]) > self.params['max_change_in_frame']:
+            reset_background(self)
+            return
+    elif color == 'light':
+        # NOT IMPLEMENTED
+        pass
+
 def reset_background(self):
     self.backgroundImage = copy.copy(np.float32(self.imgScaled))
     print self.imgScaled.shape, self.backgroundImage.shape
@@ -313,7 +317,7 @@ def dark_or_light_objects_only(self, color='dark'):
     if color == 'dark':
         self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
     else:
-        self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_GT) # CMP_GT is greater than
+        self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage+self.params['threshold'], cv2.CMP_GT) # CMP_GT is greater than
     convert_to_gray_if_necessary(self)
     
     
@@ -339,5 +343,5 @@ def dark_or_light_objects_only(self, color='dark'):
     #self.threshed = sure_fg
     erode_and_dialate(self)
     extract_and_publish_contours(self)
-    reset_background_if_difference_is_very_large(self)
+    #reset_background_if_difference_is_very_large(self, color)
         
