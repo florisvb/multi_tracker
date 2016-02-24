@@ -310,7 +310,7 @@ def dark_or_light_objects_only(self, color='dark'):
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
         self.kernel = kernel
     
-    if color = 'dark':
+    if color == 'dark':
         self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
     else:
         self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_GT) # CMP_GT is greater than
