@@ -94,7 +94,7 @@ def is_point_below_line(point, slope, intercept):
     else:
         return True
     
-def fit_ellipse_to_contour(contour):
+def fit_ellipse_to_contour(self, contour):
     ellipse = cv2.fitEllipse(contour)
     (x,y), (a,b), angle = ellipse
     a /= 2.
@@ -102,16 +102,21 @@ def fit_ellipse_to_contour(contour):
     ecc = np.min((a,b)) / np.max((a,b))
     area = np.pi*a*b
     if self.params['use_moments']:
-        x, y, area = get_centroid_from_moments(contour) # get these values from moments - might be more robust?
+        moments = get_centroid_from_moments(contour) # get these values from moments - might be more robust?
+        if moments is not None:
+            x, y, area = moments
     return x, y, ecc, area, angle
     
 def get_centroid_from_moments(contour):
     M = cv2.moments(contour)
-    cx = int(M['m10']/M['m00'])
-    cy = int(M['m01']/M['m00'])
-    area = cv2.contourArea(contour)
-    return cx, cy, area
-    
+    if M['m00'] != 0:
+        cx = int(M['m10']/M['m00'])
+        cy = int(M['m01']/M['m00'])
+        area = cv2.contourArea(contour)
+        return cx, cy, area
+    else:
+        return None
+        
 def add_data_to_contour_info(x,y,ecc,area,angle,dtCamera,header):
     # Prepare to publish the contour info
     # contour message info: dt, x, y, angle, area, ecc
@@ -139,7 +144,7 @@ def extract_and_publish_contours(self):
     for contour in contours:
         # Large objects are approximated by an ellipse
         if len(contour) > 5:
-            x, y, ecc, area, angle = fit_ellipse_to_contour(contour)
+            x, y, ecc, area, angle = fit_ellipse_to_contour(self, contour)
             
             # if object is too large, split it in two, this helps with colliding objects, but is not 100% correct
             if area > self.params['max_expected_area']:
@@ -155,13 +160,13 @@ def extract_and_publish_contours(self):
                         c2.append(point)
                 
                 if len(c1) >= 5:
-                    x, y, ecc, area, angle = fit_ellipse_to_contour(np.array(c1))
+                    x, y, ecc, area, angle = fit_ellipse_to_contour(self, np.array(c1))
                     if area < self.params['max_size'] and area > self.params['min_size']:
                         data = add_data_to_contour_info(x,y,ecc,area,angle,self.dtCamera,header)
                         contour_info.append(data)
                 
                 if len(c2) >= 5:
-                    x, y, ecc, area, angle = fit_ellipse_to_contour(np.array(c2))
+                    x, y, ecc, area, angle = fit_ellipse_to_contour(self, np.array(c2))
                     if area < self.params['max_size'] and area > self.params['min_size']:
                         data = add_data_to_contour_info(x,y,ecc,area,angle,self.dtCamera,header)
                         contour_info.append(data)
