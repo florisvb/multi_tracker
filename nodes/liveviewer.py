@@ -57,10 +57,10 @@ class LiveViewer:
             Pt Grey Firefly cameras with pt grey driver : camera/image_mono
         '''
         # default parameters (parameter server overides them)
-        self.params = { 'image_topic'       : '/camera/image_mono',
+        self.params = { 'image_topic'               : '/camera/image_mono',
                         'min_persistence_to_draw'   : 10,
                         'max_frames_to_draw'        : 50,
-                        'camera_encoding'   : 'mono8', # fireflies are bgr8, basler gige cams are mono8
+                        'camera_encoding'           : 'mono8', # fireflies are bgr8, basler gige cams are mono8
                         'roi_l'                     : 0,
                         'roi_r'                     : -1,
                         'roi_b'                     : 0,
@@ -68,10 +68,14 @@ class LiveViewer:
                         }
         for parameter, value in self.params.items():
             try:
-                p = '/multi_tracker/' + nodenum + '/tracker/' + parameter
+                p = '/multi_tracker/' + nodenum + '/liveviewer/' + parameter
                 self.params[parameter] = rospy.get_param(p)
             except:
-                print 'Using default parameter: ', parameter, ' = ', value
+                try:
+                    p = '/multi_tracker/' + nodenum + '/tracker/' + parameter
+                    self.params[parameter] = rospy.get_param(p)
+                except:
+                    print 'Using default parameter: ', parameter, ' = ', value
                 
         # initialize the node
         rospy.init_node('liveviewer_' + nodenum)
@@ -147,6 +151,8 @@ class LiveViewer:
         # Image for display
         if self.params['camera_encoding'] == 'mono8':
             self.imgOutput = cv2.cvtColor(self.imgScaled, cv2.COLOR_GRAY2RGB)
+        elif self.params['camera_encoding'] == 'binary':
+            self.imgOutput = self.imgScaled
         else:
             self.imgOutput = self.imgScaled
         
