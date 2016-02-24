@@ -218,9 +218,12 @@ def reset_background(self):
     except:
         print 'failed to save background image, might need opencv 2.4.9?'
 
-def add_image_to_background(self):
+def add_image_to_background(self, color='dark'):
     tmp_backgroundImage = copy.copy(np.float32(self.imgScaled))
-    self.backgroundImage = np.max([self.backgroundImage, tmp_backgroundImage], axis=0)
+    if color == 'dark':
+        self.backgroundImage = np.max([self.backgroundImage, tmp_backgroundImage], axis=0)
+    elif color == 'light':
+        self.backgroundImage = np.min([self.backgroundImage, tmp_backgroundImage], axis=0)
     filename = self.experiment_basename + '_' + time.strftime("%Y%m%d_%H%M%S_bgimg_N" + self.nodenum, time.localtime()) + '.png'
     home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/' + self.nodenum + '/data_directory') )
     filename = os.path.join(home_directory, filename)
@@ -261,10 +264,16 @@ def background_subtraction(self):
     reset_background_if_difference_is_very_large(self)
         
 ###########################################################################################################
-# Only track dark objects
+# Only track dark or light objects
 #########################
 
 def dark_objects_only(self):
+    dark_or_light_objects_only(self, color='dark')
+
+def light_objects_only(self):
+    dark_or_light_objects_only(self, color='light')
+
+def dark_or_light_objects_only(self, color='dark'):
     # If there is no background image, grab one, and move on to the next frame
     if self.backgroundImage is None:
         reset_background(self)
@@ -274,7 +283,7 @@ def dark_objects_only(self):
         self.reset_background_flag = False
         return
     if self.add_image_to_background_flag:
-        add_image_to_background(self)
+        add_image_to_background(self, color)
         self.add_image_to_background_flag = False
         return 
     
@@ -300,8 +309,11 @@ def dark_objects_only(self):
     except:
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
         self.kernel = kernel
-                    
-    self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
+    
+    if color = 'dark':
+        self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
+    else:
+        self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_GT) # CMP_GT is greater than
     convert_to_gray_if_necessary(self)
     
     
