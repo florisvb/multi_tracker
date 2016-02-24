@@ -158,9 +158,11 @@ def extract_and_publish_contours(self):
                 for point in contour:
                     point = point.reshape(2)
                     if is_point_below_line(point, slope, intercept):
-                        c1.append(point)
+                        c1.append([point])
                     else:
-                        c2.append(point)
+                        c2.append([point])
+                c1 = np.array(c1)
+                c2 = np.array(c2)
                 
                 if len(c1) > 5:
                     x, y, ecc, area, angle = fit_ellipse_to_contour(self, np.array(c1))
