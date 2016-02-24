@@ -64,7 +64,8 @@ def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
                          'velocity_y'           : 'velocity.y',
                          'angle'                : 'angle',
                          'frames'               : 'header.frame_id',
-                         'area'                 : 'size',}
+                         'area'                 : 'size',
+                         }
     index = data['header.frame_id'].flat
     d = {}
     for attribute, name in attributes.items():
