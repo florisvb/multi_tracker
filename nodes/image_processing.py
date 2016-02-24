@@ -102,7 +102,10 @@ def fit_ellipse_to_contour(self, contour):
     ecc = np.min((a,b)) / np.max((a,b))
     area = np.pi*a*b
     if self.params['use_moments']:
-        moments = get_centroid_from_moments(contour) # get these values from moments - might be more robust?
+        try:
+            moments = get_centroid_from_moments(contour) # get these values from moments - might be more robust?
+        except:
+            moments = None
         if moments is not None:
             x, y, area = moments
     return x, y, ecc, area, angle
@@ -155,17 +158,19 @@ def extract_and_publish_contours(self):
                 for point in contour:
                     point = point.reshape(2)
                     if is_point_below_line(point, slope, intercept):
-                        c1.append(point)
+                        c1.append([point])
                     else:
-                        c2.append(point)
+                        c2.append([point])
+                c1 = np.array(c1)
+                c2 = np.array(c2)
                 
-                if len(c1) >= 5:
+                if len(c1) > 5:
                     x, y, ecc, area, angle = fit_ellipse_to_contour(self, np.array(c1))
                     if area < self.params['max_size'] and area > self.params['min_size']:
                         data = add_data_to_contour_info(x,y,ecc,area,angle,self.dtCamera,header)
                         contour_info.append(data)
                 
-                if len(c2) >= 5:
+                if len(c2) > 5:
                     x, y, ecc, area, angle = fit_ellipse_to_contour(self, np.array(c2))
                     if area < self.params['max_size'] and area > self.params['min_size']:
                         data = add_data_to_contour_info(x,y,ecc,area,angle,self.dtCamera,header)
