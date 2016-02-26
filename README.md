@@ -1,6 +1,8 @@
 Multi tracker
 ============
 
+See the github page for more detailed info: <a href="http://florisvb.github.io/multi_tracker/">Multi Tracker Github Page</a>
+
 Multi tracker is a basic ROS package for real time tracking multiple objects in 2D. It is in constant active development, and things may break at any time, however, basic operation has remained consistent since Jan 1 2015. Primary testing has been on walking fruit flies. Only basic object-object interaction is supported by splitting objects that are larger than a specified size into two objects (thus three objects coming together will only be seen as 2 objects). Adjusting thresholds, and the image processing function can help improve robustness. System works reliably on a high end desktop from 2012 to track 10+ objects. 
 
 The code supports multiple tracking instances on the computer through the "nodenum" option that is available on all the tracking nodes.
