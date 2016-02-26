@@ -36,9 +36,11 @@
 
 <p>See the github page for more detailed info: <a href="http://florisvb.github.io/multi_tracker/">Multi Tracker Github Page</a></p>
 
-<p>Multi tracker is a basic ROS package for real time tracking multiple objects in 2D. It is in constant active development, and things may break at any time, however, basic operation has remained consistent since Jan 1 2015. Primary testing has been on walking fruit flies. Only basic object-object interaction is supported by splitting objects that are larger than a specified size into two objects (thus three objects coming together will only be seen as 2 objects). Adjusting thresholds, and the image processing function can help improve robustness. System works reliably on a high end desktop from 2012 to track 10+ objects. </p>
+<p>Multi tracker is a basic ROS package for real time tracking multiple objects in 2D. Primary testing has been on walking fruit flies. Only basic object-object interaction is supported by splitting objects that are larger than a specified size into two objects (thus three objects coming together will only be seen as 2 objects). Adjusting thresholds, and the image processing function can help improve robustness. System works reliably on a high end desktop from 2012 to track 10+ objects. The code supports multiple tracking instances on the computer through the "nodenum" option that is available on all the tracking nodes.</p>
 
-<p>The code supports multiple tracking instances on the computer through the "nodenum" option that is available on all the tracking nodes.</p>
+<p>Below is a video that shows raw footage on the left, and the realtime output from the <code>liveviewer.py</code> on the right.
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/d2Zl3wrpyEg" frameborder="0" allowfullscreen></iframe>
 
 <p>The package was built and tested with point grey usb firefly cameras on an Ubuntu (12.04) system, and Basler GigE cameras using the camera aravis driver on 12.04 and 14.04. However, there is no reason that it shouldn't work with other cameras.</p>
 
@@ -48,8 +50,6 @@
 <p>Install ROS, if you have not already done so (tested with ros hydro, full desktop install): <a href="http://wiki.ros.org/hydro/Installation/Ubuntu">http://wiki.ros.org/hydro/Installation/Ubuntu</a></p>
 
 <p>Setup your catkin workspace, if you have not already done so: <a href="http://wiki.ros.org/catkin/Tutorials/create_a_workspace">http://wiki.ros.org/catkin/Tutorials/create_a_workspace</a></p>
-
-<p>Copy the multi tracker package into your catkin_workspace/src, and run catkin_make from the catkin_workspace. Use "git clone <a href="https://github.com/florisvb/multi_tracker.git">https://github.com/florisvb/multi_tracker.git</a>" for this. </p>
 
 <h1>
 <a id="cameras" class="anchor" href="#cameras" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Cameras</h1>
