@@ -18,6 +18,15 @@ def get_heatmap(pd, binsx, binsy, position_x='position_x', position_y='position_
     h, xedges, yedges = np.histogram2d(x,y,bins=[binsx,binsy])
     return h
     
+def get_heatmap_weighted(pd, sample_names, bins, weight_name=None, normed=False):
+    sample = [pd[sample_name].values for sample_name in sample_names]
+    if weight_name is not None:
+        weights = pd[weight_name]
+    else:
+        weights = None
+    h, edges = np.histogramdd(sample,bins,weights=weights, normed=normed)
+    return h
+    
 def plot_heatmap(pd, binsx, binsy, ax=None, vmin=0, vmax=None, logcolorscale=False, position_x='position_x',position_y='position_y', position_z='position_z', position_z_slice=None):   
     if ax is None:
         fig = plt.figure()
@@ -38,7 +47,16 @@ def resampling_statistics_on_heatmaps(h_ons, h_offs, iterations=1000, neff=None)
     '''
     if neff is None:
         neff = len(h_ons)
-    actual_difference = np.mean(h_ons, axis=0) - np.mean(h_offs, axis=0)
+    
+    # bootstrap actual difference
+    actual_differences = []
+    for i in range(iterations):
+        index_on = np.random.randint(0, len(h_ons))
+        index_off = np.random.randint(0, len(h_offs))
+        d = h_ons[index_on] - h_offs[index_off]
+        actual_differences.append(d)
+        
+    actual_difference = np.nanmean(actual_differences, axis=0)
     
     all_hs = []
     all_hs.extend(h_ons)
@@ -49,10 +67,15 @@ def resampling_statistics_on_heatmaps(h_ons, h_offs, iterations=1000, neff=None)
         indices_on = np.random.randint(0, len(all_hs), neff)
         indices_off = np.random.randint(0, len(all_hs), neff)
 
-        fake_on = np.mean([all_hs[n] for n in indices_on], axis=0)
-        fake_off = np.mean([all_hs[n] for n in indices_off], axis=0)
+        #fake_on = np.mean([all_hs[n] for n in indices_on], axis=0)
+        #fake_off = np.mean([all_hs[n] for n in indices_off], axis=0)
+        fake_on = np.array([all_hs[n] for n in indices_on])
+        fake_off = np.array([all_hs[n] for n in indices_off])
         
-        differences.append(fake_on-fake_off)
+        d = np.nanmean(fake_on - fake_off, axis=0)
+        differences.append(d)
+        
+        #differences.append(fake_on-fake_off)
     differences = np.array(differences)
     
     pvals = np.ones_like(actual_difference)
