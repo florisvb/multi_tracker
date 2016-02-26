@@ -26,8 +26,6 @@ import read_hdf5_file_to_pandas
 
 import pickle
 
-# testing
-
 def get_filename(path, contains):
     cmd = 'ls ' + path
     ls = os.popen(cmd).read()
