@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Multi tracker : Multiple object tracking for single camera in ROS">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Multi tracker</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/florisvb/multi_tracker">View on GitHub</a>
+
+          <h1 id="project_title">Multi tracker</h1>
+          <h2 id="project_tagline">Multiple object tracking for single camera in ROS</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/florisvb/multi_tracker/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/florisvb/multi_tracker/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="multi-tracker" class="anchor" href="#multi-tracker" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Multi tracker</h1>
+
+<p>See the github page for more detailed info: <a href="http://florisvb.github.io/multi_tracker/">Multi Tracker Github Page</a></p>
+
+<p>Multi tracker is a basic ROS package for real time tracking multiple objects in 2D. It is in constant active development, and things may break at any time, however, basic operation has remained consistent since Jan 1 2015. Primary testing has been on walking fruit flies. Only basic object-object interaction is supported by splitting objects that are larger than a specified size into two objects (thus three objects coming together will only be seen as 2 objects). Adjusting thresholds, and the image processing function can help improve robustness. System works reliably on a high end desktop from 2012 to track 10+ objects. </p>
+
+<p>The code supports multiple tracking instances on the computer through the "nodenum" option that is available on all the tracking nodes.</p>
+
+<p>The package was built and tested with point grey usb firefly cameras on an Ubuntu (12.04) system, and Basler GigE cameras using the camera aravis driver on 12.04 and 14.04. However, there is no reason that it shouldn't work with other cameras.</p>
+
+<h1>
+<a id="installing" class="anchor" href="#installing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installing</h1>
+
+<p>Install ROS, if you have not already done so (tested with ros hydro, full desktop install): <a href="http://wiki.ros.org/hydro/Installation/Ubuntu">http://wiki.ros.org/hydro/Installation/Ubuntu</a></p>
+
+<p>Setup your catkin workspace, if you have not already done so: <a href="http://wiki.ros.org/catkin/Tutorials/create_a_workspace">http://wiki.ros.org/catkin/Tutorials/create_a_workspace</a></p>
+
+<p>Copy the multi tracker package into your catkin_workspace/src, and run catkin_make from the catkin_workspace. Use "git clone <a href="https://github.com/florisvb/multi_tracker.git">https://github.com/florisvb/multi_tracker.git</a>" for this. </p>
+
+<h1>
+<a id="cameras" class="anchor" href="#cameras" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Cameras</h1>
+
+<p>Point grey usb camera:</p>
+
+<p>Install the appropriate camera driver, such as: <a href="http://wiki.ros.org/pointgrey_camera_driver">http://wiki.ros.org/pointgrey_camera_driver</a>. To talk to the camera, you may need a udev rule. There is an example udev rule for a point grey firefly camera in the rules folder. Move this file to /etc/udev/rules.d directory.</p>
+
+<p>Basler GigE camera / Camera Aravis:</p>
+
+<p>See aravis_install_notes</p>
+
+<h1>
+<a id="analysis" class="anchor" href="#analysis" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Analysis</h1>
+
+<p>To use the analysis tools: from inside multi_tracker, run python ./setup.py install. You may want to do this in a virtual environment: <a href="http://docs.python-guide.org/en/latest/dev/virtualenvs/">http://docs.python-guide.org/en/latest/dev/virtualenvs/</a></p>
+
+<p>Analysis tools currently rely on pandas and hdf5 file formats.</p>
+
+<h1>
+<a id="overview" class="anchor" href="#overview" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Overview</h1>
+
+<h2>
+<a id="parameters" class="anchor" href="#parameters" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Parameters</h2>
+
+<p>(examples are found in the /demo folder)</p>
+
+<p>camera_parameters.yaml: specifies key camera parameters, such as framerate, exposure time, etc. These parameter names may be camera brand dependent. The camera parameters can also be specified by running <em>rosrun rqt_reconfigure rqt_reconfigure</em> </p>
+
+<p>tracker_parameters.yaml: specifies various tracking related parameters</p>
+
+<p>data_association_parameters.yaml: specifies various data association related parameters</p>
+
+<p>kalman_parameters.py: specifies the kalman parameters</p>
+
+<h2>
+<a id="nodes" class="anchor" href="#nodes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Nodes</h2>
+
+<p>tracker_simplebuffer.py: listens to /camera/image_mono (or whatever topic is specified in tracker_parameters.yaml), uses simple background subtraction and contour detection to find the outer most contours of objects in the tracking space. Publishes a list of contours each frame, including x,y position, angle, and area. </p>
+
+<p>data_association.py: listens to the '/multi_tracker/contours' topic and runs a simple kalman filter to do data association and filtering between subsequent frames. Publishes tracked objects to '/multi_tracker/tracked_objects' </p>
+
+<p>save_data_to_hdf5.py: listens to '/multi_tracker/tracked_objects' and saves the data to a csv file. Alternatively, one can use "rosbag record" to record the data in ros format, which can replayed at a later time.</p>
+
+<h1>
+<a id="running" class="anchor" href="#running" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Running</h1>
+
+<p>Minimal steps to run:</p>
+
+<ol>
+<li>copy the /demo folder to your home directory</li>
+<li>get a camera running on the ROs network (see Cameras above), note the image topic it is publishing to</li>
+<li>if the camera_image topic is not /camera/image_raw, edit the /demo/demo_1/src/tracker_parameters.yaml file so that /multi_tracker/1/tracker/image_topic matches the image_topic</li>
+<li>from inside ~/demo/demo_1/src folder, run "roslaunch tracking_launcher.launch"
+This will load all the yaml (parameter) files, and launch the tracker, data_association, save_hdf5_data, and liveviewer nodes.</li>
+<li>Hit control-c to stop the node (and cease collecting data).</li>
+</ol>
+
+<p>Now you can try editing some of the contents of the yaml files to change the file structure and tracking parameters.</p>
+
+<p>The two demo folders (demo_1 and demo_2) are there to illustrate how you can run two instances on one computer in parallel. You can even run them on the same camera feed, using ROI's to split a single camera feed into two experiments.</p>
+
+<h1>
+<a id="image-processing" class="anchor" href="#image-processing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Image Processing</h1>
+
+<p>The code supports externally defined image processing functions, so you can write your own python image processing function, and specify the tracker to use that, rather than the default functions included in this package. To define your own image processing functions, set the parameter /multi_tracker/1/tracker/image_processing_module to be the exact path to your python file, and /multi_tracker/1/tracker/image_processor to the name of the function within that file.</p>
+
+<p>To write your own image_processing function, look at the incredibly_basic function in image_processing.py, and start with this as a template. Don't forget to import some of the ROS specific stuff:</p>
+
+<p>from multi_tracker.msg import Contourinfo, Contourlist
+from multi_tracker.msg import Trackedobject, Trackedobjectlist
+from multi_tracker.srv import resetBackgroundService</p>
+
+<p>Alternatively, you can edit the image_processing.py file in multi_tracker/nodes, and add your function there. Then set /multi_tracker/1/tracker/image_processor to the name of your function.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Multi tracker maintained by <a href="https://github.com/florisvb">florisvb</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
