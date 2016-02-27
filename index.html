@@ -61,11 +61,11 @@ $ catkin_make</code></pre>
 <h1>
 <a id="cameras" class="anchor" href="#cameras" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Cameras</h1>
 
-<h3>Point grey usb camera</h3>
+<h4>Point grey usb camera</h4>
 
 <p>Install the appropriate camera driver, such as: <a href="http://wiki.ros.org/pointgrey_camera_driver">http://wiki.ros.org/pointgrey_camera_driver</a>. To talk to the camera, you may need a udev rule. There is an example udev rule for a point grey firefly camera in the rules folder. Move this file to /etc/udev/rules.d directory.</p>
 
-<h3>Basler GigE camera / Camera Aravis</h3>
+<h4>Basler GigE camera / Camera Aravis</h4>
 
 <p>See aravis_install_notes</p>
 
@@ -95,11 +95,30 @@ $ catkin_make</code></pre>
 <h2>
 <a id="nodes" class="anchor" href="#nodes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Nodes</h2>
 
-<p>tracker_simplebuffer.py: listens to /camera/image_mono (or whatever topic is specified in tracker_parameters.yaml), uses simple background subtraction and contour detection to find the outer most contours of objects in the tracking space. Publishes a list of contours each frame, including x,y position, angle, and area. </p>
+<h4>tracker_simplebuffer.py</h4>
+<p>listens to <em>/camera/image_mono</em> (or whatever topic is specified in tracker_parameters.yaml), and uses the image processing routine specified in tracker_parameters.yaml to find the outer most contours of objects in the tracking space. Publishes a list of contours each frame, including x,y position, angle, and area. </p>
 
-<p>data_association.py: listens to the '/multi_tracker/contours' topic and runs a simple kalman filter to do data association and filtering between subsequent frames. Publishes tracked objects to '/multi_tracker/tracked_objects' </p>
+<h4>data_association.py</h4>
+<p>listens to the <em>/multi_tracker/n/contours</em> topic and runs a simple kalman filter to do data association and filtering between subsequent frames. Publishes tracked objects to <em>/multi_tracker/n/tracked_objects</em></p>
 
-<p>save_data_to_hdf5.py: listens to '/multi_tracker/tracked_objects' and saves the data to a csv file. Alternatively, one can use "rosbag record" to record the data in ros format, which can replayed at a later time.</p>
+<h4>save_data_to_hdf5.py</h4>
+<p>listens to <em>/multi_tracker/n/tracked_objects</em> and saves the data to an h5 file. Alternatively, one can use "rosbag record" to record the data in ros format, which can replayed at a later time. Very rarely, not not never, does this node crash. For critical data, I recommend using rosbag record as a backup.</p>
+
+<h4>liveviewer.py</h4>
+<p>Listens to the camera topic specified in liveviewer_parameters.yaml, and overlays the tracked objects from the <em>/multi_tracker/n/tracked_objects</em>. Use the topic <em>/multi_tracker/n/processed_image</em> to see the tracking overlaid on the processed image from which the contours are calculated. This can help with debugging and optimizing the tracker parameters.</p>
+
+<h4>delta_video_simplebuffer.py</h4>
+<p>Listens to the camera topic specified in delta_video_parameters.yaml, and saves the pixels and values for any pixels that change more than the specified threshold. This results in a dramatically compressed filesize relative to a full resolution video. Artifacts are kept at an absolute minimum. Using a threshold of 10, and tracking 10 flies, 20 hours of 30 fps video comes to 20-40 GB.</p>
+
+<h4>delta_video_player.py</h4>
+<p>This node will replay a saved delta_video stream.</p>
+ 
+<h4>save_bag.py</h4>
+<p>Automatically starts and stops saving a rosbag file. Requires a config file. See raw_data_bag_config.py in the demo for a template.</p>
+
+<h4>republish_pref_obj_data.py</h4>
+<p>Republishes data from the oldest tracked object using a standard ROS message type (subject to change!). This is useful if doing a closed loop experiment with a single target.</p>
+
 
 <h1>
 <a id="running" class="anchor" href="#running" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Running</h1>
