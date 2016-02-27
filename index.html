@@ -127,8 +127,8 @@ $ catkin_make</code></pre>
 
 <ol>
 <li>copy the /demo folder to your home directory</li>
-<li>get a camera running on the ROs network (see Cameras above), note the image topic it is publishing to</li>
-<li>if the camera_image topic is not /camera/image_raw, edit the /demo/demo_1/src/tracker_parameters.yaml file so that /multi_tracker/1/tracker/image_topic matches the image_topic</li>
+<li>get a camera running on the ROS network (see Cameras above), note the image topic it is publishing to</li>
+<li>if the camera_image topic is not /camera/image_raw, edit the /demo/demo_1/src/tracker_parameters.yaml file so that /multi_tracker/1/tracker/image_topic matches the image_topic. For color cameras, it is best to use the camera/image_mono topic, if it exists.</li>
 <li>from inside ~/demo/demo_1/src folder, run "roslaunch tracking_launcher.launch"
 This will load all the yaml (parameter) files, and launch the tracker, data_association, save_hdf5_data, and liveviewer nodes.</li>
 <li>Hit control-c to stop the node (and cease collecting data).</li>
