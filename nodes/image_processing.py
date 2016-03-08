@@ -272,6 +272,11 @@ def background_subtraction(self):
 #########################
 
 def dark_objects_only(self):
+    if self.params['circular_mask_x'] != 'none':
+        if self.image_mask is None:
+            self.image_mask = np.zeros_like(self.imgScaled)
+            cv2.circle(self.image_mask,(self.params['circular_mask_x'], self.params['circular_mask_y']),int(self.params['circular_mask_r']),[1,1,1],-1)
+        self.imgScaled = self.image_mask*self.imgScaled
     dark_or_light_objects_only(self, color='dark')
 
 def light_objects_only(self):

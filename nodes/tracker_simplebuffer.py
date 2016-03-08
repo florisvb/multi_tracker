@@ -59,6 +59,9 @@ class Tracker:
                         'roi_r'                     : -1,
                         'roi_b'                     : 0,
                         'roi_t'                     : -1,
+                        'circular_mask_x'           : 'none',
+                        'circular_mask_y'           : 'none',
+                        'circular_mask_r'           : 'none',
                         'use_moments'               : True, # use moments for x,y,area instead of fitted ellipse
                         }
         for parameter, value in self.params.items():
@@ -97,6 +100,7 @@ class Tracker:
         self.pubContours = rospy.Publisher('/multi_tracker/' + nodenum + '/contours', Contourlist, queue_size=300)
         
         # Subscriptions - subscribe to images, and tracked objects
+        self.image_mask = None 
         sizeImage = 128+1024*1024*3 # Size of header + data.
         self.subImage = rospy.Subscriber(self.params['image_topic'], Image, self.image_callback, queue_size=60, buff_size=2*sizeImage, tcp_nodelay=True)
         self.pubProcessedImage = rospy.Publisher('/multi_tracker/' + nodenum + '/processed_image', Image, queue_size=5)

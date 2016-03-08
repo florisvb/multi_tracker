@@ -65,6 +65,9 @@ class LiveViewer:
                         'roi_r'                     : -1,
                         'roi_b'                     : 0,
                         'roi_t'                     : -1,
+                        'circular_mask_x'           : 'none',
+                        'circular_mask_y'           : 'none',
+                        'circular_mask_r'           : 'none',
                         }
         for parameter, value in self.params.items():
             try:
@@ -95,6 +98,7 @@ class LiveViewer:
         cv2.setMouseCallback(self.window_name, self.on_mouse_click)
         
         # Subscriptions - subscribe to images, and tracked objects
+        self.image_mask = None 
         sizeImage = 128+1024*1024*3 # Size of header + data.
         self.subImage = rospy.Subscriber(self.params['image_topic'], Image, self.image_callback, queue_size=5, buff_size=2*sizeImage, tcp_nodelay=True)
 
@@ -148,6 +152,12 @@ class LiveViewer:
 
         self.imgScaled = img[self.params['roi_b']:self.params['roi_t'], self.params['roi_l']:self.params['roi_r']]
         self.shapeImage = self.imgScaled.shape # (height,width)
+        
+        if self.params['circular_mask_x'] != 'none':
+            if self.image_mask is None:
+                self.image_mask = np.zeros_like(self.imgScaled)
+                cv2.circle(self.image_mask,(self.params['circular_mask_x'], self.params['circular_mask_y']),int(self.params['circular_mask_r']),[1,1,1],-1)
+            self.imgScaled = self.image_mask*self.imgScaled
         
         # Image for display
         if self.params['camera_encoding'] == 'mono8':
