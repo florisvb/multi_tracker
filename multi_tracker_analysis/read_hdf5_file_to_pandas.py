@@ -141,10 +141,19 @@ def get_objid_lengths(pd, objid_attribute='objid'):
     key_length_dict = dict(zip(keys,true_lengths))
     return key_length_dict
     
-def remove_rows_with_above_speed_threshold(pd, speed_threshold=10):
+def remove_rows_above_speed_threshold(pd, speed_threshold=10):
     q = 'speed < ' + str(speed_threshold)
     return pd.query(q)
+    
+def remove_objects_that_never_exceed_minimum_speed(pd, speed_threshold=1):
 
+    speeds = pd.speed.groupby(pd.objid).max()
+    
+    keysok = np.where(speeds.values > speed_threshold)
+    objidsok = speeds.iloc[keysok].index
+    pd_q = pd.query('objid in @objidsok')
+
+    return pd_q
 
 
 
