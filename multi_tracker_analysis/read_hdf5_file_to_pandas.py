@@ -51,6 +51,9 @@ class Dataset(object):
         self.keys = np.unique(self.pd.objid).tolist()
         
 def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
+    if '.pickle' in filename:
+        pd = pandas.read_pickle(filename)
+        return pd
     data = h5py.File(filename, 'r', swmr=True)['data']
     if attributes is None:
         attributes = {   'objid'                : 'objid',
