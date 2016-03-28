@@ -15,7 +15,7 @@ import h5py
 import atexit
 
 class DataListener:
-    def __init__(self, nodenum, info='data information'):
+    def __init__(self, nodenum, info='data information', record_time_hrs=24):
         self.subTrackedObjects = rospy.Subscriber('multi_tracker/' + nodenum + '/tracked_objects', Trackedobjectlist, self.tracked_object_callback, queue_size=300)
         
         experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
@@ -27,6 +27,7 @@ class DataListener:
         filename = os.path.join(home_directory, filename)
         print 'Saving hdf5 data to: ', filename
         self.time_start = time.time()
+        self.record_time_hrs = record_time_hrs
         
         self.buffer = []
         self.array_buffer = []
@@ -121,7 +122,7 @@ class DataListener:
         atexit.register(self.stop_saving_data)
         while (not rospy.is_shutdown()):
             t = time.time() - self.time_start
-            if t > 24*3600:
+            if t > self.record_time_hrs*3600:
                 self.stop_saving_data()
                 return
             with self.lockBuffer:
@@ -141,7 +142,9 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("--nodenum", type="str", dest="nodenum", default='1',
                         help="node number, for example, if running multiple tracker instances on one computer")
+    parser.add_option("--record-time-hrs", type="int", dest="record_time_hrs", default=24,
+                        help="number of hours to record data for")
     (options, args) = parser.parse_args()
     
-    datalistener = DataListener(options.nodenum)
+    datalistener = DataListener(options.nodenum, options.record_time_hrs)
     datalistener.main()
