@@ -1,7 +1,9 @@
 from optparse import OptionParser
 import sys, os
+import imp
 
 import rosbag, rospy
+import pickle
 
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
@@ -31,9 +33,13 @@ def get_filename(path, contains):
     for i, filename in enumerate(all_filelist):
         if contains in filename:
             return os.path.join(path, filename)
+            
+def get_random_color():
+    color = (np.random.randint(0,255), np.random.randint(0,255), np.random.randint(0,255))
+    return color
 
 class QTrajectory(object):
-    def __init__(self, pd, bgimg, delta_video_filename):
+    def __init__(self, pd, bgimg, delta_video_filename, config=None):
         self.pd = pd
         self.dataset = read_hdf5_file_to_pandas.Dataset(self.pd)
         self.backgroundimg_filename = bgimg
@@ -41,6 +47,7 @@ class QTrajectory(object):
         self.binsx = None
         self.binsy = None
         self.troi = [np.min(pd.time_epoch.values), np.min(pd.time_epoch.values)+300] 
+        self.config = config
         
         # load delta video bag
         if delta_video_filename != 'none':
@@ -67,10 +74,27 @@ class QTrajectory(object):
         play_btn.pressed.connect(self.play_movie)
         self.layout.addWidget(play_btn, 0, 0)
         
+        # stop movie button        
+        stop_btn = QtGui.QPushButton('stop video sequence')
+        stop_btn.pressed.connect(self.stop_movie)
+        self.layout.addWidget(stop_btn, 1, 0)
+        
+        # save timerange button       
+        save_btn = QtGui.QPushButton('save time sequence')
+        save_btn.pressed.connect(self.save_time_sequence)
+        self.layout.addWidget(save_btn, 2, 0)
+        
         
         self.p1 = pg.PlotWidget(title="Basic array plotting", x=self.time_epoch_continuous, y=self.nflies)
         self.p1.enableAutoRange('xy', False)
         self.layout.addWidget(self.p1, 1, 1)
+        if self.config is not None:
+            print '**** Sensory stimulus: ', self.config.sensory_stimulus_on
+            for r, row in enumerate(self.config.sensory_stimulus_on):
+                v1 = pg.PlotDataItem([self.config.sensory_stimulus_on[r][0],self.config.sensory_stimulus_on[r][0]], [0,10])
+                v2 = pg.PlotDataItem([self.config.sensory_stimulus_on[r][-1],self.config.sensory_stimulus_on[r][-1]], [0,10])
+                f12 = pg.FillBetweenItem(curve1=v1, curve2=v2, brush=pg.mkBrush('r'))
+                self.p1.addItem(f12)
         
         self.p2 = pg.PlotWidget()
         self.layout.addWidget(self.p2, 0, 1)
@@ -79,6 +103,25 @@ class QTrajectory(object):
         f = 'update_time_region'
         lr.sigRegionChanged.connect(self.__getattribute__(f))
         self.p1.addItem(lr)
+        
+    def save_time_sequence(self):
+        self.troi
+        filename = os.path.join(config.path, 'time_ranges.pickle')
+        if os.path.exists(filename):
+            f = open(filename, 'r+')
+            time_range_data = pickle.load(f)
+            f.close()
+        else:
+            f = open(filename, 'w+')
+            f.close()
+            time_range_data = []
+        t = self.troi[-1] - self.troi[0]
+        data_to_save = [self.troi[0], t]
+        time_range_data.append(data_to_save)
+        f = open(filename, 'r+')
+        pickle.dump(time_range_data, f)
+        f.close()
+        print 'saved: ', data_to_save
         
     def update_time_region(self, linear_region):
         self.p2.clear()
@@ -95,9 +138,6 @@ class QTrajectory(object):
         
         indices = np.where(h != 0)
         #masked_heatmap_binary = np.ma.masked_array(heatmap_binary, mask=np.invert(heatmap_binary))
-    
-        print np.max(self.backgroundimg), np.max(h)
-        print 
         img[indices] = 0
         
         self.img = pg.ImageItem(img)
@@ -106,15 +146,16 @@ class QTrajectory(object):
         #self.p2.setImage(img.swapaxes(0,1)[:,:,[2,1,0]], autoRange=False, autoLevels=False, )
         
         keys = np.unique(pd_subset.objid.values)
-        if len(keys) < 20:
+        if len(keys) < 100:
             for key in keys:
                 trajec = self.dataset.trajec(key)
-                self.p2.plot(trajec.position_y, trajec.position_x, pen=(255,0,0)) 
-        
-        print 'region: ', self.troi
-        print mta.read_hdf5_file_to_pandas.get_objid_lengths(pd_subset)
-        print
-        print pd.speed.groupby(pd.objid).max()
+                first_time = np.max([self.troi[0], trajec.time_epoch[0]])
+                first_time_index = np.argmin( np.abs(trajec.time_epoch-first_time) )
+                last_time = np.min([self.troi[-1], trajec.time_epoch[-1]])
+                last_time_index = np.argmin( np.abs(trajec.time_epoch-last_time) )
+                #if trajec.length > 5:
+                pen = pg.mkPen(get_random_color(), width=2)  
+                self.p2.plot(trajec.position_y[first_time_index:last_time_index], trajec.position_x[first_time_index:last_time_index], pen=pen) 
         
     ### Delta video bag stuff
     def load_image_sequence(self):
@@ -141,10 +182,13 @@ class QTrajectory(object):
             self.current_frame = -1
             print 'restarted movie'
         self.current_frame += 1
-        print self.current_frame, len(self.image_sequence)
         return self.image_sequence[self.current_frame]
     
+    def stop_movie(self):
+        self.play = False
+    
     def play_movie(self):
+        self.play = True
         timerange = self.troi
         print 'loading image sequence'
         self.load_image_sequence()
@@ -164,22 +208,22 @@ class QTrajectory(object):
     
     def updateData(self):
         #global img, data, i, updateTime, fps
-
-        ## Display the data
-        cvimg = self.get_next_reconstructed_image()
-        self.img.setImage(cvimg)
-        
-        QtCore.QTimer.singleShot(1, self.updateData)
-        now = ptime.time()
-        dt = (now-self.updateTime)
-        self.updateTime = now
-        #self.fps = self.fps * 0.9 + fps2 * 0.1
-        
-        if dt < 0.02:
-            d = 0.02 - dt
-            time.sleep(d)
-        
-        del(cvimg)
+        if self.play:
+            ## Display the data
+            cvimg = self.get_next_reconstructed_image()
+            self.img.setImage(cvimg)
+            
+            QtCore.QTimer.singleShot(1, self.updateData)
+            now = ptime.time()
+            dt = (now-self.updateTime)
+            self.updateTime = now
+            #self.fps = self.fps * 0.9 + fps2 * 0.1
+            
+            if dt < 0.01:
+                d = 0.01 - dt
+                time.sleep(d)
+            
+            del(cvimg)
     
     def run(self, key, candidate):
         self.key = key
@@ -195,7 +239,6 @@ class QTrajectory(object):
         t0 = np.min(pd_subset.time_epoch.values)
         t1 = np.max(pd_subset.time_epoch.values)
         
-        print t0, t1
         self.play_movie([t0, t1])
 
     ###########################
@@ -213,18 +256,32 @@ if __name__ == '__main__':
         
     ## Read data #############################################################
     parser = OptionParser()
+    parser.add_option('--path', type=str, default='none', help="option: path that points to standard named filename, background image, dvbag, config. If using 'path', no need to provide filename, bgimg, dvbag, and config. Note")
     parser.add_option('--filename', type=str, help="name and path of the hdf5 tracked_objects filename")
     parser.add_option('--bgimg', type=str, help="name and path of the background image")
     parser.add_option('--minlength', type=int, default=1, help="minimum length of trajectories to show")
     parser.add_option('--minspeed', type=float, default=0, help="minimum length of trajectories to show")
     parser.add_option('--maxspeed', type=float, default=10, help="maximum speed")
     parser.add_option('--dvbag', type=str, default='none', help="name and path of the delta video bag file, optional")
+    parser.add_option('--config', type=str, default='none', help="name and path of a configuration file, optional. If the configuration file has an attribute 'sensory_stimulus_on', which should be a list of epoch timestamps e.g. [[t1,t2],[t3,4]], then these timeframes will be highlighted in the gui.")
     (options, args) = parser.parse_args()
+    
+    if options.path != 'none':
+        options.filename = get_filename(options.path, 'trackedobjects.hdf5')
+        options.config = get_filename(options.path, 'config')
+        options.dvbag = get_filename(options.path, 'delta_video.bag')
+        options.bgimg = get_filename(options.path, '_bgimg_')
 
     pd = mta.read_hdf5_file_to_pandas.load_data_as_pandas_dataframe_from_hdf5_file(options.filename)
     pd = mta.read_hdf5_file_to_pandas.cull_short_trajectories(pd, options.minlength)
     pd = mta.read_hdf5_file_to_pandas.remove_rows_above_speed_threshold(pd, speed_threshold=options.maxspeed)
     pd = mta.read_hdf5_file_to_pandas.remove_objects_that_never_exceed_minimum_speed(pd, speed_threshold=options.minspeed)
     
-    Qtrajec = QTrajectory(pd, options.bgimg, options.dvbag)
+    if options.config != 'none':
+        Config = imp.load_source('Config', options.config)
+        config = Config.Config(os.path.dirname(options.config))
+    else:
+        config = None
+    
+    Qtrajec = QTrajectory(pd, options.bgimg, options.dvbag, config)
     Qtrajec.run()
