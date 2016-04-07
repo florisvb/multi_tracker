@@ -50,6 +50,9 @@ def flatten_msg(msg, t, max_strlen=None):
         elif rostype == 'geometry_msgs/Quaternion':
             p = getattr(msg, attr)
             result.extend([p.x, p.y, p.z, p.w])
+        
+        elif rostype == 'std_msgs/MultiArrayLayout':
+            pass
             
         elif '[]' in rostype and 'string' not in rostype:
             p = getattr(msg, attr)
@@ -139,6 +142,8 @@ def make_dtype(msg, max_strlen=None):
                            (attr+'_z', np.float32),
                            (attr+'_w', np.float32),
                            ])
+        elif rostype == 'std_msgs/MultiArrayLayout':
+            pass
         elif '[]' in rostype and 'string' not in rostype:
             basetype = rostype.split('[]')[0]
             r = []
