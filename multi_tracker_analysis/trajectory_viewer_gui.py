@@ -21,6 +21,8 @@ import multi_tracker_analysis as mta
 import cv2
 import copy
 
+import dvbag_to_pandas_reader
+
 def get_filename(path, contains):
     cmd = 'ls ' + path
     ls = os.popen(cmd).read()
@@ -52,9 +54,16 @@ class QTrajectory(object):
         # load delta video bag
         if delta_video_filename != 'none':
             print 'Loading delta video bag, this may take some time'
-            self.dvbag = rosbag.Bag(delta_video_filename)
+            dirname = os.path.dirname(delta_video_filename)
+            basename = os.path.basename(delta_video_filename)
+            saveto = os.path.join(dirname, basename.split('.')[0] + '.hdf')
+            self.dvbag = dvbag_to_pandas_reader.DVBag2PandasReader(delta_video_filename, saveto)
+            
         else:
             self.dvbag = None
+            
+        # trajectory colors
+        self.trajec_to_color_dict = {}
         
         # extract time and speed
         self.time_epoch = pd.time_epoch.groupby(pd.index).mean().values
@@ -154,10 +163,16 @@ class QTrajectory(object):
                 last_time = np.min([self.troi[-1], trajec.time_epoch[-1]])
                 last_time_index = np.argmin( np.abs(trajec.time_epoch-last_time) )
                 #if trajec.length > 5:
-                pen = pg.mkPen(get_random_color(), width=2)  
+                if key not in self.trajec_to_color_dict.keys():
+                    color = get_random_color()
+                    self.trajec_to_color_dict.setdefault(key, color)
+                else:
+                    color = self.trajec_to_color_dict[key]
+                pen = pg.mkPen(color, width=2)  
                 self.p2.plot(trajec.position_y[first_time_index:last_time_index], trajec.position_x[first_time_index:last_time_index], pen=pen) 
         
     ### Delta video bag stuff
+    '''
     def load_image_sequence(self):
         timerange = self.troi
         print 'loading image sequence from delta video bag - may take a moment'
@@ -176,13 +191,29 @@ class QTrajectory(object):
                 print 'bad message?'
             self.image_sequence.append(imgcopy)
         self.current_frame = -1
+    '''
+    def load_image_sequence(self):
+        timerange = self.troi
+        frames = self.dvbag.process_timerange(timerange[0], timerange[-1])
+        self.image_sequence = []
+        for frame in frames:
+            reconstructed_image = copy.copy(self.backgroundimg)
+            q = 'frames == ' + str(frame)
+            pd = self.dvbag.dataframe.query(q)
+            reconstructed_image[ pd.x.values, pd.y.values, 0] = pd.value.values
+            reconstructed_image[ pd.x.values, pd.y.values, 1] = pd.value.values
+            reconstructed_image[ pd.x.values, pd.y.values, 2] = pd.value.values
+            self.image_sequence.append(reconstructed_image)
+        self.current_frame = -1
     
     def get_next_reconstructed_image(self):
         if self.current_frame >= len(self.image_sequence)-1:
             self.current_frame = -1
             print 'restarted movie'
         self.current_frame += 1
-        return self.image_sequence[self.current_frame]
+        reconstructed_image = self.image_sequence[self.current_frame]
+        
+        return reconstructed_image
     
     def stop_movie(self):
         self.play = False
@@ -257,6 +288,7 @@ if __name__ == '__main__':
     ## Read data #############################################################
     parser = OptionParser()
     parser.add_option('--path', type=str, default='none', help="option: path that points to standard named filename, background image, dvbag, config. If using 'path', no need to provide filename, bgimg, dvbag, and config. Note")
+    parser.add_option('--movie', type=int, default=1, help="load and play the dvbag movie, default is 1, to load use 1")
     parser.add_option('--filename', type=str, help="name and path of the hdf5 tracked_objects filename")
     parser.add_option('--bgimg', type=str, help="name and path of the background image")
     parser.add_option('--minlength', type=int, default=1, help="minimum length of trajectories to show")
@@ -282,6 +314,9 @@ if __name__ == '__main__':
         config = Config.Config(os.path.dirname(options.config))
     else:
         config = None
+        
+    if options.movie is False:
+        options.dvbag = 'none'
     
     Qtrajec = QTrajectory(pd, options.bgimg, options.dvbag, config)
     Qtrajec.run()
