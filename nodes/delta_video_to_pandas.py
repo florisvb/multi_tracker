@@ -30,18 +30,18 @@ import multi_tracker_analysis.dvbag_to_pandas_reader as dvbag_to_pandas_reader
 
 # The main tracking class, a ROS node
 class DeCompressor:
-    def __init__(self, nodenum, saveto=''):
+    def __init__(self, nodenum, saveto='', record_time_hrs=12):
                         
         # initialize the node
         rospy.init_node('delta_to_pandas')
         self.nodename = rospy.get_name().rstrip('/')
         self.time_start = time.time()
         self.saving_data = True
-        self.record_time = 12
+        self.record_time_hrs = record_time_hrs
 
         # Publishers - publish contours
         topic = '/multi_tracker/' + str(nodenum) + '/delta_video'
-        self.subDeltaVid = rospy.Subscriber(topic, DeltaVid, self.delta_image_callback, queue_size=300)
+        self.subDeltaVid = rospy.Subscriber(topic, DeltaVid, self.save_to_buffer, queue_size=300)
         
         if len(saveto) < 1:
             experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
@@ -55,6 +55,7 @@ class DeCompressor:
         else:
             self.saveto = saveto
 
+        topic_in = '/multi_tracker/' + str(nodenum) + '/delta_video'
         self.subDeltaVid = rospy.Subscriber(topic_in, DeltaVid, self.save_to_buffer, queue_size=300)
         
         self.buffer = []
@@ -81,9 +82,9 @@ class DeCompressor:
             with self.lockBuffer:
                 time_now = rospy.Time.now()
                 if len(self.buffer) > 0:
-                    self.process_buffer(self.image_buffer.pop(0))
+                    self.save_delta_image(self.buffer.pop(0))
                 pt = (rospy.Time.now()-time_now).to_sec()
-                if len(self.buffer) > 9:
+                if len(self.buffer) > 20:
                     rospy.logwarn("Data saving processing time exceeds acquisition rate. Processing time: %f, Buffer: %d", pt, len(self.buffer))
             
 #####################################################################################################
@@ -94,7 +95,8 @@ if __name__ == '__main__':
                         help="filename where to save video, default is none")
     parser.add_option("--nodenum", type="int", dest="nodenum", default=1,
                         help="nodenumber")
-    
+    parser.add_option("--record-time-hrs", type="int", dest="record_time_hrs", default=12,
+                        help="number of hours to record data for")
     (options, args) = parser.parse_args()
     
     decompressor = DeCompressor(options.nodenum, options.saveto)
