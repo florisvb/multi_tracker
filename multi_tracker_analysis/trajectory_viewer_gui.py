@@ -21,7 +21,7 @@ import multi_tracker_analysis as mta
 import cv2
 import copy
 
-import dvbag_to_pandas_reader
+import progressbar
 
 def get_filename(path, contains):
     cmd = 'ls ' + path
@@ -39,9 +39,12 @@ def get_filename(path, contains):
 def get_random_color():
     color = (np.random.randint(0,255), np.random.randint(0,255), np.random.randint(0,255))
     return color
-
+    
 class QTrajectory(object):
-    def __init__(self, pd, bgimg, delta_video_filename, config=None):
+    def __init__(self, pd, bgimg, delta_video_filename, config=None, skip_frames=5):
+        '''
+        skip_frames - when playing back movie, how many frames to skip between updates (to speed up viewing)
+        '''
         self.pd = pd
         self.dataset = read_hdf5_file_to_pandas.Dataset(self.pd)
         self.backgroundimg_filename = bgimg
@@ -50,15 +53,11 @@ class QTrajectory(object):
         self.binsy = None
         self.troi = [np.min(pd.time_epoch.values), np.min(pd.time_epoch.values)+300] 
         self.config = config
+        self.skip_frames = skip_frames
         
         # load delta video bag
         if delta_video_filename != 'none':
-            print 'Loading delta video bag, this may take some time'
-            dirname = os.path.dirname(delta_video_filename)
-            basename = os.path.basename(delta_video_filename)
-            saveto = os.path.join(dirname, basename.split('.')[0] + '.hdf')
-            self.dvbag = dvbag_to_pandas_reader.DVBag2PandasReader(delta_video_filename, saveto)
-            
+            self.dvbag = rosbag.Bag(delta_video_filename)
         else:
             self.dvbag = None
             
@@ -140,7 +139,7 @@ class QTrajectory(object):
         
         if self.binsx is None:
             self.binsx, self.binsy = mta.plot.get_bins_from_backgroundimage(self.backgroundimg_filename)
-            self.backgroundimg = cv2.imread(self.backgroundimg_filename)
+            self.backgroundimg = cv2.imread(self.backgroundimg_filename, cv2.CV_8UC1)
         img = copy.copy(self.backgroundimg)
         
         h = mta.plot.get_heatmap(pd_subset, self.binsy, self.binsx, position_x='position_y', position_y='position_x', position_z='position_z', position_z_slice=None)
@@ -151,6 +150,10 @@ class QTrajectory(object):
         
         self.img = pg.ImageItem(img)
         self.p2.addItem(self.img)
+        self.scatter = pg.ScatterPlotItem()
+        self.scatter.pxMode = True
+        self.p2.addItem(self.scatter)
+        self.scatter.setZValue(0)
         self.img.setZValue(-200)  # make sure image is behind other data
         #self.p2.setImage(img.swapaxes(0,1)[:,:,[2,1,0]], autoRange=False, autoLevels=False, )
         
@@ -172,48 +175,37 @@ class QTrajectory(object):
                 self.p2.plot(trajec.position_y[first_time_index:last_time_index], trajec.position_x[first_time_index:last_time_index], pen=pen) 
         
     ### Delta video bag stuff
-    '''
+    
     def load_image_sequence(self):
         timerange = self.troi
         print 'loading image sequence from delta video bag - may take a moment'
+        pbar = progressbar.ProgressBar().start()
+        
         rt0 = rospy.Time(timerange[0])
         rt1 = rospy.Time(timerange[1])
         self.msgs = self.dvbag.read_messages(start_time=rt0, end_time=rt1)
         
         self.image_sequence = []
-        for msg in self.msgs:
+        for m, msg in enumerate(self.msgs):
             imgcopy = copy.copy(self.backgroundimg)
-            try:
-                imgcopy[ msg[1].xpixels, msg[1].ypixels, 0] = msg[1].values
-                imgcopy[ msg[1].xpixels, msg[1].ypixels, 1] = msg[1].values
-                imgcopy[ msg[1].xpixels, msg[1].ypixels, 2] = msg[1].values
-            except:
-                print 'bad message?'
+            imgcopy[ msg[1].xpixels, msg[1].ypixels] = msg[1].values # if there's an error, check if you're using ROS hydro?
             self.image_sequence.append(imgcopy)
+            #s = int((m / float(len(self.msgs)))*100)
+            tfloat = msg[1].header.stamp.secs + msg[1].header.stamp.nsecs*1e-9
+            t_elapsed = tfloat - timerange[0]
+            t_total = timerange[1] - timerange[0]
+            s = int(100*(t_elapsed / t_total))
+            pbar.update(s)
+        pbar.finish()
         self.current_frame = -1
-    '''
-    def load_image_sequence(self):
-        timerange = self.troi
-        frames = self.dvbag.process_timerange(timerange[0], timerange[-1])
-        self.image_sequence = []
-        for frame in frames:
-            reconstructed_image = copy.copy(self.backgroundimg)
-            q = 'frames == ' + str(frame)
-            pd = self.dvbag.dataframe.query(q)
-            reconstructed_image[ pd.x.values, pd.y.values, 0] = pd.value.values
-            reconstructed_image[ pd.x.values, pd.y.values, 1] = pd.value.values
-            reconstructed_image[ pd.x.values, pd.y.values, 2] = pd.value.values
-            self.image_sequence.append(reconstructed_image)
-        self.current_frame = -1
-    
+        
     def get_next_reconstructed_image(self):
         if self.current_frame >= len(self.image_sequence)-1:
             self.current_frame = -1
             print 'restarted movie'
         self.current_frame += 1
-        reconstructed_image = self.image_sequence[self.current_frame]
-        
-        return reconstructed_image
+        img = self.image_sequence[self.current_frame]      
+        return img
     
     def stop_movie(self):
         self.play = False
@@ -225,20 +217,10 @@ class QTrajectory(object):
         self.load_image_sequence()
     
         print 'playing movie'
-        cvimg = copy.copy(self.backgroundimg)#self.get_next_reconstructed_image()
-        x = cvimg.shape[0]
-        self.img = pg.ImageItem(cvimg)
-        self.p2.addItem(self.img)
-        self.img.setZValue(-100)  # make sure image is behind other data
-        #img.setRect(pg.QtCore.QRectF(0, 0, 4, 5))
-
         self.updateTime = ptime.time()
-        self.fps = 0
-        
         self.updateData()
     
     def updateData(self):
-        #global img, data, i, updateTime, fps
         if self.play:
             ## Display the data
             cvimg = self.get_next_reconstructed_image()
@@ -248,10 +230,9 @@ class QTrajectory(object):
             now = ptime.time()
             dt = (now-self.updateTime)
             self.updateTime = now
-            #self.fps = self.fps * 0.9 + fps2 * 0.1
             
-            if dt < 0.01:
-                d = 0.01 - dt
+            if dt < 0.005:
+                d = 0.005 - dt
                 time.sleep(d)
             
             del(cvimg)
@@ -294,6 +275,7 @@ if __name__ == '__main__':
     parser.add_option('--minlength', type=int, default=1, help="minimum length of trajectories to show")
     parser.add_option('--minspeed', type=float, default=0, help="minimum length of trajectories to show")
     parser.add_option('--maxspeed', type=float, default=10, help="maximum speed")
+    parser.add_option('--skip-frames', type=int, default=8, dest="skip_frames", help="how many frames to skip between image updates (speeds up processing)")
     parser.add_option('--dvbag', type=str, default='none', help="name and path of the delta video bag file, optional")
     parser.add_option('--config', type=str, default='none', help="name and path of a configuration file, optional. If the configuration file has an attribute 'sensory_stimulus_on', which should be a list of epoch timestamps e.g. [[t1,t2],[t3,4]], then these timeframes will be highlighted in the gui.")
     (options, args) = parser.parse_args()
@@ -303,7 +285,7 @@ if __name__ == '__main__':
         options.config = get_filename(options.path, 'config')
         options.dvbag = get_filename(options.path, 'delta_video.bag')
         options.bgimg = get_filename(options.path, '_bgimg_')
-
+            
     pd = mta.read_hdf5_file_to_pandas.load_data_as_pandas_dataframe_from_hdf5_file(options.filename)
     pd = mta.read_hdf5_file_to_pandas.cull_short_trajectories(pd, options.minlength)
     pd = mta.read_hdf5_file_to_pandas.remove_rows_above_speed_threshold(pd, speed_threshold=options.maxspeed)
@@ -318,5 +300,5 @@ if __name__ == '__main__':
     if options.movie is False:
         options.dvbag = 'none'
     
-    Qtrajec = QTrajectory(pd, options.bgimg, options.dvbag, config)
+    Qtrajec = QTrajectory(pd, options.bgimg, options.dvbag, config, options.skip_frames)
     Qtrajec.run()
