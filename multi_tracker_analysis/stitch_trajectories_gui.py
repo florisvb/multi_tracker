@@ -37,14 +37,16 @@ def get_filename(path, contains):
     filelist = []
     for i, filename in enumerate(all_filelist):
         if contains in filename:
-            return os.path.join(path, filename)
+            return os.path.expanduser(os.path.join(path, filename))
 
 def load_data(path):
     try:
         data_filename = get_filename(path, 'trackedobjects.pickle')
+        print 'Found file: ', data_filename
         pd = pandas.read_pickle(data_filename)
     except:
         data_filename = get_filename(path, 'trackedobjects.hdf5')
+        print 'Found file: ', data_filename
         data_filename_pickled = data_filename.split('.')[0] + '.pickle'
         try:
             pd = pandas.read_pickle(data_filename_pickled)
@@ -82,7 +84,7 @@ class QTrajectory(object):
         self.binsy = None
         
         
-        self.filename = os.path.join(path, 'stitches.pickle')
+        self.filename = os.path.expanduser( os.path.join(path, 'stitches.pickle') ) 
         f = open(self.filename, 'w')
         self.stitches = []
         pickle.dump(self.stitches, f)
@@ -258,11 +260,8 @@ class QTrajectory(object):
         self.p1.plot(trajec1.position_y, trajec1.position_x, pen=(0,0,255)) 
         self.p1.plot(trajec2.position_y, trajec2.position_x, pen=(255,0,0)) 
         
-        spots = [{'pos': (trajec1.position_y[0], trajec1.position_x[0]), 'size': 3, 'brush': (0,255,0)},
-                 {'pos': (trajec2.position_y[0], trajec2.position_x[0]), 'size': 3, 'brush': (0,255,0)},      ]
-        print spots
-        self.scatter.setData(spots)
-        
+        self.p1.plot(trajec1.position_y[0:1], trajec1.position_x[0:1], pen=(0,0,0), symbol='o', symbolSize=10) 
+        self.p1.plot(trajec2.position_y[0:1], trajec2.position_x[0:1], pen=(0,0,0), symbol='o', symbolSize=10) 
 
     def run(self, key, candidate):
         self.key = key
