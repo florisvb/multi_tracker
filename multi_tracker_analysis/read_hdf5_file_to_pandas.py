@@ -47,9 +47,12 @@ class Dataset(object):
         d.iloc[indices] = np.inf
         return np.argmin(d)
         
-    def load_keys(self):
-        self.keys = np.unique(self.pd.objid).tolist()
-        
+    def load_keys(self, keys=None):
+        if keys is None:
+            self.keys = np.unique(self.pd.objid).tolist()
+        else:
+            self.keys = keys
+            
 def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
     if '.pickle' in filename:
         pd = pandas.read_pickle(filename)
@@ -132,6 +135,34 @@ def cull_short_trajectories(pd, min_length=4):
     keys_ok = np.array(keys)[indices]
     
     culled_pd = pd.query('objid in @keys_ok')
+    
+    return culled_pd
+    
+def cull_trajectories_that_do_not_cover_much_ground(pd, min_distance_travelled=10):
+    distance_travelled = pd.speed.groupby(pd.objid).agg('sum')
+    indices = np.where(distance_travelled > min_distance_travelled)[0]
+    objids = distance_travelled.index[indices]
+    indices_where_object_acceptable = pd.objid.isin(objids)
+    culled_pd = pd[indices_where_object_acceptable]
+    return culled_pd
+    
+def cull_trajectories_that_do_not_cover_much_x_or_y_distance(pd, min_distance_travelled=10):
+    min_x = pd.position_x.groupby(pd.objid).agg('min')
+    max_x = pd.position_x.groupby(pd.objid).agg('max')
+    distance_travelled = max_x - min_x
+    indices = np.where(distance_travelled > min_distance_travelled)[0]
+    objids = distance_travelled.index[indices]
+    indices_where_object_acceptable = pd.objid.isin(objids)
+    culled_pd = pd[indices_where_object_acceptable]
+    pd = culled_pd 
+    
+    min_y = pd.position_y.groupby(pd.objid).agg('min')
+    max_y = pd.position_y.groupby(pd.objid).agg('max')
+    distance_travelled = max_y - min_y
+    indices = np.where(distance_travelled > min_distance_travelled)[0]
+    objids = distance_travelled.index[indices]
+    indices_where_object_acceptable = pd.objid.isin(objids)
+    culled_pd = pd[indices_where_object_acceptable]
     
     return culled_pd
 

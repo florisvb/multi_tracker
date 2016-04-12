@@ -275,6 +275,7 @@ if __name__ == '__main__':
     parser.add_option('--minlength', type=int, default=1, help="minimum length of trajectories to show")
     parser.add_option('--minspeed', type=float, default=0, help="minimum length of trajectories to show")
     parser.add_option('--maxspeed', type=float, default=10, help="maximum speed")
+    parser.add_option('--dp', type=float, default=10, help="minimum distance travelled, in pixels")
     parser.add_option('--skip-frames', type=int, default=8, dest="skip_frames", help="how many frames to skip between image updates (speeds up processing)")
     parser.add_option('--dvbag', type=str, default='none', help="name and path of the delta video bag file, optional")
     parser.add_option('--config', type=str, default='none', help="name and path of a configuration file, optional. If the configuration file has an attribute 'sensory_stimulus_on', which should be a list of epoch timestamps e.g. [[t1,t2],[t3,4]], then these timeframes will be highlighted in the gui.")
@@ -290,6 +291,8 @@ if __name__ == '__main__':
     pd = mta.read_hdf5_file_to_pandas.cull_short_trajectories(pd, options.minlength)
     pd = mta.read_hdf5_file_to_pandas.remove_rows_above_speed_threshold(pd, speed_threshold=options.maxspeed)
     pd = mta.read_hdf5_file_to_pandas.remove_objects_that_never_exceed_minimum_speed(pd, speed_threshold=options.minspeed)
+    pd = mta.read_hdf5_file_to_pandas.cull_trajectories_that_do_not_cover_much_ground(pd, min_distance_travelled=options.dp)
+    pd = mta.read_hdf5_file_to_pandas.cull_trajectories_that_do_not_cover_much_x_or_y_distance(pd, min_distance_travelled=options.dp)
     
     if options.config != 'none':
         Config = imp.load_source('Config', options.config)
