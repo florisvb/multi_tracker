@@ -13,8 +13,11 @@
 /multi_tracker/1/tracker/image_processing_module: 'default'
 /multi_tracker/1/tracker/min_size: 5
 /multi_tracker/1/tracker/max_size: 30000
+/multi_tracker/1/tracker/max_expected_area: 80
 /multi_tracker/1/tracker/roi_l: 0
 /multi_tracker/1/tracker/roi_r: -1
 /multi_tracker/1/tracker/roi_b: 0
 /multi_tracker/1/tracker/roi_t: -1
-
+/multi_tracker/1/tracker/circular_mask_x: 'none'
+/multi_tracker/1/tracker/circular_mask_y: 'none'
+/multi_tracker/1/tracker/circular_mask_r: 'none'

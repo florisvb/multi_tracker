@@ -23,9 +23,8 @@ import threading
 
 class DataAssociator(object):
     def __init__(self, nodenum):
-        kalman_parameter_py_file = rospy.get_param('/multi_tracker/' + nodenum + '/data_association/kalman_parameters_py_file')
+        kalman_parameter_py_file = os.path.expanduser( rospy.get_param('/multi_tracker/' + nodenum + '/data_association/kalman_parameters_py_file') )
         home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/' + nodenum + '/home_directory') )
-        kalman_parameter_py_file = os.path.join(home_directory, kalman_parameter_py_file)
         print 'Kalman py file: ', kalman_parameter_py_file
         
         self.lockBuffer = threading.Lock()

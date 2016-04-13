@@ -37,14 +37,16 @@ def get_filename(path, contains):
     filelist = []
     for i, filename in enumerate(all_filelist):
         if contains in filename:
-            return os.path.join(path, filename)
+            return os.path.expanduser(os.path.join(path, filename))
 
 def load_data(path):
     try:
         data_filename = get_filename(path, 'trackedobjects.pickle')
+        print 'Found file: ', data_filename
         pd = pandas.read_pickle(data_filename)
     except:
         data_filename = get_filename(path, 'trackedobjects.hdf5')
+        print 'Found file: ', data_filename
         data_filename_pickled = data_filename.split('.')[0] + '.pickle'
         try:
             pd = pandas.read_pickle(data_filename_pickled)
@@ -52,7 +54,7 @@ def load_data(path):
             pd = mta.read_hdf5_file_to_pandas.load_data_as_pandas_dataframe_from_hdf5_file(data_filename)
             pandas.to_pickle(pd, data_filename_pickled)
             
-    pd = read_hdf5_file_to_pandas.remove_rows_with_above_speed_threshold(pd, speed_threshold=2)
+    pd = mta.read_hdf5_file_to_pandas.remove_rows_above_speed_threshold(pd, speed_threshold=2)
             
     return pd
             
@@ -70,7 +72,7 @@ def load_data_and_delta_video(path):
     
 def load_backgroundimg(path):
     bg_img_filename = get_filename(path, 'deltavideo_bgimg')
-    bgimg = cv2.imread(bg_img_filename)
+    bgimg = cv2.imread(bg_img_filename, cv2.CV_8UC1)
     return bgimg
 
 class QTrajectory(object):
@@ -82,7 +84,7 @@ class QTrajectory(object):
         self.binsy = None
         
         
-        self.filename = os.path.join(path, 'stitches.pickle')
+        self.filename = os.path.expanduser( os.path.join(path, 'stitches.pickle') ) 
         f = open(self.filename, 'w')
         self.stitches = []
         pickle.dump(self.stitches, f)
@@ -90,7 +92,6 @@ class QTrajectory(object):
         
         if keys is None:
             keys = np.unique(self.pd.objid.values)
-        print 'N keys: ', len(keys)
         self.keys = keys
         self.key_index = -1
         self.key = None
@@ -120,6 +121,12 @@ class QTrajectory(object):
         self.button = 'accepted'
         
         self.p1 = pg.PlotWidget(title="Basic array plotting")
+        
+        # for showing starting point
+        self.scatter = pg.ScatterPlotItem()
+        self.p1.addItem(self.scatter)
+        self.scatter.setZValue(0)
+        
         self.layout.addWidget(self.p1, 0, 1)
         
         self.w.show()
@@ -177,9 +184,7 @@ class QTrajectory(object):
         self.image_sequence = []
         for msg in self.msgs:
             imgcopy = copy.copy(self.backgroundimg)
-            imgcopy[ msg[1].xpixels, msg[1].ypixels, 0] = msg[1].values
-            imgcopy[ msg[1].xpixels, msg[1].ypixels, 1] = msg[1].values
-            imgcopy[ msg[1].xpixels, msg[1].ypixels, 2] = msg[1].values
+            imgcopy[ msg[1].xpixels, msg[1].ypixels] = msg[1].values
             self.image_sequence.append(imgcopy)
         self.current_frame = -1
         
@@ -190,7 +195,6 @@ class QTrajectory(object):
             self.current_frame = -1
             print 'restarted movie'
         self.current_frame += 1
-        print self.current_frame, len(self.image_sequence)
         return self.image_sequence[self.current_frame]
         
         
@@ -252,9 +256,12 @@ class QTrajectory(object):
     def show_trajectory_pair(self, key1, key2):
         trajec1 = self.dataset.trajec(key1)
         trajec2 = self.dataset.trajec(key2)
+        
         self.p1.plot(trajec1.position_y, trajec1.position_x, pen=(0,0,255)) 
         self.p1.plot(trajec2.position_y, trajec2.position_x, pen=(255,0,0)) 
         
+        self.p1.plot(trajec1.position_y[0:1], trajec1.position_x[0:1], pen=(0,0,0), symbol='o', symbolSize=10) 
+        self.p1.plot(trajec2.position_y[0:1], trajec2.position_x[0:1], pen=(0,0,0), symbol='o', symbolSize=10) 
 
     def run(self, key, candidate):
         self.key = key
@@ -270,7 +277,6 @@ class QTrajectory(object):
         t0 = np.min(pd_subset.time_epoch.values)
         t1 = np.max(pd_subset.time_epoch.values)
         
-        print t0, t1
         self.play_movie([t0, t1])
 
     def go(self):

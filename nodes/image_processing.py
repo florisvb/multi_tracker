@@ -272,17 +272,21 @@ def background_subtraction(self):
 #########################
 
 def dark_objects_only(self):
-    if self.params['circular_mask_x'] != 'none':
-        if self.image_mask is None:
-            self.image_mask = np.zeros_like(self.imgScaled)
-            cv2.circle(self.image_mask,(self.params['circular_mask_x'], self.params['circular_mask_y']),int(self.params['circular_mask_r']),[1,1,1],-1)
-        self.imgScaled = self.image_mask*self.imgScaled
     dark_or_light_objects_only(self, color='dark')
 
 def light_objects_only(self):
     dark_or_light_objects_only(self, color='light')
 
+def dark_or_light_objects(self):
+    dark_or_light_objects_only(self, color='darkorlight')
+
 def dark_or_light_objects_only(self, color='dark'):
+    if self.params['circular_mask_x'] != 'none':
+        if self.image_mask is None:
+            self.image_mask = np.zeros_like(self.imgScaled)
+            cv2.circle(self.image_mask,(self.params['circular_mask_x'], self.params['circular_mask_y']),int(self.params['circular_mask_r']),[1,1,1],-1)
+        self.imgScaled = self.image_mask*self.imgScaled
+        
     # If there is no background image, grab one, and move on to the next frame
     if self.backgroundImage is None:
         reset_background(self)
@@ -321,8 +325,15 @@ def dark_or_light_objects_only(self, color='dark'):
     
     if color == 'dark':
         self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
-    else:
+    elif color == 'light':
         self.threshed = cv2.compare(np.float32(self.imgScaled), self.backgroundImage+self.params['threshold'], cv2.CMP_GT) # CMP_GT is greater than
+    elif color == 'darkorlight':
+        #absdiff = cv2.absdiff(np.float32(self.imgScaled), self.backgroundImage)
+        #retval, self.threshed = cv2.threshold(absdiff, self.params['threshold'], 255, 0)
+        #self.threshed = np.uint8(self.threshed)
+        dark = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
+        light = cv2.compare(np.float32(self.imgScaled), self.backgroundImage+self.params['threshold'], cv2.CMP_GT) # CMP_GT is greater than
+        self.threshed = dark+light
     convert_to_gray_if_necessary(self)
     
     
