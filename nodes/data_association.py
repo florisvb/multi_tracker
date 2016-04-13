@@ -244,8 +244,6 @@ class DataAssociator(object):
     def main(self):
         while not rospy.is_shutdown():
             t = time.time() - self.time_start
-            if t > 24*3600:
-                return
             with self.lockBuffer:
                 time_now = rospy.Time.now()
                 if len(self.contour_buffer) > 0:
