@@ -3,6 +3,8 @@ import h5py
 import copy
 import pandas
 import os
+import imp
+import pickle
 
 def get_filenames(path, contains):
     cmd = 'ls ' + path
@@ -17,6 +19,30 @@ def get_filenames(path, contains):
         if contains in filename:
             filelist.append( os.path.join(path, filename) )
     return filelist
+    
+def get_filename(path, contains):
+    cmd = 'ls ' + path
+    ls = os.popen(cmd).read()
+    all_filelist = ls.split('\n')
+    try:
+        all_filelist.remove('')
+    except:
+        pass
+    filelist = []
+    for i, filename in enumerate(all_filelist):
+        if contains in filename:
+            return os.path.join(path, filename)
+            
+def load_bag_as_hdf5(bag, skip_messages=[]):
+    output_fname = bag.split('.')[0] + '.hdf5'
+    print output_fname
+    if not os.path.exists(output_fname):
+        mta.bag2hdf5.bag2hdf5(   bag,
+                                 output_fname,
+                                 max_strlen=200,
+                                 skip_messages=skip_messages)    
+    metadata = h5py.File(output_fname, 'r')
+    return metadata
 
 class Trajectory(object):
     def __init__(self, pd, objid):
@@ -80,6 +106,46 @@ def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
     pd = pd.drop(pd.index==[0]) # delete 0 frames (frames with no data)
     pd = calc_additional_columns(pd)
     # pd_subset = pd[pd.objid==key]
+    return pd
+    
+def load_and_preprocess_data(hdf5_filename):
+    '''
+    requires that a configuration file be found in the same directory as the hdf5 file, with the same prefix
+    
+    returns: pandas dataframe, processed according to configuration file, and the configuration file instance
+    '''
+    pd = load_data_as_pandas_dataframe_from_hdf5_file(hdf5_filename, attributes=None)
+    
+    hdf5_basename = os.path.basename(hdf5_filename)
+    directory = os.path.dirname(hdf5_filename)
+    
+    identifiercode = hdf5_basename.split('_trackedobjects')[0]
+    config_filename = 'config_' + identifiercode + '.py'
+    config_filename = get_filename(directory, config_filename)
+
+    if config_filename is not None:
+        Config = imp.load_source('Config', config_filename)
+        config = Config.Config(directory, identifiercode)
+        if config.__dict__.has_key('preprocess_data_function'):
+            pd = config.__getattribute__('preprocess_data_function')(pd)
+    
+    return pd, config
+    
+def delete_cut_join_trajectories_according_to_instructions(pd, instructions_filename):
+    f = open(instructions_filename)
+    instructions = pickle.load(f)
+    f.close()
+    
+    for instruction in instructions:
+        if instruction['action'] == 'delete':
+            pd = pd[pd.objid!=instruction['objid']]
+        elif instruction['action'] == 'cut':
+            mask = (pd['objid']==instruction['objid']) & (pd['frames']>instruction['cut_frame_global'])
+            pd.loc[mask,'objid'] = instruction['new_objid']
+        elif instruction['action'] == 'join':
+            for key in instruction['objids']:
+                mask = pd['objid']==key
+                pd.loc[mask,'objid'] = instruction['objids'][0]
     return pd
     
 def calc_additional_columns(pd):

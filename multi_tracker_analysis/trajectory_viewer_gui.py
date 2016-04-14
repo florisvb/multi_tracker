@@ -64,6 +64,9 @@ class QTrajectory(object):
             
         # trajectory colors
         self.trajec_to_color_dict = {}
+        self.trajec_width_dict = {}
+        self.plotted_traces_keys = []
+        self.plotted_traces = []
         
         # extract time and speed
         self.time_epoch = pd.time_epoch.groupby(pd.index).mean().values
@@ -88,15 +91,28 @@ class QTrajectory(object):
         stop_btn.pressed.connect(self.stop_movie)
         self.layout.addWidget(stop_btn, 1, 0)
         
+        # toggle delete trajectory button      
+        toggle_delete_object_id_btn = QtGui.QPushButton('delete objects\ncrosshair = red')
+        toggle_delete_object_id_btn.pressed.connect(self.toggle_delete_object_id_numbers)
+        self.layout.addWidget(toggle_delete_object_id_btn, 3, 0)
+        self.delete_objects = False
+        
+        # toggle cut trajectory button      
+        toggle_cut_object_id_btn = QtGui.QPushButton('cut objects\ncrosshair = yellow')
+        toggle_cut_object_id_btn.pressed.connect(self.toggle_cut_object_id_numbers)
+        self.layout.addWidget(toggle_cut_object_id_btn, 4, 0)
+        self.cut_objects = False
+        
         # start collecting object ids button       
-        start_collecting_object_id_btn = QtGui.QPushButton('start collecting\nobject id numbers')
+        start_collecting_object_id_btn = QtGui.QPushButton('join objects\ncrosshair = green')
         start_collecting_object_id_btn.pressed.connect(self.start_collecting_object_id_numbers)
-        self.layout.addWidget(start_collecting_object_id_btn, 2, 0)
+        self.layout.addWidget(start_collecting_object_id_btn, 5, 0)
+        self.join_objects = False
     
-        # start collecting object ids button       
+        # save collected object ids button       
         save_collected_object_id_btn = QtGui.QPushButton('save collected\nobject id numbers')
         save_collected_object_id_btn.pressed.connect(self.save_collected_object_id_numbers)
-        self.layout.addWidget(save_collected_object_id_btn, 3, 0)
+        self.layout.addWidget(save_collected_object_id_btn, 6, 0)
         
         
         self.p1 = pg.PlotWidget(title="Basic array plotting", x=self.time_epoch_continuous, y=self.nflies)
@@ -117,14 +133,87 @@ class QTrajectory(object):
         f = 'update_time_region'
         lr.sigRegionChanged.connect(self.__getattribute__(f))
         self.p1.addItem(lr)
-        
+    
+    def toggle_delete_object_id_numbers(self):
+        if self.delete_objects:
+            self.delete_objects = False
+            print 'Stop deleting objects!'
+        else:
+            self.delete_objects = True
+            print 'Deleting objects!'
+        self.cut_objects = False
+        self.join_objects = False
+    
+    def toggle_cut_object_id_numbers(self):
+        if self.cut_objects:
+            self.cut_objects = False
+            print 'Stop cutting objects!'
+        else:
+            self.cut_objects = True
+            print 'Cutting objects!'
+        self.delete_objects = False
+        self.join_objects = False
+    
     def start_collecting_object_id_numbers(self):
-        self.collect_object_id_numbers = True
+        self.join_objects = True
         self.object_id_numbers = []
         print 'Ready to collect object id numbers. Click on traces to add object id numbers to the list. Click "save object id numbers" to save, and reset the list'
-    
+        self.delete_objects = False
+        self.cut_objects = False
+            
+    def cut_trajectory(self, key, point):
+        dataset = mta.read_hdf5_file_to_pandas.Dataset(self.pd)
+        trajec = dataset.trajec(key)
+        p = np.vstack((trajec.position_y, trajec.position_x))
+        point = np.array([[point[0]], [point[1]]])
+        error = np.linalg.norm(p-point, axis=0)
+        trajectory_frame = np.argmin(error)
+        dataset_frame = dataset.timestamp_to_framestamp(trajec.time_epoch[trajectory_frame])
+        
+        # now replace objids
+        new_objid = np.max(self.pd.objid) + 1
+        
+        instructions = {'action': 'cut',
+                        'order': time.time(),
+                        'objid': key,
+                        'cut_frame_global': dataset_frame,
+                        'cut_frame_trajectory': trajectory_frame, 
+                        'cut_time_epoch': trajec.time_epoch[trajectory_frame],
+                        'new_objid': new_objid}
+        self.save_delete_cut_join_instructions(instructions)
+
+        # update gui
+        mask_b = (self.pd['objid']==key) & (self.pd['frames']>dataset_frame)
+        self.pd.loc[mask_b,'objid'] = new_objid
+        self.draw_trajectories()
+        
     def save_collected_object_id_numbers(self):
-        filename = os.path.join(self.path, 'saved_object_id_numbers.pickle')
+        instructions = {'action': 'join',
+                        'order': time.time(),
+                        'objids': self.object_id_numbers}
+        self.save_delete_cut_join_instructions(instructions)
+        
+        # now join them for the gui
+        for key in self.object_id_numbers[1:]:
+            mask_b = self.pd['objid']==key
+            self.pd.loc[mask_b,'objid'] = self.object_id_numbers[0]
+        self.draw_trajectories()
+        
+        self.object_id_numbers = []
+        self.trajec_width_dict = {}
+        print 'Reset object id list - you may collect a new selection of objects now'
+        
+    def delete_object_id_number(self, key):
+        instructions = {'action': 'delete',
+                        'order': time.time(),
+                        'objid': key}
+        self.save_delete_cut_join_instructions(instructions)
+        # update gui
+        self.pd = self.pd[self.pd.objid!=key]
+        self.draw_trajectories()
+    
+    def save_delete_cut_join_instructions(self, instructions):
+        filename = os.path.join(self.path, 'delete_cut_join_instructions.pickle')
         if os.path.exists(filename):
             f = open(filename, 'r+')
             data = pickle.load(f)
@@ -133,21 +222,19 @@ class QTrajectory(object):
             f = open(filename, 'w+')
             f.close()
             data = []
-        t = self.troi[-1] - self.troi[0]
-        data_to_save = {'timerange': [self.troi[0], self.troi[1]],
-                        'object_ids': self.object_id_numbers}
-        data.append(data_to_save)
+        data.append(instructions)
         f = open(filename, 'r+')
         pickle.dump(data, f)
         f.close()
-        print 'Saved object id number list: ', self.object_id_numbers
-        self.object_id_numbers = []
-        print 'Reset object id list - you may collect a new selection of objects now'
-        
+    
     def update_time_region(self, linear_region):
-        self.p2.clear()
-        
+        self.linear_region = linear_region
         self.troi = linear_region.getRegion()
+        self.draw_trajectories()
+        
+    def draw_trajectories(self):
+        self.p2.clear()
+                
         pd_subset = mta.data_slicing.get_data_in_epoch_timerange(self.pd, self.troi)
         
         if self.binsx is None:
@@ -155,16 +242,20 @@ class QTrajectory(object):
             self.backgroundimg = cv2.imread(self.backgroundimg_filename, cv2.CV_8UC1)
         img = copy.copy(self.backgroundimg)
         
+        # plot a heatmap of the trajectories, for error checking
         h = mta.plot.get_heatmap(pd_subset, self.binsy, self.binsx, position_x='position_y', position_y='position_x', position_z='position_z', position_z_slice=None)
-        
         indices = np.where(h != 0)
-        #masked_heatmap_binary = np.ma.masked_array(heatmap_binary, mask=np.invert(heatmap_binary))
         img[indices] = 0
-        
         self.img = pg.ImageItem(img)
         self.p2.addItem(self.img)
         self.img.setZValue(-200)  # make sure image is behind other data
-        #self.p2.setImage(img.swapaxes(0,1)[:,:,[2,1,0]], autoRange=False, autoLevels=False, )
+        
+        # cross hair mouse stuff
+        self.p2.scene().sigMouseMoved.connect(self.mouse_moved)
+        self.crosshair_vLine = pg.InfiniteLine(angle=90, movable=False)
+        self.crosshair_hLine = pg.InfiniteLine(angle=0, movable=False)
+        self.p2.addItem(self.crosshair_vLine, ignoreBounds=True)
+        self.p2.addItem(self.crosshair_hLine, ignoreBounds=True)
         
         keys = np.unique(pd_subset.objid.values)
         self.plotted_traces_keys = []
@@ -182,7 +273,11 @@ class QTrajectory(object):
                     self.trajec_to_color_dict.setdefault(key, color)
                 else:
                     color = self.trajec_to_color_dict[key]
-                pen = pg.mkPen(color, width=2)  
+                if key in self.trajec_width_dict.keys():
+                    width = self.trajec_width_dict[key]
+                else:
+                    width = 2
+                pen = pg.mkPen(color, width=width)  
                 plotted_trace = self.p2.plot(trajec.position_y[first_time_index:last_time_index], trajec.position_x[first_time_index:last_time_index], pen=pen, clickable=True) 
                 self.plotted_traces.append(plotted_trace)
                 self.plotted_traces_keys.append(key)
@@ -192,13 +287,40 @@ class QTrajectory(object):
                 self.plotted_traces[i].curve.key = key
                 self.plotted_traces[i].curve.sigClicked.connect(self.trace_clicked)
                 
+    def mouse_moved(self, pos):
+        self.mouse_position = [self.img.mapFromScene(pos).x(), self.img.mapFromScene(pos).y()]
+        self.crosshair_vLine.setPos(self.mouse_position[0])
+        self.crosshair_hLine.setPos(self.mouse_position[1])
+            
+        if self.cut_objects:
+            pen = pg.mkPen('y', width=1)
+            self.crosshair_vLine.setPen(pen)
+            self.crosshair_hLine.setPen(pen)
+        elif self.join_objects:
+            pen = pg.mkPen('g', width=1)
+            self.crosshair_vLine.setPen(pen)
+            self.crosshair_hLine.setPen(pen)
+        elif self.delete_objects:
+            pen = pg.mkPen('r', width=1)
+            self.crosshair_vLine.setPen(pen)
+            self.crosshair_hLine.setPen(pen)
+        
     def trace_clicked(self, item):
-        print 'Saving object to object list: ', item.key
-        self.object_id_numbers.append(item.key)
-        color = self.trajec_to_color_dict[item.key]
-        pen = pg.mkPen(color, width=4)  
-        item.setPen(pen)
-    
+        if self.join_objects:
+            print 'Saving object to object list: ', item.key
+            self.object_id_numbers.append(item.key)
+            color = self.trajec_to_color_dict[item.key]
+            pen = pg.mkPen(color, width=4)  
+            self.trajec_width_dict.setdefault(item.key, 4)
+            item.setPen(pen)
+        elif self.cut_objects:
+            print 'Cutting trajectory: ', item.key, ' at: ', self.mouse_position
+            self.cut_trajectory(item.key, self.mouse_position)
+        elif self.delete_objects:
+            self.delete_object_id_number(item.key)
+            
+            
+            
     ### Delta video bag stuff
     
     def load_image_sequence(self):
@@ -297,10 +419,6 @@ if __name__ == '__main__':
     parser.add_option('--movie', type=int, default=1, help="load and play the dvbag movie, default is 1, to load use 1")
     parser.add_option('--filename', type=str, help="name and path of the hdf5 tracked_objects filename")
     parser.add_option('--bgimg', type=str, help="name and path of the background image")
-    parser.add_option('--minlength', type=int, default=1, help="minimum length of trajectories to show")
-    parser.add_option('--minspeed', type=float, default=0, help="minimum length of trajectories to show")
-    parser.add_option('--maxspeed', type=float, default=10, help="maximum speed")
-    parser.add_option('--dp', type=float, default=10, help="minimum distance travelled, in pixels")
     parser.add_option('--skip-frames', type=int, default=8, dest="skip_frames", help="how many frames to skip between image updates (speeds up processing)")
     parser.add_option('--dvbag', type=str, default='none', help="name and path of the delta video bag file, optional")
     parser.add_option('--config', type=str, default='none', help="name and path of a configuration file, optional. If the configuration file has an attribute 'sensory_stimulus_on', which should be a list of epoch timestamps e.g. [[t1,t2],[t3,4]], then these timeframes will be highlighted in the gui.")
@@ -312,24 +430,8 @@ if __name__ == '__main__':
         options.dvbag = get_filename(options.path, 'delta_video.bag')
         options.bgimg = get_filename(options.path, '_bgimg_')
             
-    pd = mta.read_hdf5_file_to_pandas.load_data_as_pandas_dataframe_from_hdf5_file(options.filename)
-    pd = mta.read_hdf5_file_to_pandas.cull_short_trajectories(pd, options.minlength)
-    pd = mta.read_hdf5_file_to_pandas.remove_rows_above_speed_threshold(pd, speed_threshold=options.maxspeed)
-    pd = mta.read_hdf5_file_to_pandas.remove_objects_that_never_exceed_minimum_speed(pd, speed_threshold=options.minspeed)
-    pd = mta.read_hdf5_file_to_pandas.cull_trajectories_that_do_not_cover_much_ground(pd, min_distance_travelled=options.dp)
-    pd = mta.read_hdf5_file_to_pandas.cull_trajectories_that_do_not_cover_much_x_or_y_distance(pd, min_distance_travelled=options.dp)
+    pd, config = mta.read_hdf5_file_to_pandas.load_and_preprocess_data(options.filename)
     
-    if options.config != 'none':
-        try:
-            Config = imp.load_source('Config', options.config)
-            config = Config.Config(os.path.dirname(options.config))
-        except:
-            print 'Could not find config: ', options.config
-            print 'Continuing anyways!'
-            config = None
-    else:
-        config = None
-        
     if options.movie is False:
         options.dvbag = 'none'
     
