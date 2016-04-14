@@ -11,7 +11,6 @@ import pyqtgraph.ptime as ptime
 import time
 import numpy as np
 
-import orchard.make_orchard_plots as mop
 import read_hdf5_file_to_pandas
 import data_slicing
 
@@ -87,10 +86,15 @@ class QTrajectory(object):
         stop_btn.pressed.connect(self.stop_movie)
         self.layout.addWidget(stop_btn, 1, 0)
         
-        # save timerange button       
-        save_btn = QtGui.QPushButton('save time sequence')
-        save_btn.pressed.connect(self.save_time_sequence)
-        self.layout.addWidget(save_btn, 2, 0)
+        # start collecting object ids button       
+        start_collecting_object_id_btn = QtGui.QPushButton('start collecting\nobject id numbers')
+        start_collecting_object_id_btn.pressed.connect(self.start_collecting_object_id_numbers)
+        self.layout.addWidget(start_collecting_object_id_btn, 2, 0)
+    
+        # start collecting object ids button       
+        save_collected_object_id_btn = QtGui.QPushButton('save collected\nobject id numbers')
+        save_collected_object_id_btn.pressed.connect(self.save_collected_object_id_numbers)
+        self.layout.addWidget(save_collected_object_id_btn, 3, 0)
         
         
         self.p1 = pg.PlotWidget(title="Basic array plotting", x=self.time_epoch_continuous, y=self.nflies)
@@ -112,24 +116,31 @@ class QTrajectory(object):
         lr.sigRegionChanged.connect(self.__getattribute__(f))
         self.p1.addItem(lr)
         
-    def save_time_sequence(self):
-        self.troi
-        filename = os.path.join(config.path, 'time_ranges.pickle')
+    def start_collecting_object_id_numbers(self):
+        self.collect_object_id_numbers = True
+        self.object_id_numbers = []
+        print 'Ready to collect object id numbers. Click on traces to add object id numbers to the list. Click "save object id numbers" to save, and reset the list'
+    
+    def save_collected_object_id_numbers(self):
+        filename = os.path.join(config.path, 'saved_object_id_numbers.pickle')
         if os.path.exists(filename):
             f = open(filename, 'r+')
-            time_range_data = pickle.load(f)
+            data = pickle.load(f)
             f.close()
         else:
             f = open(filename, 'w+')
             f.close()
-            time_range_data = []
+            data = []
         t = self.troi[-1] - self.troi[0]
-        data_to_save = [self.troi[0], t]
-        time_range_data.append(data_to_save)
+        data_to_save = {'timerange': [self.troi[0], self.troi[1]],
+                        'object_ids': self.object_id_numbers}
+        data.append(data_to_save)
         f = open(filename, 'r+')
-        pickle.dump(time_range_data, f)
+        pickle.dump(data, f)
         f.close()
-        print 'saved: ', data_to_save
+        print 'Saved object id number list: ', self.object_id_numbers
+        self.object_id_numbers = []
+        print 'Reset object id list - you may collect a new selection of objects now'
         
     def update_time_region(self, linear_region):
         self.p2.clear()
@@ -150,14 +161,12 @@ class QTrajectory(object):
         
         self.img = pg.ImageItem(img)
         self.p2.addItem(self.img)
-        self.scatter = pg.ScatterPlotItem()
-        self.scatter.pxMode = True
-        self.p2.addItem(self.scatter)
-        self.scatter.setZValue(0)
         self.img.setZValue(-200)  # make sure image is behind other data
         #self.p2.setImage(img.swapaxes(0,1)[:,:,[2,1,0]], autoRange=False, autoLevels=False, )
         
         keys = np.unique(pd_subset.objid.values)
+        self.plotted_traces_keys = []
+        self.plotted_traces = []
         if len(keys) < 100:
             for key in keys:
                 trajec = self.dataset.trajec(key)
@@ -172,8 +181,22 @@ class QTrajectory(object):
                 else:
                     color = self.trajec_to_color_dict[key]
                 pen = pg.mkPen(color, width=2)  
-                self.p2.plot(trajec.position_y[first_time_index:last_time_index], trajec.position_x[first_time_index:last_time_index], pen=pen) 
-        
+                plotted_trace = self.p2.plot(trajec.position_y[first_time_index:last_time_index], trajec.position_x[first_time_index:last_time_index], pen=pen, clickable=True) 
+                self.plotted_traces.append(plotted_trace)
+                self.plotted_traces_keys.append(key)
+                
+            for i, key in enumerate(self.plotted_traces_keys):
+                self.plotted_traces[i].curve.setClickable(True)
+                self.plotted_traces[i].curve.key = key
+                self.plotted_traces[i].curve.sigClicked.connect(self.trace_clicked)
+                
+    def trace_clicked(self, item):
+        print 'Saving object to object list: ', item.key
+        self.object_id_numbers.append(item.key)
+        color = self.trajec_to_color_dict[item.key]
+        pen = pg.mkPen(color, width=4)  
+        item.setPen(pen)
+    
     ### Delta video bag stuff
     
     def load_image_sequence(self):
@@ -295,8 +318,12 @@ if __name__ == '__main__':
     pd = mta.read_hdf5_file_to_pandas.cull_trajectories_that_do_not_cover_much_x_or_y_distance(pd, min_distance_travelled=options.dp)
     
     if options.config != 'none':
-        Config = imp.load_source('Config', options.config)
-        config = Config.Config(os.path.dirname(options.config))
+        try:
+            Config = imp.load_source('Config', options.config)
+            config = Config.Config(os.path.dirname(options.config))
+        except:
+            print 'Could not find config: ', options.config
+            print 'Continuing anyways!'
     else:
         config = None
         
