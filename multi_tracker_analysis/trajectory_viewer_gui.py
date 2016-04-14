@@ -54,6 +54,8 @@ class QTrajectory(object):
         self.config = config
         self.skip_frames = skip_frames
         
+        self.path = os.path.dirname(delta_video_filename)
+        
         # load delta video bag
         if delta_video_filename != 'none':
             self.dvbag = rosbag.Bag(delta_video_filename)
@@ -122,7 +124,7 @@ class QTrajectory(object):
         print 'Ready to collect object id numbers. Click on traces to add object id numbers to the list. Click "save object id numbers" to save, and reset the list'
     
     def save_collected_object_id_numbers(self):
-        filename = os.path.join(config.path, 'saved_object_id_numbers.pickle')
+        filename = os.path.join(self.path, 'saved_object_id_numbers.pickle')
         if os.path.exists(filename):
             f = open(filename, 'r+')
             data = pickle.load(f)
@@ -324,6 +326,7 @@ if __name__ == '__main__':
         except:
             print 'Could not find config: ', options.config
             print 'Continuing anyways!'
+            config = None
     else:
         config = None
         
