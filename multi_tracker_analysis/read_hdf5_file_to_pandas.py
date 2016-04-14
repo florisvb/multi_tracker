@@ -128,7 +128,9 @@ def load_and_preprocess_data(hdf5_filename):
         config = Config.Config(directory, identifiercode)
         if config.__dict__.has_key('preprocess_data_function'):
             pd = config.__getattribute__('preprocess_data_function')(pd)
-    
+    else:
+        config = None
+        
     return pd, config
     
 def delete_cut_join_trajectories_according_to_instructions(pd, instructions_filename):

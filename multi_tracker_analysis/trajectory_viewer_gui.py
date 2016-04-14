@@ -40,18 +40,18 @@ def get_random_color():
     return color
     
 class QTrajectory(object):
-    def __init__(self, pd, bgimg, delta_video_filename, config=None, skip_frames=5):
+    def __init__(self, data_filename, bgimg, delta_video_filename, skip_frames=5):
         '''
         skip_frames - when playing back movie, how many frames to skip between updates (to speed up viewing)
         '''
-        self.pd = pd
-        self.dataset = read_hdf5_file_to_pandas.Dataset(self.pd)
+        self.data_filename = data_filename
+        self.load_data()
         self.backgroundimg_filename = bgimg
         self.backgroundimg = None
         self.binsx = None
         self.binsy = None
-        self.troi = [np.min(pd.time_epoch.values), np.min(pd.time_epoch.values)+300] 
-        self.config = config
+        trange = np.max(self.pd.time_epoch.values) - np.min(self.pd.time_epoch.values) 
+        self.troi = [np.min(self.pd.time_epoch.values), np.min(self.pd.time_epoch.values)+trange*0.1] 
         self.skip_frames = skip_frames
         
         self.path = os.path.dirname(delta_video_filename)
@@ -69,9 +69,9 @@ class QTrajectory(object):
         self.plotted_traces = []
         
         # extract time and speed
-        self.time_epoch = pd.time_epoch.groupby(pd.index).mean().values
-        self.speed = pd.speed.groupby(pd.index).mean().values
-        self.nflies = data_slicing.get_nkeys_per_frame(pd)
+        self.time_epoch = self.pd.time_epoch.groupby(self.pd.index).mean().values
+        self.speed = self.pd.speed.groupby(self.pd.index).mean().values
+        self.nflies = data_slicing.get_nkeys_per_frame(self.pd)
         self.time_epoch_continuous = np.linspace(np.min(self.time_epoch), np.max(self.time_epoch), len(self.nflies))
         
         ## create GUI
@@ -114,6 +114,11 @@ class QTrajectory(object):
         save_collected_object_id_btn.pressed.connect(self.save_collected_object_id_numbers)
         self.layout.addWidget(save_collected_object_id_btn, 6, 0)
         
+        # undo      
+        undo_btn = QtGui.QPushButton('undo last action')
+        undo_btn.pressed.connect(self.undo)
+        self.layout.addWidget(undo_btn, 7, 0)
+        
         
         self.p1 = pg.PlotWidget(title="Basic array plotting", x=self.time_epoch_continuous, y=self.nflies)
         self.p1.enableAutoRange('xy', False)
@@ -133,6 +138,52 @@ class QTrajectory(object):
         f = 'update_time_region'
         lr.sigRegionChanged.connect(self.__getattribute__(f))
         self.p1.addItem(lr)
+        self.draw_timeseries_vlines_for_interesting_timepoints()
+        
+    def draw_timeseries_vlines_for_interesting_timepoints(self):
+        # draw trajectory ends
+        self.trajectory_ends_vlines = []
+        for t in self.pd.groupby('objid').time_epoch.max().values: 
+            vline = pg.InfiniteLine(angle=90, movable=False)
+            self.p1.addItem(vline, ignoreBounds=True)
+            vline.setPos(t)
+            pen = pg.mkPen('g', width=2)
+            vline.setPen(pen)
+            self.trajectory_ends_vlines.append(vline)
+            
+        # times (or frames) where trajectories get very close to one another
+        
+        
+    def load_data(self):
+        self.pd, self.config = mta.read_hdf5_file_to_pandas.load_and_preprocess_data(self.data_filename)
+        self.path = self.config.path
+        self.dataset = read_hdf5_file_to_pandas.Dataset(self.pd)
+        filename = os.path.join(self.path, 'delete_cut_join_instructions.pickle')
+        if os.path.exists(filename):
+            f = open(filename, 'r+')
+            data = pickle.load(f)
+            f.close()
+        else:
+            data = []
+        self.instructions = data
+        
+    def undo(self):
+        instruction = self.instructions.pop(-1)
+        filename = os.path.join(self.path, 'delete_cut_join_instructions.pickle')
+        if os.path.exists(filename):
+            f = open(filename, 'r+')
+            data = pickle.load(f)
+            f.close()
+        else:
+            f = open(filename, 'w+')
+            f.close()
+            data = []
+        data = self.instructions
+        f = open(filename, 'r+')
+        pickle.dump(data, f)
+        f.close()
+        self.load_data()
+        self.draw_trajectories()
     
     def toggle_delete_object_id_numbers(self):
         if self.delete_objects:
@@ -209,6 +260,7 @@ class QTrajectory(object):
                         'objid': key}
         self.save_delete_cut_join_instructions(instructions)
         # update gui
+        #self.trajec_to_color_dict[key] = (0,0,0,0) 
         self.pd = self.pd[self.pd.objid!=key]
         self.draw_trajectories()
     
@@ -226,6 +278,7 @@ class QTrajectory(object):
         f = open(filename, 'r+')
         pickle.dump(data, f)
         f.close()
+        self.instructions.append(instructions)
     
     def update_time_region(self, linear_region):
         self.linear_region = linear_region
@@ -236,6 +289,7 @@ class QTrajectory(object):
         self.p2.clear()
                 
         pd_subset = mta.data_slicing.get_data_in_epoch_timerange(self.pd, self.troi)
+        self.dataset = read_hdf5_file_to_pandas.Dataset(self.pd)
         
         if self.binsx is None:
             self.binsx, self.binsy = mta.plot.get_bins_from_backgroundimage(self.backgroundimg_filename)
@@ -278,12 +332,12 @@ class QTrajectory(object):
                 else:
                     width = 2
                 pen = pg.mkPen(color, width=width)  
-                plotted_trace = self.p2.plot(trajec.position_y[first_time_index:last_time_index], trajec.position_x[first_time_index:last_time_index], pen=pen, clickable=True) 
+                plotted_trace = self.p2.plot(trajec.position_y[first_time_index:last_time_index], trajec.position_x[first_time_index:last_time_index], pen=pen) 
                 self.plotted_traces.append(plotted_trace)
                 self.plotted_traces_keys.append(key)
                 
             for i, key in enumerate(self.plotted_traces_keys):
-                self.plotted_traces[i].curve.setClickable(True)
+                self.plotted_traces[i].curve.setClickable(True, width=3)
                 self.plotted_traces[i].curve.key = key
                 self.plotted_traces[i].curve.sigClicked.connect(self.trace_clicked)
                 
@@ -307,12 +361,20 @@ class QTrajectory(object):
         
     def trace_clicked(self, item):
         if self.join_objects:
-            print 'Saving object to object list: ', item.key
-            self.object_id_numbers.append(item.key)
-            color = self.trajec_to_color_dict[item.key]
-            pen = pg.mkPen(color, width=4)  
-            self.trajec_width_dict.setdefault(item.key, 4)
-            item.setPen(pen)
+            if item.key not in self.object_id_numbers:
+                print 'Saving object to object list: ', item.key
+                self.object_id_numbers.append(item.key)
+                color = self.trajec_to_color_dict[item.key]
+                pen = pg.mkPen(color, width=4)  
+                self.trajec_width_dict.setdefault(item.key, 4)
+                item.setPen(pen)
+            else:
+                print 'Removing object from object list: ', item.key
+                self.object_id_numbers.remove(item.key)
+                color = self.trajec_to_color_dict[item.key]
+                pen = pg.mkPen(color, width=2)  
+                self.trajec_width_dict.setdefault(item.key, 2)
+                item.setPen(pen)
         elif self.cut_objects:
             print 'Cutting trajectory: ', item.key, ' at: ', self.mouse_position
             self.cut_trajectory(item.key, self.mouse_position)
@@ -378,8 +440,8 @@ class QTrajectory(object):
             dt = (now-self.updateTime)
             self.updateTime = now
             
-            if dt < 0.005:
-                d = 0.005 - dt
+            if dt < 0.03:
+                d = 0.03 - dt
                 time.sleep(d)
             
             del(cvimg)
@@ -430,10 +492,8 @@ if __name__ == '__main__':
         options.dvbag = get_filename(options.path, 'delta_video.bag')
         options.bgimg = get_filename(options.path, '_bgimg_')
             
-    pd, config = mta.read_hdf5_file_to_pandas.load_and_preprocess_data(options.filename)
-    
     if options.movie is False:
         options.dvbag = 'none'
     
-    Qtrajec = QTrajectory(pd, options.bgimg, options.dvbag, config, options.skip_frames)
+    Qtrajec = QTrajectory(options.filename, options.bgimg, options.dvbag, options.skip_frames)
     Qtrajec.run()
