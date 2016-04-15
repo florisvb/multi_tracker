@@ -52,14 +52,28 @@ class Trajectory(object):
             self.__setattr__(column, self.pd[column].values)
         
 class Dataset(object):
-    def __init__(self, pd):
+    def __init__(self, pd, copy=False):
         self.pd = pd
         self.keys = []
         self.__processed_trajecs__ = {}
-    
+        self.copy = copy
+        
+        if copy:
+            self.load_keys()
+            self.copy_trajectory_objects_to_dataset()
+            del(self.pd)
+            print 'Dataset loaded as a stand alone object - to save your dataset, use pickle:'
+            print 'import pickle'
+            print 'f = open(filename, "w+")'
+            print 'pickle.dump(dataset, f)'
+            print 'f.close()'
+            
     def trajec(self, key):
-        return Trajectory(self.pd, key)
-    
+        if not self.copy:
+            return Trajectory(self.pd, key)
+        else:
+            raise ValueError('This is a copied dataset, use dictionary acccess: dataset.trajecs[key]') 
+            
     def framestamp_to_timestamp(self, frame):
         t = self.pd.ix[frame]['time_epoch']
         try:
@@ -78,6 +92,13 @@ class Dataset(object):
             self.keys = np.unique(self.pd.objid).tolist()
         else:
             self.keys = keys
+            
+    def copy_trajectory_objects_to_dataset(self):
+        self.trajecs = {}
+        for key in self.keys:
+            trajec = copy.copy(Trajectory(self.pd, key))
+            self.trajecs.setdefault(key, trajec)
+            
             
 def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
     if '.pickle' in filename:
