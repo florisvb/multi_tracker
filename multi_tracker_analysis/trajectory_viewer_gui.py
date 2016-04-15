@@ -512,11 +512,13 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
     
     if options.path != 'none':
+        if not os.path.isdir(options.path):
+            raise ValueError('Path needs to be a directory!')
         options.filename = get_filename(options.path, 'trackedobjects.hdf5')
         options.config = get_filename(options.path, 'config')
         options.dvbag = get_filename(options.path, 'delta_video.bag')
         options.bgimg = get_filename(options.path, '_bgimg_')
-            
+    
     if options.movie is False:
         options.dvbag = 'none'
     
