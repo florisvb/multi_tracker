@@ -5,6 +5,7 @@ import pandas
 import os
 import imp
 import pickle
+import scipy.interpolate
 
 def get_filenames(path, contains):
     cmd = 'ls ' + path
@@ -50,6 +51,9 @@ class Trajectory(object):
         
         for column in self.pd.columns:
             self.__setattr__(column, self.pd[column].values)
+            
+    def __getitem__(self, key): # trajec attributes can be accessed just like a dictionary this way
+        return self.__getattribute__(key)
         
 class Dataset(object):
     def __init__(self, pd, copy=False):
@@ -154,10 +158,27 @@ def load_and_preprocess_data(hdf5_filename):
         
     return pd, config
     
-def delete_cut_join_trajectories_according_to_instructions(pd, instructions_filename):
+def delete_cut_join_trajectories_according_to_instructions(pd, instructions_filename, interpolate_joined_trajectories=True):
     f = open(instructions_filename)
     instructions = pickle.load(f)
     f.close()
+    
+    def get_proper_order_of_objects(dataset, keys):
+        trajecs = [dataset.trajec(key) for key in keys]
+        ts = [trajec.time_epoch[0] for trajec in trajecs]
+        order = np.argsort(ts)
+        return np.array(keys)[order]
+        
+    def get_indices_to_use_for_interpolation(key1, key2):
+        length_key1 = len(dataset.trajec(key1).position_x)
+        first_index_key1 = np.max( [length_key1-4, 0] )
+        indices_key1 = np.arange( first_index_key1, length_key1 )
+        
+        length_key2 = len(dataset.trajec(key2).position_x)
+        last_index_key2 = np.min( [length_key2, 0+4] )
+        indices_key2 = np.arange( 0, last_index_key2 )
+    
+        return indices_key1, indices_key2
     
     for instruction in instructions:
         if instruction['action'] == 'delete':
@@ -166,9 +187,46 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions_file
             mask = (pd['objid']==instruction['objid']) & (pd['frames']>instruction['cut_frame_global'])
             pd.loc[mask,'objid'] = instruction['new_objid']
         elif instruction['action'] == 'join':
-            for key in instruction['objids']:
-                mask = pd['objid']==key
-                pd.loc[mask,'objid'] = instruction['objids'][0]
+            if interpolate_joined_trajectories is False:
+                for key in instruction['objids']:
+                    mask = pd['objid']==key
+                    pd.loc[mask,'objid'] = instruction['objids'][0]
+            elif interpolate_joined_trajectories is True:
+                dataset = Dataset(pd)
+                keys = get_proper_order_of_objects(dataset, instruction['objids'])
+                for k, key in enumerate(keys[0:-1]):
+                    dataset = Dataset(pd)
+                    last_frame = dataset.trajec(keys[k]).frames[-1]
+                    first_frame = dataset.trajec(keys[k+1]).frames[0]
+                    if first_frame < last_frame: # overlap between objects, keep the second object's data, since the first is likely bad kalman projections
+                        mask = np.invert( (pd['objid']==keys[k]) & (pd['frames']>=first_frame) )
+                        pd = pd[mask]
+                    else:
+                        frames_to_interpolate = np.arange(last_frame+1, first_frame)
+                        if len(frames_to_interpolate) > 0:
+                            indices_key1, indices_key2 = get_indices_to_use_for_interpolation(keys[k], keys[k+1])
+                            x = np.hstack((dataset.trajec(keys[k]).frames[indices_key1], dataset.trajec(keys[k+1]).frames[indices_key2]))
+                            new_pd_dict = {attribute: None for attribute in pd.columns}
+                            index = frames_to_interpolate
+                            for attribute in pd.columns:
+                                if attribute == 'objid':
+                                    attribute_values = [keys[0] for f in frames_to_interpolate]
+                                elif attribute == 'frames':
+                                    attribute_values = frames_to_interpolate
+                                else:
+                                    y = np.hstack((dataset.trajec(keys[k])[attribute][indices_key1], dataset.trajec(keys[k+1])[attribute][indices_key2]))         
+                                    func = scipy.interpolate.interp1d(x,y)
+                                    attribute_values = func(frames_to_interpolate)
+                                new_pd_dict[attribute] = attribute_values
+                            interpolated_values = np.ones_like(new_pd_dict['position_x'])
+                            new_pd_dict.setdefault('interpolated', interpolated_values)
+                            new_pd = pandas.DataFrame(new_pd_dict, index=frames_to_interpolate)
+                            pd = pandas.concat([pd, new_pd])
+                            pd = pd.sort_index()
+                for key in instruction['objids']:
+                    mask = pd['objid']==key
+                    pd.loc[mask,'objid'] = instruction['objids'][0]
+                
     return pd
     
 def calc_additional_columns(pd):

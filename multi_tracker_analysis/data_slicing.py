@@ -56,6 +56,14 @@ def calc_frames_with_object_NOT_in_circular_region(pd, center, radius, region_na
     pd[region_name].iloc[indices] = 1
     return pd
     
+def remove_objects_that_enter_area_outside_circular_region(pd, center, radius, region_name='outofbounds'):
+    pd = calc_frames_with_object_NOT_in_circular_region(pd, center, radius, region_name=region_name)
+    outofbounds = np.unique(pd[pd[region_name]==1].objid.values)
+    keys_ok = [key for key in pd.objid if key not in outofbounds]
+    indices_where_object_acceptable = pd.objid.isin(keys_ok)
+    culled_pd = pd[indices_where_object_acceptable]
+    return culled_pd
+        
 def calc_frames_with_object_in_rectangular_region(pd, x_range, y_range, z_range=None, region_name='region'):
     '''
     center  - list (x,y) units should match units of position_x and position_y

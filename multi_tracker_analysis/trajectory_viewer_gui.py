@@ -67,12 +67,7 @@ class QTrajectory(object):
         self.trajec_width_dict = {}
         self.plotted_traces_keys = []
         self.plotted_traces = []
-        
-        # extract time and speed
-        self.time_epoch = self.pd.time_epoch.groupby(self.pd.index).mean().values
-        self.speed = self.pd.speed.groupby(self.pd.index).mean().values
-        self.nflies = data_slicing.get_nkeys_per_frame(self.pd)
-        self.time_epoch_continuous = np.linspace(np.min(self.time_epoch), np.max(self.time_epoch), len(self.nflies))
+        self.trajectory_ends_vlines = []
         
         ## create GUI
         self.app = QtGui.QApplication([])
@@ -104,13 +99,13 @@ class QTrajectory(object):
         self.cut_objects = False
         
         # start collecting object ids button       
-        start_collecting_object_id_btn = QtGui.QPushButton('join objects\ncrosshair = green')
+        start_collecting_object_id_btn = QtGui.QPushButton('select objects to join\ncrosshair = green')
         start_collecting_object_id_btn.pressed.connect(self.start_collecting_object_id_numbers)
         self.layout.addWidget(start_collecting_object_id_btn, 5, 0)
         self.join_objects = False
     
         # save collected object ids button       
-        save_collected_object_id_btn = QtGui.QPushButton('save collected\nobject id numbers')
+        save_collected_object_id_btn = QtGui.QPushButton('join selected\nobject id numbers')
         save_collected_object_id_btn.pressed.connect(self.save_collected_object_id_numbers)
         self.layout.addWidget(save_collected_object_id_btn, 6, 0)
         
@@ -120,7 +115,7 @@ class QTrajectory(object):
         self.layout.addWidget(undo_btn, 7, 0)
         
         
-        self.p1 = pg.PlotWidget(title="Basic array plotting", x=self.time_epoch_continuous, y=self.nflies)
+        self.p1 = pg.PlotWidget(title="Basic array plotting")
         self.p1.enableAutoRange('xy', False)
         self.layout.addWidget(self.p1, 1, 1)
         if self.config is not None:
@@ -140,9 +135,24 @@ class QTrajectory(object):
         self.p1.addItem(lr)
         self.draw_timeseries_vlines_for_interesting_timepoints()
         
+        self.current_time_vline = pg.InfiniteLine(angle=90, movable=False)
+        self.p1.addItem(self.current_time_vline, ignoreBounds=True)
+        self.current_time_vline.setPos(0)
+        pen = pg.mkPen((255,255,255), width=2)
+        self.current_time_vline.setPen(pen)
+        
     def draw_timeseries_vlines_for_interesting_timepoints(self):
-        # draw trajectory ends
-        self.trajectory_ends_vlines = []
+        # clear
+        try:
+            self.p1.removeItem(self.nflies_plot)
+        except:
+            pass
+        for vline in self.trajectory_ends_vlines:
+            self.p1.removeItem(vline)
+        # draw
+        self.nflies_plot = self.p1.plot(x=self.time_epoch_continuous, y=self.nflies)
+        self.p1.setRange(xRange=[np.min(self.time_epoch_continuous), np.max(self.time_epoch_continuous)], yRange=[0, np.max(self.nflies)])
+        
         for t in self.pd.groupby('objid').time_epoch.max().values: 
             vline = pg.InfiniteLine(angle=90, movable=False)
             self.p1.addItem(vline, ignoreBounds=True)
@@ -150,7 +160,7 @@ class QTrajectory(object):
             pen = pg.mkPen('g', width=2)
             vline.setPen(pen)
             self.trajectory_ends_vlines.append(vline)
-            
+        
         # times (or frames) where trajectories get very close to one another
         
         
@@ -166,6 +176,11 @@ class QTrajectory(object):
         else:
             data = []
         self.instructions = data
+        # extract time and speed
+        self.time_epoch = self.pd.time_epoch.groupby(self.pd.index).mean().values
+        self.speed = self.pd.speed.groupby(self.pd.index).mean().values
+        self.nflies = data_slicing.get_nkeys_per_frame(self.pd)
+        self.time_epoch_continuous = np.linspace(np.min(self.time_epoch), np.max(self.time_epoch), len(self.nflies))
         
     def undo(self):
         instruction = self.instructions.pop(-1)
@@ -184,7 +199,8 @@ class QTrajectory(object):
         f.close()
         self.load_data()
         self.draw_trajectories()
-    
+        self.draw_timeseries_vlines_for_interesting_timepoints()
+        
     def toggle_delete_object_id_numbers(self):
         if self.delete_objects:
             self.delete_objects = False
@@ -234,9 +250,9 @@ class QTrajectory(object):
         self.save_delete_cut_join_instructions(instructions)
 
         # update gui
-        mask_b = (self.pd['objid']==key) & (self.pd['frames']>dataset_frame)
-        self.pd.loc[mask_b,'objid'] = new_objid
+        self.load_data()
         self.draw_trajectories()
+        self.draw_timeseries_vlines_for_interesting_timepoints()
         
     def save_collected_object_id_numbers(self):
         instructions = {'action': 'join',
@@ -245,10 +261,9 @@ class QTrajectory(object):
         self.save_delete_cut_join_instructions(instructions)
         
         # now join them for the gui
-        for key in self.object_id_numbers[1:]:
-            mask_b = self.pd['objid']==key
-            self.pd.loc[mask_b,'objid'] = self.object_id_numbers[0]
+        self.load_data()
         self.draw_trajectories()
+        self.draw_timeseries_vlines_for_interesting_timepoints()
         
         self.object_id_numbers = []
         self.trajec_width_dict = {}
@@ -261,21 +276,22 @@ class QTrajectory(object):
         self.save_delete_cut_join_instructions(instructions)
         # update gui
         #self.trajec_to_color_dict[key] = (0,0,0,0) 
-        self.pd = self.pd[self.pd.objid!=key]
+        self.load_data()
         self.draw_trajectories()
+        self.draw_timeseries_vlines_for_interesting_timepoints()
     
     def save_delete_cut_join_instructions(self, instructions):
-        filename = os.path.join(self.path, 'delete_cut_join_instructions.pickle')
-        if os.path.exists(filename):
-            f = open(filename, 'r+')
+        self.delete_cut_join_filename = os.path.join(self.path, 'delete_cut_join_instructions.pickle')
+        if os.path.exists(self.delete_cut_join_filename):
+            f = open(self.delete_cut_join_filename, 'r+')
             data = pickle.load(f)
             f.close()
         else:
-            f = open(filename, 'w+')
+            f = open(self.delete_cut_join_filename, 'w+')
             f.close()
             data = []
         data.append(instructions)
-        f = open(filename, 'r+')
+        f = open(self.delete_cut_join_filename, 'r+')
         pickle.dump(data, f)
         f.close()
         self.instructions.append(instructions)
@@ -286,6 +302,8 @@ class QTrajectory(object):
         self.draw_trajectories()
         
     def draw_trajectories(self):
+        for plotted_trace in self.plotted_traces:
+            self.p2.removeItem(plotted_trace)
         self.p2.clear()
                 
         pd_subset = mta.data_slicing.get_data_in_epoch_timerange(self.pd, self.troi)
@@ -340,7 +358,7 @@ class QTrajectory(object):
                 self.plotted_traces[i].curve.setClickable(True, width=3)
                 self.plotted_traces[i].curve.key = key
                 self.plotted_traces[i].curve.sigClicked.connect(self.trace_clicked)
-                
+        
     def mouse_moved(self, pos):
         self.mouse_position = [self.img.mapFromScene(pos).x(), self.img.mapFromScene(pos).y()]
         self.crosshair_vLine.setPos(self.mouse_position[0])
@@ -395,26 +413,31 @@ class QTrajectory(object):
         self.msgs = self.dvbag.read_messages(start_time=rt0, end_time=rt1)
         
         self.image_sequence = []
+        self.image_sequence_timestamps = []
+        t0 = None
         for m, msg in enumerate(self.msgs):
             imgcopy = copy.copy(self.backgroundimg)
             imgcopy[ msg[1].xpixels, msg[1].ypixels] = msg[1].values # if there's an error, check if you're using ROS hydro?
             self.image_sequence.append(imgcopy)
             #s = int((m / float(len(self.msgs)))*100)
             tfloat = msg[1].header.stamp.secs + msg[1].header.stamp.nsecs*1e-9
-            t_elapsed = tfloat - timerange[0]
-            t_total = timerange[1] - timerange[0]
-            s = int(100*(t_elapsed / t_total))
-            pbar.update(s)
+            self.image_sequence_timestamps.append(tfloat)
+            if t0 is not None:
+                t_elapsed = tfloat - t0
+                t_total = timerange[1] - timerange[0]
+                s = int(100*(t_elapsed / t_total))
+                pbar.update(s)
+            else:
+                t0 = tfloat
         pbar.finish()
         self.current_frame = -1
         
     def get_next_reconstructed_image(self):
         if self.current_frame >= len(self.image_sequence)-1:
             self.current_frame = -1
-            print 'restarted movie'
         self.current_frame += 1
         img = self.image_sequence[self.current_frame]      
-        return img
+        return self.image_sequence_timestamps[self.current_frame], img
     
     def stop_movie(self):
         self.play = False
@@ -432,7 +455,7 @@ class QTrajectory(object):
     def updateData(self):
         if self.play:
             ## Display the data
-            cvimg = self.get_next_reconstructed_image()
+            time_epoch, cvimg = self.get_next_reconstructed_image()
             self.img.setImage(cvimg)
             
             QtCore.QTimer.singleShot(1, self.updateData)
@@ -443,6 +466,8 @@ class QTrajectory(object):
             if dt < 0.03:
                 d = 0.03 - dt
                 time.sleep(d)
+                
+            self.current_time_vline.setPos(time_epoch)
             
             del(cvimg)
     
