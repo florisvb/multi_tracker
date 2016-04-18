@@ -86,10 +86,12 @@ class Dataset(object):
             return t
             
     def timestamp_to_framestamp(self, t):
-        d = self.pd['time_epoch'] - t
-        indices = np.where(d<0)
-        d.iloc[indices] = np.inf
-        return np.argmin(d)
+        first_time = self.pd['time_epoch'].values[0]
+        first_frame = self.pd['frames'].values[0]
+        last_time = self.pd['time_epoch'].values[-1]
+        last_frame = self.pd['frames'].values[-1]
+        func = scipy.interpolate.interp1d([first_time, last_time],[first_frame, last_frame])
+        return int(func(t))
         
     def load_keys(self, keys=None):
         if keys is None:
@@ -158,10 +160,13 @@ def load_and_preprocess_data(hdf5_filename):
         
     return pd, config
     
-def delete_cut_join_trajectories_according_to_instructions(pd, instructions_filename, interpolate_joined_trajectories=True):
-    f = open(instructions_filename)
-    instructions = pickle.load(f)
-    f.close()
+def delete_cut_join_trajectories_according_to_instructions(pd, instructions, interpolate_joined_trajectories=True):
+    if type(instructions) is str:
+        f = open(instructions)
+        instructions = pickle.load(f)
+        f.close()
+    elif type(instructions) is not list:
+        instructions = [instructions]
     
     def get_proper_order_of_objects(dataset, keys):
         trajecs = [dataset.trajec(key) for key in keys]
@@ -208,14 +213,48 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions_file
                             x = np.hstack((dataset.trajec(keys[k]).frames[indices_key1], dataset.trajec(keys[k+1]).frames[indices_key2]))
                             new_pd_dict = {attribute: None for attribute in pd.columns}
                             index = frames_to_interpolate
+                            
+                            if 'data_to_add' in instruction.keys():
+                                data_to_add_frames = []
+                                data_to_add_x = []
+                                data_to_add_y = []
+                                for index, data_to_add in enumerate(instruction['data_to_add']):
+                                    frame_for_data_to_add = dataset.timestamp_to_framestamp(data_to_add[0])
+                                    print frame_for_data_to_add, last_frame, first_frame
+                                    if frame_for_data_to_add > last_frame and frame_for_data_to_add < first_frame:
+                                        data_to_add_frames.append(frame_for_data_to_add)
+                                        data_to_add_x.append(data_to_add[1])
+                                        data_to_add_y.append(data_to_add[2])
+                                order = np.argsort(data_to_add_frames)
+                                data_to_add_frames = np.array(data_to_add_frames)[order]
+                                data_to_add_x = np.array(data_to_add_x)[order]
+                                data_to_add_y = np.array(data_to_add_y)[order]
+                                print 'Adding data in interpolation: ', data_to_add_frames, data_to_add_x, data_to_add_y
+                            
                             for attribute in pd.columns:
                                 if attribute == 'objid':
                                     attribute_values = [keys[0] for f in frames_to_interpolate]
                                 elif attribute == 'frames':
                                     attribute_values = frames_to_interpolate
                                 else:
-                                    y = np.hstack((dataset.trajec(keys[k])[attribute][indices_key1], dataset.trajec(keys[k+1])[attribute][indices_key2]))         
-                                    func = scipy.interpolate.interp1d(x,y)
+                                    y = np.hstack((dataset.trajec(keys[k])[attribute][indices_key1], dataset.trajec(keys[k+1])[attribute][indices_key2]))  
+                                    
+                                    if 'data_to_add' in instruction.keys():
+                                        if 'position' in attribute:
+                                            x_with_added_data = np.hstack((x, data_to_add_frames))
+                                            if attribute == 'position_x':
+                                                y_with_added_data = np.hstack((y, data_to_add_y))   
+                                            elif attribute == 'position_y':
+                                                y_with_added_data = np.hstack((y, data_to_add_x))  
+                                            order = np.argsort(x_with_added_data)
+                                            x_with_added_data = x_with_added_data[order]
+                                            y_with_added_data = y_with_added_data[order]
+                                            func = scipy.interpolate.interp1d(x_with_added_data,y_with_added_data)
+                                        else:
+                                            func = scipy.interpolate.interp1d(x,y)
+                                    else:
+                                        func = scipy.interpolate.interp1d(x,y)
+                                    
                                     attribute_values = func(frames_to_interpolate)
                                 new_pd_dict[attribute] = attribute_values
                             interpolated_values = np.ones_like(new_pd_dict['position_x'])
