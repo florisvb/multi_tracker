@@ -313,7 +313,6 @@ class QTrajectory(TemplateBaseClass):
         
         self.join_objects = True
         self.crosshair_pen = pg.mkPen('g', width=1)
-        self.object_id_numbers = []
         self.ui.qttext_selected_objids.clear()
         
         print 'Ready to collect object id numbers. Click on traces to add object id numbers to the list. Click "save object id numbers" to save, and reset the list'
