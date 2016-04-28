@@ -68,8 +68,13 @@ class QTrajectory(TemplateBaseClass):
         self.ui.trajec_join_add_data.clicked.connect(self.toggle_trajec_join_add_data)
         self.ui.trajec_join_save.clicked.connect(self.trajec_join_save)
         self.ui.trajec_join_clear.clicked.connect(self.toggle_trajec_join_clear)
-        self.ui.trajec_save_id.clicked.connect(self.toggle_trajec_save_id)
-
+        self.ui.get_original_objid.clicked.connect(self.trajec_get_original_objid)
+        self.ui.save_annotation.clicked.connect(self.save_annotation)
+        self.ui.load_annotations.clicked.connect(self.load_annotations)
+        self.ui.annotated_color_checkbox.stateChanged.connect(self.toggle_annotated_colors)
+        self.ui.annotated_hide_checkbox.stateChanged.connect(self.toggle_annotated_hide)
+        self.ui.save_colors.clicked.connect(self.save_trajec_colors)
+        
         # parameters
         self.data_filename = data_filename
         self.load_data()
@@ -90,23 +95,31 @@ class QTrajectory(TemplateBaseClass):
             self.dvbag = None
             
         # Initialize 
+        self.trajec_width_dict = {}
         try:
             fname = os.path.join(self.path, 'trajec_to_color_dict.pickle')
             f = open(fname, 'r+')
             self.trajec_to_color_dict = pickle.load(f)
             f.close()
-            
-            fname = os.path.join(self.path, 'trajec_width_dict.pickle')
-            f = open(fname, 'r+')
-            self.trajec_width_dict = pickle.load(f)
-            f.close()
         except:
             self.trajec_to_color_dict = {}
-            self.trajec_width_dict = {}
+            for key in self.pd.objid.unique():
+                color = get_random_color()
+                self.trajec_to_color_dict.setdefault(key, color)
         self.plotted_traces_keys = []
         self.plotted_traces = []
         self.trajectory_ends_vlines = []
         self.data_to_add = []
+        self.selected_trajectory_ends = []
+        
+        self.annotations = os.path.join(self.path, 'annotations.pickle')
+        if os.path.exists(self.annotations):
+            f = open(self.annotations, 'r+')
+            data = pickle.load(f)
+            f.close()
+            self.annotated_keys = data.keys()
+        else:
+            self.annotated_keys = []
         
         self.time_mouse_click = time.time()
         self.cut_objects = False
@@ -121,7 +134,7 @@ class QTrajectory(TemplateBaseClass):
             for r, row in enumerate(self.config.sensory_stimulus_on):
                 v1 = pg.PlotDataItem([self.config.sensory_stimulus_on[r][0],self.config.sensory_stimulus_on[r][0]], [0,10])
                 v2 = pg.PlotDataItem([self.config.sensory_stimulus_on[r][-1],self.config.sensory_stimulus_on[r][-1]], [0,10])
-                f12 = pg.FillBetweenItem(curve1=v1, curve2=v2, brush=pg.mkBrush('r'))
+                f12 = pg.FillBetweenItem(curve1=v1, curve2=v2, brush=pg.mkBrush((255,0,0,150)) )
                 self.ui.qtplot_timetrace.addItem(f12)
         
         lr = pg.LinearRegionItem(values=self.troi)
@@ -130,6 +143,8 @@ class QTrajectory(TemplateBaseClass):
         self.ui.qtplot_timetrace.addItem(lr)
         self.draw_timeseries_vlines_for_interesting_timepoints()
         self.ui.qtplot_timetrace.setRange(xRange=[np.min(self.time_epoch_continuous), np.max(self.time_epoch_continuous)], yRange=[0, np.max(self.nflies)])
+        self.ui.qtplot_timetrace.setLimits(yMin=0, yMax=np.max(self.nflies))
+        self.ui.qtplot_timetrace.setLimits(minYRange=np.max(self.nflies), maxYRange=np.max(self.nflies))
         
         self.current_time_vline = pg.InfiniteLine(angle=90, movable=False)
         self.ui.qtplot_timetrace.addItem(self.current_time_vline, ignoreBounds=True)
@@ -144,7 +159,7 @@ class QTrajectory(TemplateBaseClass):
         self.join_objects = False
         self.delete_objects = False
         self.add_data = False
-        self.save_id = False
+        self.get_original_objid = False
     
     def set_movie_speed(self, data):
         if data >0:
@@ -157,44 +172,82 @@ class QTrajectory(TemplateBaseClass):
             p = 1- (np.abs(data) / 30.)
             max_frame_delay = 0.2
             self.frame_delay = (max_frame_delay - (max_frame_delay*p))*2
+            
+    def get_annotations_from_checked_boxes(self):
+        notes = []
+        for i in range(1,5):
+            checkbox = self.ui.__getattribute__('annotated_checkbox_' + str(i))
+            if checkbox.checkState():
+                textbox = self.ui.__getattribute__('annotated_text_' + str(i))
+                note = textbox.toPlainText()
+                notes.append(str(note))
+        return notes
     
-    def toggle_trajec_save_id(self):
-        self.set_all_buttons_false()
-        
-        self.save_id = True
-        self.crosshair_pen = pg.mkPen((248,142,255), width=1)
-        print 'Saving objects!'
-    
-    def trajec_save_id(self, key):
-        self.saved_object_id_numbers = os.path.join(self.path, 'save_object_id_numbers.pickle')
-        if os.path.exists(self.saved_object_id_numbers):
-            f = open(self.saved_object_id_numbers, 'r+')
+    def save_annotation(self):
+        notes = self.get_annotations_from_checked_boxes()
+
+        print notes
+        self.annotations = os.path.join(self.path, 'annotations.pickle')
+        if os.path.exists(self.annotations):
+            f = open(self.annotations, 'r+')
             data = pickle.load(f)
             f.close()
         else:
-            f = open(self.saved_object_id_numbers, 'w+')
+            f = open(self.annotations, 'w+')
             f.close()
-            data = []
-        data.append(key)
-        f = open(self.saved_object_id_numbers, 'r+')
+            data = {}
+        
+        for key in self.object_id_numbers:
+            if key not in data.keys():
+                data.setdefault(key, {'notes': [], 'related_objids': []})
+            data[key]['notes'] = notes
+            data[key]['related_objids'] = self.object_id_numbers
+            if len(notes) == 0:
+                del(data[key])
+        self.annotated_keys = data.keys()
+
+        f = open(self.annotations, 'r+')
         pickle.dump(data, f)
         f.close()
+        print 'Saved annotation'
         
-        self.trajec_to_color_dict[key] = (0,0,0)
-        self.trajec_width_dict[key] = 3
-        self.draw_trajectories()
+        self.toggle_trajec_join_clear()
                 
-    def save_trajec_color_width_dicts(self):
+    def load_annotations(self):
+        for i in range(1,5):
+            checkbox = self.ui.__getattribute__('annotated_checkbox_' + str(i))
+            checkbox.setCheckState(0)
+            textbox = self.ui.__getattribute__('annotated_text_' + str(i))
+            textbox.clear()
+            
+        self.annotations = os.path.join(self.path, 'annotations.pickle')
+        if os.path.exists(self.annotations):
+            f = open(self.annotations, 'r+')
+            data = pickle.load(f)
+            f.close()
+            
+        for key in self.object_id_numbers:
+            annotation = data[key]
+            if len(self.object_id_numbers) > 1:
+                raise ValueError('Load Annotations only works with single trajectories selected')
+            for i, note in enumerate(annotation['notes']):
+                checkbox = self.ui.__getattribute__('annotated_checkbox_' + str(i+1))
+                checkbox.setChecked(True)
+                textbox = self.ui.__getattribute__('annotated_text_' + str(i+1))
+                textbox.setPlainText(note)
+        
+    def toggle_annotated_colors(self):
+        self.draw_trajectories()
+    
+    def toggle_annotated_hide(self):
+        self.draw_trajectories()
+        
+    def save_trajec_colors(self):
         fname = os.path.join(self.path, 'trajec_to_color_dict.pickle')
         f = open(fname, 'w+')
         pickle.dump(self.trajec_to_color_dict, f)
         f.close()
         
-        fname = os.path.join(self.path, 'trajec_width_dict.pickle')
-        f = open(fname, 'w+')
-        pickle.dump(self.trajec_width_dict, f)
-        f.close()
-            
     def trajec_undo(self):
         instruction = self.instructions.pop(-1)
         filename = os.path.join(self.path, 'delete_cut_join_instructions.pickle')
@@ -232,6 +285,11 @@ class QTrajectory(TemplateBaseClass):
         print 'playing movie'
         self.updateTime = ptime.time()
         self.updateData()
+        
+    def trajec_get_original_objid(self):
+        self.set_all_buttons_false()
+        self.get_original_objid = True
+        self.crosshair_pen = pg.mkPen((255, 129, 234), width=1)
     
     def toggle_trajec_delete(self):
         self.set_all_buttons_false()
@@ -239,6 +297,9 @@ class QTrajectory(TemplateBaseClass):
         self.delete_objects = True
         self.crosshair_pen = pg.mkPen('r', width=1)
         print 'Deleting objects!'
+        
+        for key in self.object_id_numbers:
+            self.delete_object_id_number(key)
     
     def toggle_trajec_cut(self):
         self.set_all_buttons_false()
@@ -253,6 +314,8 @@ class QTrajectory(TemplateBaseClass):
         self.join_objects = True
         self.crosshair_pen = pg.mkPen('g', width=1)
         self.object_id_numbers = []
+        self.ui.qttext_selected_objids.clear()
+        
         print 'Ready to collect object id numbers. Click on traces to add object id numbers to the list. Click "save object id numbers" to save, and reset the list'
         
     def toggle_trajec_join_add_data(self):
@@ -265,6 +328,7 @@ class QTrajectory(TemplateBaseClass):
    
     def toggle_trajec_join_clear(self):
         self.set_all_buttons_false()
+        self.trajec_width_dict = {}
 
         for key in self.object_id_numbers:
             self.trajec_width_dict[key] = 2
@@ -272,8 +336,11 @@ class QTrajectory(TemplateBaseClass):
         self.crosshair_pen = pg.mkPen('w', width=1)
         self.object_id_numbers = []
         self.add_data = []
+        self.ui.qttext_selected_objids.clear()
         print 'Join list cleared'
         self.draw_trajectories()
+        
+        self.toggle_trajec_join_collect()
     
     ### Mouse moved / clicked callbacks
     
@@ -292,6 +359,17 @@ class QTrajectory(TemplateBaseClass):
                 self.add_data_to_trajecs_to_join()
         self.time_mouse_click = time.time()
         
+        if self.get_original_objid:
+            s = 'time_epoch > ' + str(self.current_time_epoch - 1) + ' & time_epoch < ' + str(self.current_time_epoch + 1)
+            pd_tmp = self.original_pd.query(s)
+            print s, pd_tmp.shape
+            x_diff = np.abs(pd_tmp.position_x.values - self.mouse_position[1])
+            y_diff = np.abs(pd_tmp.position_y.values - self.mouse_position[0])
+            i = np.argmin(x_diff + y_diff)
+            objid = pd_tmp.iloc[i].objid
+            self.ui.qttext_show_original_objid.clear()
+            self.ui.qttext_show_original_objid.setPlainText(str(int(objid)))
+        
     def trace_clicked(self, item): 
         if self.join_objects:
             if item.key not in self.object_id_numbers:
@@ -308,6 +386,10 @@ class QTrajectory(TemplateBaseClass):
                 pen = pg.mkPen(color, width=2)  
                 self.trajec_width_dict.setdefault(item.key, 2)
                 item.setPen(pen)
+            self.ui.qttext_selected_objids.clear()
+            self.ui.qttext_selected_objids.setPlainText(str(self.object_id_numbers))
+            self.draw_vlines_for_selected_trajecs()
+            
         elif self.cut_objects:
             print 'Cutting trajectory: ', item.key, ' at: ', self.mouse_position
             self.cut_trajectory(item.key, self.mouse_position)
@@ -315,12 +397,28 @@ class QTrajectory(TemplateBaseClass):
             self.delete_object_id_number(item.key)
         elif self.add_data:
             self.add_data_to_trajecs_to_join()
-        elif self.save_id:
-            self.trajec_save_id(item.key)
             
     def add_data_to_trajecs_to_join(self):
         self.data_to_add.append([self.current_time_epoch, self.mouse_position[0], self.mouse_position[1]])
         self.draw_data_to_add()
+        
+    def get_new_unique_objid(self):
+        fname = os.path.join(self.path, 'new_unique_objids.pickle')
+        if os.path.exists(fname):
+            f = open(fname, 'r+')
+            data = pickle.load(f)
+            f.close()
+        else:
+            f = open(fname, 'w+')
+            f.close()
+            data = [np.max(self.pd.objid)+10]
+        new_objid = data[-1] + 1
+        data.append(new_objid)
+        f = open(fname, 'r+')
+        pickle.dump(data, f)
+        f.close()
+        print 'NEW OBJID CREATED: ', new_objid
+        return new_objid
         
     def cut_trajectory(self, key, point):
         dataset = mta.read_hdf5_file_to_pandas.Dataset(self.pd)
@@ -331,16 +429,13 @@ class QTrajectory(TemplateBaseClass):
         trajectory_frame = np.argmin(error)
         dataset_frame = dataset.timestamp_to_framestamp(trajec.time_epoch[trajectory_frame])
         
-        # now replace objids
-        new_objid = np.max(self.pd.objid) + 1
-        
         instructions = {'action': 'cut',
                         'order': time.time(),
                         'objid': key,
                         'cut_frame_global': dataset_frame,
                         'cut_frame_trajectory': trajectory_frame, 
                         'cut_time_epoch': trajec.time_epoch[trajectory_frame],
-                        'new_objid': new_objid}
+                        'new_objid': self.get_new_unique_objid()}
         self.save_delete_cut_join_instructions(instructions)
 
         # update gui
@@ -352,11 +447,13 @@ class QTrajectory(TemplateBaseClass):
         instructions = {'action': 'join',
                         'order': time.time(),
                         'objids': self.object_id_numbers,
-                        'data_to_add': self.data_to_add}
+                        'data_to_add': self.data_to_add,
+                        'new_objid': self.get_new_unique_objid()}
         print instructions
         self.save_delete_cut_join_instructions(instructions)
         
         self.object_id_numbers = []
+        self.ui.qttext_selected_objids.clear()
         self.data_to_add = []
         self.trajec_width_dict = {}
         
@@ -390,18 +487,36 @@ class QTrajectory(TemplateBaseClass):
             pass
         for vline in self.trajectory_ends_vlines:
             self.ui.qtplot_timetrace.removeItem(vline)
+        self.trajectory_ends_vlines = []
+        
         # draw
         self.nflies_plot = self.ui.qtplot_timetrace.plot(x=self.time_epoch_continuous, y=self.nflies)
         
-        for t in self.pd.groupby('objid').time_epoch.max().values: 
+        objid_ends = self.pd.groupby('objid').time_epoch.max()
+        for key in objid_ends.keys():
+            t = objid_ends[key]
             vline = pg.InfiniteLine(angle=90, movable=False)
             self.ui.qtplot_timetrace.addItem(vline, ignoreBounds=True)
             vline.setPos(t)
-            pen = pg.mkPen('g', width=2)
+            pen = pg.mkPen(self.trajec_to_color_dict[key], width=1)
             vline.setPen(pen)
             self.trajectory_ends_vlines.append(vline)
         
         # TODO: times (or frames) where trajectories get very close to one another
+        
+    def draw_vlines_for_selected_trajecs(self):
+        for vline in self.selected_trajectory_ends:
+            self.ui.qtplot_timetrace.removeItem(vline)
+        self.selected_trajectory_ends = []
+        for key in self.object_id_numbers:
+            trajec = self.dataset.trajec(key)
+            vline = pg.InfiniteLine(angle=90, movable=False)
+            self.ui.qtplot_timetrace.addItem(vline, ignoreBounds=True)
+            vline.setPos(trajec.time_epoch[-1])
+            pen = pg.mkPen(self.trajec_to_color_dict[key], width=5)
+            vline.setPen(pen)
+            self.selected_trajectory_ends.append(vline)
+            
     
     def update_time_region(self, linear_region):
         self.linear_region = linear_region
@@ -457,6 +572,14 @@ class QTrajectory(TemplateBaseClass):
                     width = self.trajec_width_dict[key]
                 else:
                     width = 2
+                if self.ui.annotated_color_checkbox.checkState():
+                    if key in self.annotated_keys:
+                        color = (0,0,0)
+                        width = 6
+                if self.ui.annotated_hide_checkbox.checkState():
+                    if key in self.annotated_keys:
+                        color = (0,0,0,0)
+                        width = 1
                 pen = pg.mkPen(color, width=width)  
                 plotted_trace = self.ui.qtplot_trajectory.plot(trajec.position_y[first_time_index:last_time_index], trajec.position_x[first_time_index:last_time_index], pen=pen) 
                 self.plotted_traces.append(plotted_trace)
@@ -468,7 +591,8 @@ class QTrajectory(TemplateBaseClass):
                 self.plotted_traces[i].curve.sigClicked.connect(self.trace_clicked)
         
         self.draw_data_to_add()
-        self.save_trajec_color_width_dicts()
+        self.draw_vlines_for_selected_trajecs()
+        #self.save_trajec_color_width_dicts()
         
     def draw_data_to_add(self):
         for data in self.data_to_add:
@@ -478,6 +602,7 @@ class QTrajectory(TemplateBaseClass):
     ### Load / read / save data functions
     
     def load_data(self):
+        self.original_pd = mta.read_hdf5_file_to_pandas.load_data_as_pandas_dataframe_from_hdf5_file(self.data_filename)
         self.pd, self.config = mta.read_hdf5_file_to_pandas.load_and_preprocess_data(self.data_filename)
         self.path = self.config.path
         self.dataset = read_hdf5_file_to_pandas.Dataset(self.pd)

@@ -6,6 +6,7 @@ import os
 import imp
 import pickle
 import scipy.interpolate
+import warnings
 
 def get_filenames(path, contains):
     cmd = 'ls ' + path
@@ -187,6 +188,7 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
     
     for instruction in instructions:
         if instruction['action'] == 'delete':
+            #pass
             pd = pd[pd.objid!=instruction['objid']]
         elif instruction['action'] == 'cut':
             mask = (pd['objid']==instruction['objid']) & (pd['frames']>instruction['cut_frame_global'])
@@ -195,7 +197,12 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
             if interpolate_joined_trajectories is False:
                 for key in instruction['objids']:
                     mask = pd['objid']==key
-                    pd.loc[mask,'objid'] = instruction['objids'][0]
+                    if 'new_objid' in instruction.keys():
+                        print '*** ASSIGNING NEW OBJID: ', instruction['new_objid']
+                        pd.loc[mask,'objid'] = instruction['new_objid']
+                    else:
+                        warnings.warn("Warning: using old join method; not using unique objid numbers")
+                        pd.loc[mask,'objid'] = instruction['objids'][0]
             elif interpolate_joined_trajectories is True:
                 dataset = Dataset(pd)
                 keys = get_proper_order_of_objects(dataset, instruction['objids'])
@@ -229,7 +236,6 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
                                 data_to_add_frames = np.array(data_to_add_frames)[order]
                                 data_to_add_x = np.array(data_to_add_x)[order]
                                 data_to_add_y = np.array(data_to_add_y)[order]
-                                print 'Adding data in interpolation: ', data_to_add_frames, data_to_add_x, data_to_add_y
                             
                             for attribute in pd.columns:
                                 if attribute == 'objid':
@@ -264,7 +270,12 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
                             pd = pd.sort_index()
                 for key in instruction['objids']:
                     mask = pd['objid']==key
-                    pd.loc[mask,'objid'] = instruction['objids'][0]
+                    if 'new_objid' in instruction.keys():
+                        print '*** ASSIGNING NEW OBJID: ', instruction['new_objid']
+                        pd.loc[mask,'objid'] = instruction['new_objid']
+                    else:
+                        warnings.warn("Warning: using old join method; not using unique objid numbers")
+                        pd.loc[mask,'objid'] = instruction['objids'][0]
                 
     return pd
     
