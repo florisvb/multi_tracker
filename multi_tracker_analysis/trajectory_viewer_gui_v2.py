@@ -47,10 +47,12 @@ def get_random_color():
     return color
   
 class QTrajectory(TemplateBaseClass):
-    def __init__(self, data_filename, bgimg, delta_video_filename):
+    def __init__(self, data_filename, bgimg, delta_video_filename, load_original=False):
+        self.load_original = load_original 
+        
         TemplateBaseClass.__init__(self)
         self.setWindowTitle('Trajectory Viewer GUI v2')
-  
+    
         # Create the main window
         #self.app = QtGui.QApplication([])
         self.ui = WindowTemplate()
@@ -86,7 +88,7 @@ class QTrajectory(TemplateBaseClass):
         self.troi = [np.min(self.pd.time_epoch.values), np.min(self.pd.time_epoch.values)+trange*0.1] 
         self.skip_frames = 1
         self.frame_delay = 0.03
-        self.path = os.path.dirname(delta_video_filename)
+        self.path = os.path.dirname(data_filename)
         
         # load delta video bag
         if delta_video_filename != 'none':
@@ -111,6 +113,7 @@ class QTrajectory(TemplateBaseClass):
         self.trajectory_ends_vlines = []
         self.data_to_add = []
         self.selected_trajectory_ends = []
+        self.object_id_numbers = []
         
         self.annotations = os.path.join(self.path, 'annotations.pickle')
         if os.path.exists(self.annotations):
@@ -141,7 +144,10 @@ class QTrajectory(TemplateBaseClass):
         f = 'update_time_region'
         lr.sigRegionChanged.connect(self.__getattribute__(f))
         self.ui.qtplot_timetrace.addItem(lr)
+        
+        print 'drawing interesting time points'
         self.draw_timeseries_vlines_for_interesting_timepoints()
+        print 'done drawing interesting time points'
         self.ui.qtplot_timetrace.setRange(xRange=[np.min(self.time_epoch_continuous), np.max(self.time_epoch_continuous)], yRange=[0, np.max(self.nflies)])
         self.ui.qtplot_timetrace.setLimits(yMin=0, yMax=np.max(self.nflies))
         self.ui.qtplot_timetrace.setLimits(minYRange=np.max(self.nflies), maxYRange=np.max(self.nflies))
@@ -601,7 +607,9 @@ class QTrajectory(TemplateBaseClass):
     ### Load / read / save data functions
     
     def load_data(self):
-        self.original_pd = mta.read_hdf5_file_to_pandas.load_data_as_pandas_dataframe_from_hdf5_file(self.data_filename)
+        if self.load_original:
+            self.original_pd = mta.read_hdf5_file_to_pandas.load_data_as_pandas_dataframe_from_hdf5_file(self.data_filename)
+        print 'loading data'
         self.pd, self.config = mta.read_hdf5_file_to_pandas.load_and_preprocess_data(self.data_filename)
         self.path = self.config.path
         self.dataset = read_hdf5_file_to_pandas.Dataset(self.pd)
@@ -614,6 +622,7 @@ class QTrajectory(TemplateBaseClass):
             data = []
         self.instructions = data
         self.calc_time_etc()
+        print 'data loaded'
     
     def calc_time_etc(self):
         self.time_epoch = self.pd.time_epoch.groupby(self.pd.index).mean().values
@@ -707,6 +716,7 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option('--path', type=str, default='none', help="option: path that points to standard named filename, background image, dvbag, config. If using 'path', no need to provide filename, bgimg, dvbag, and config. Note")
     parser.add_option('--movie', type=int, default=1, help="load and play the dvbag movie, default is 1, to load use 1")
+    parser.add_option('--load-original', type=int, default=0, dest="load_original", help="load original (unprocessed) dataset for debugging, use 1 to load, default 0")
     parser.add_option('--filename', type=str, help="name and path of the hdf5 tracked_objects filename")
     parser.add_option('--bgimg', type=str, help="name and path of the background image")
     parser.add_option('--dvbag', type=str, default='none', help="name and path of the delta video bag file, optional")
@@ -721,10 +731,10 @@ if __name__ == '__main__':
         options.dvbag = get_filename(options.path, 'delta_video.bag')
         options.bgimg = get_filename(options.path, '_bgimg_')
     
-    if options.movie is False:
+    if options.movie != 1:
         options.dvbag = 'none'
     
-    Qtrajec = QTrajectory(options.filename, options.bgimg, options.dvbag)
+    Qtrajec = QTrajectory(options.filename, options.bgimg, options.dvbag, options.load_original)
     Qtrajec.run()
     
     if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
