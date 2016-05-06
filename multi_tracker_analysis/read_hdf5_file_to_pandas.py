@@ -161,6 +161,15 @@ def load_and_preprocess_data(hdf5_filename):
         
     return pd, config
     
+def find_instructions_related_to_objid(instructions, objid):
+    for i, instruction in enumerate(instructions):
+        if 'new_objid' in instruction.keys():
+            if objid == instruction['new_objid']:
+                print i
+        if 'objids' in instruction.keys():
+            if objid in instruction['objids']:
+                print i
+    
 def delete_cut_join_trajectories_according_to_instructions(pd, instructions, interpolate_joined_trajectories=True):
     if type(instructions) is str:
         f = open(instructions)
@@ -170,10 +179,17 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
         instructions = [instructions]
     
     def get_proper_order_of_objects(dataset, keys):
-        trajecs = [dataset.trajec(key) for key in keys]
-        ts = [trajec.time_epoch[0] for trajec in trajecs]
+        trajecs = []
+        ts = []
+        goodkeys = []
+        for key in keys:
+            trajec = dataset.trajec(key)
+            if len(trajec.speed) > 0:
+                trajecs.append(trajec)
+                ts.append(trajec.time_epoch[0])
+                goodkeys.append(key)
         order = np.argsort(ts)
-        return np.array(keys)[order]
+        return np.array(goodkeys)[order]
         
     def get_indices_to_use_for_interpolation(key1, key2):
         length_key1 = len(dataset.trajec(key1).position_x)
