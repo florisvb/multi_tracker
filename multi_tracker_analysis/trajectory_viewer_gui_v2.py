@@ -60,6 +60,7 @@ class QTrajectory(TemplateBaseClass):
         #self.show()
 
         # Buttons
+        self.ui.movie_save.clicked.connect(self.save_image_sequence)
         self.ui.movie_speed.sliderMoved.connect(self.set_movie_speed)
         self.ui.trajec_undo.clicked.connect(self.trajec_undo)
         self.ui.movie_play.clicked.connect(self.movie_play)
@@ -623,6 +624,7 @@ class QTrajectory(TemplateBaseClass):
         self.instructions = data
         self.calc_time_etc()
         print 'data loaded'
+        print 'N Trajecs: ', len(self.pd.groupby('objid'))
     
     def calc_time_etc(self):
         self.time_epoch = self.pd.time_epoch.groupby(self.pd.index).mean().values
@@ -675,6 +677,26 @@ class QTrajectory(TemplateBaseClass):
         pbar.finish()
         self.current_frame = -1
         
+    def save_image_sequence(self):
+        start_frame = self.dataset.timestamp_to_framestamp(self.troi[0])
+        dirname = 'image_sequence_' + str(start_frame)
+        dirname = os.path.join(self.path, dirname)
+        if os.path.exists(dirname):
+            print 'Path exists! Will not overwrite'
+            return
+        else:
+            os.mkdir(dirname)
+        print 'saving image sequence: ', len(self.image_sequence)
+        zs = int(np.ceil( np.log10(len(self.image_sequence)) )+1)
+        print 'zs: ', zs
+        for i, image in enumerate(self.image_sequence):
+            img_name = str(i).zfill(zs) + '.png'
+            img_name = os.path.join(dirname, img_name)      
+            cv2.imwrite(img_name, image)
+            print i, img_name
+        print 'To turn the PNGs into a movie, you can run this command from inside the directory with the tmp files: '
+        print 'mencoder \'mf://*.png\' -mf type=png:fps=30 -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o animation.avi'
+            
     def get_next_reconstructed_image(self):
         self.current_frame += self.skip_frames
         if self.current_frame >= len(self.image_sequence)-1:

@@ -40,7 +40,7 @@
       <x>10</x>
       <y>10</y>
       <width>171</width>
-      <height>141</height>
+      <height>161</height>
      </rect>
     </property>
     <property name="title">
@@ -82,7 +82,7 @@
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>110</y>
+       <y>100</y>
        <width>161</width>
        <height>29</height>
       </rect>
@@ -107,7 +107,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>100</y>
+       <y>90</y>
        <width>66</width>
        <height>17</height>
       </rect>
@@ -117,6 +117,19 @@
      </property>
      <property name="text">
       <string>Speed</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="movie_save">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>130</y>
+       <width>111</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Save Img Seq</string>
      </property>
     </widget>
    </widget>
@@ -317,7 +330,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>150</y>
+      <y>160</y>
       <width>181</width>
       <height>20</height>
      </rect>
