@@ -235,6 +235,7 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
                             indices_key1, indices_key2 = get_indices_to_use_for_interpolation(keys[k], keys[k+1])
                             x = np.hstack((dataset.trajec(keys[k]).frames[indices_key1], dataset.trajec(keys[k+1]).frames[indices_key2]))
                             new_pd_dict = {attribute: None for attribute in pd.columns}
+                            new_pd_dict.setdefault('interpolated': None)
                             index = frames_to_interpolate
                             
                             if 'data_to_add' in instruction.keys():
