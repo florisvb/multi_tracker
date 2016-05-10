@@ -280,14 +280,15 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
                                     attribute_values = func(frames_to_interpolate)
                                 new_pd_dict[attribute] = attribute_values
                             interpolated_values = np.ones_like(new_pd_dict['position_x'])
-                            new_pd_dict.setdefault('interpolated', interpolated_values)
+                            new_pd_dict['interpolated'] = interpolated_values
+                            #return pd, new_pd_dict, frames_to_interpolate
                             new_pd = pandas.DataFrame(new_pd_dict, index=frames_to_interpolate)
                             pd = pandas.concat([pd, new_pd])
                             pd = pd.sort_index()
                 for key in instruction['objids']:
                     mask = pd['objid']==key
                     if 'new_objid' in instruction.keys():
-                        print '*** ASSIGNING NEW OBJID: ', instruction['new_objid']
+                        print '*** ASSIGNING NEW OBJID: ', key, '  to : ', instruction['new_objid']
                         pd.loc[mask,'objid'] = instruction['new_objid']
                     else:
                         warnings.warn("Warning: using old join method; not using unique objid numbers")
