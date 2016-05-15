@@ -34,6 +34,7 @@ def get_filename(path, contains):
     for i, filename in enumerate(all_filelist):
         if contains in filename:
             return os.path.join(path, filename)
+    return None
             
 def load_bag_as_hdf5(bag, skip_messages=[]):
     output_fname = bag.split('.')[0] + '.hdf5'
@@ -142,6 +143,14 @@ def load_and_preprocess_data(hdf5_filename):
     
     returns: pandas dataframe, processed according to configuration file, and the configuration file instance
     '''
+    if 'trackedobjects' not in hdf5_filename:
+        print 'File is not a trackedobjects file, looking for a trackedobjects file in this directory'
+        fname = get_filename(hdf5_filename, 'trackedobjects.hdf5')
+        if fname is not None:
+            hdf5_filename = fname
+        else:
+            raise ValueError('Could not find trackedobjects.hdf5 file')
+                    
     pd = load_data_as_pandas_dataframe_from_hdf5_file(hdf5_filename, attributes=None)
     
     hdf5_basename = os.path.basename(hdf5_filename)
@@ -235,7 +244,7 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
                             indices_key1, indices_key2 = get_indices_to_use_for_interpolation(keys[k], keys[k+1])
                             x = np.hstack((dataset.trajec(keys[k]).frames[indices_key1], dataset.trajec(keys[k+1]).frames[indices_key2]))
                             new_pd_dict = {attribute: None for attribute in pd.columns}
-                            new_pd_dict.setdefault('interpolated': None)
+                            new_pd_dict.setdefault('interpolated', None)
                             index = frames_to_interpolate
                             
                             if 'data_to_add' in instruction.keys():
