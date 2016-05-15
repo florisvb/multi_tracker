@@ -170,6 +170,18 @@ def load_and_preprocess_data(hdf5_filename):
         config = None
         
     return pd, config
+
+def load_config_from_path(path):
+    config_filename = get_filename(path, 'config')
+    hdf5_file = os.path.basename(get_filename(path, 'trackedobjects.hdf5'))
+    identifiercode = hdf5_file.split('_trackedobjects')[0]
+    print 'identifiercode: ', identifiercode
+    if config_filename is not None:
+        Config = imp.load_source('Config', config_filename)
+        config = Config.Config(path, identifiercode)
+    else:
+        config = None
+    return config
     
 def find_instructions_related_to_objid(instructions, objid):
     for i, instruction in enumerate(instructions):
