@@ -148,6 +148,7 @@ def load_and_preprocess_data(hdf5_filename):
         fname = get_filename(hdf5_filename, 'trackedobjects.hdf5')
         if fname is not None:
             hdf5_filename = fname
+            print 'Found: ', fname
         else:
             raise ValueError('Could not find trackedobjects.hdf5 file')
                     
