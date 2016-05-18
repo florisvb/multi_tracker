@@ -662,7 +662,8 @@ class QTrajectory(TemplateBaseClass):
         t0 = None
         for m, msg in enumerate(self.msgs):
             imgcopy = copy.copy(self.backgroundimg)
-            imgcopy[ msg[1].xpixels, msg[1].ypixels] = msg[1].values # if there's an error, check if you're using ROS hydro?
+            if len(msg[1].values) > 0:
+                imgcopy[ msg[1].xpixels, msg[1].ypixels] = msg[1].values # if there's an error, check if you're using ROS hydro?
             self.image_sequence.append(imgcopy)
             #s = int((m / float(len(self.msgs)))*100)
             tfloat = msg[1].header.stamp.secs + msg[1].header.stamp.nsecs*1e-9
