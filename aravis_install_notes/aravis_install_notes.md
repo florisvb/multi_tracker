@@ -31,3 +31,8 @@ edit these files to follow templates found in this directory:
 
 Restart computer for changes to take effect.
 
+Note: if there are problems you may need to shut down the network manager.
+sudo stop network-manager
+
+Make that permanent past reboot:
+echo "manual" | sudo tee /etc/init/network-manager.override
