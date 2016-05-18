@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from __future__ import division
 from optparse import OptionParser
-import roslib
 import rospy
 import rosparam
 import copy
@@ -136,8 +135,8 @@ class Compressor:
         if self.backgroundImage is None:
             self.backgroundImage = copy.copy(self.imgScaled)
             self.background_img_filename = self.experiment_basename + '_deltavideo_bgimg_' + time.strftime("%Y%m%d_%H%M.png", time.localtime())
-            home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/' + self.nodenum + '/data_directory') )
-            self.background_img_filename = os.path.join(home_directory, self.background_img_filename)
+            data_directory = os.path.expanduser( rospy.get_param('/multi_tracker/' + self.nodenum + '/data_directory') )
+            self.background_img_filename = os.path.join(data_directory, self.background_img_filename)
             
             cv2.imwrite(self.background_img_filename, self.backgroundImage)
             self.current_background_img += 1
@@ -145,8 +144,8 @@ class Compressor:
         if self.reset_background_flag:
             self.backgroundImage = copy.copy(self.imgScaled)
             self.background_img_filename = time.strftime("%Y%m%d_%H%M_deltavideo_bgimg_N" + self.nodenum, time.localtime()) + '.png'
-            home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/data_directory') )
-            self.background_img_filename = os.path.join(home_directory, self.background_img_filename)
+            data_directory = os.path.expanduser( rospy.get_param('/multi_tracker/' + self.nodenum + '/data_directory') )
+            self.background_img_filename = os.path.join(data_directory, self.background_img_filename)
             cv2.imwrite(self.background_img_filename, self.backgroundImage)
             self.current_background_img += 1
             self.reset_background_flag = False
