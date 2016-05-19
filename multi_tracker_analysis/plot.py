@@ -121,7 +121,7 @@ def plot_individual_trajectories_from_dataset_format(dataset, keys, backgroundim
         
     if backgroundimage is not None:
         backgroundimage = plt.imread(backgroundimage)
-        binsx, binsy = plot.get_bins_from_backgroundimage(backgroundimage)
+        binsx, binsy = get_bins_from_backgroundimage(backgroundimage)
         ax.imshow(backgroundimage, cmap=plt.get_cmap('gray'), extent=[binsx[0], binsx[-1], binsy[0], binsy[-1]])
         
     for key in keys:
