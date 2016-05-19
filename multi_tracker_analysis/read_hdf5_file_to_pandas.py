@@ -374,8 +374,17 @@ def cull_short_trajectories(pd, min_length=4):
     culled_pd = pd.query('objid in @keys_ok')
     
     return culled_pd
+
+def compare_objids_from_two_dataframes(pd1, pd2):
+    objids_1 = np.unique(pd1.objid.values)
+    objids_2 = np.unique(pd2.objid.values)
     
-def cull_trajectories_that_do_not_cover_much_ground(pd, min_distance_travelled=10):
+    unique_to_1 = [k for k in objids_1 if k not in objids_2]
+    unique_to_2 = [k for k in objids_2 if k not in objids_1]
+    
+    return unique_to_1, unique_to_2
+    
+def cull_trajectories_that_do_not_cover_much_ground(pd, min_distance_travelled=10, print_keys=False):
     distance_travelled = pd.speed.groupby(pd.objid).agg('sum')
     indices = np.where(distance_travelled > min_distance_travelled)[0]
     objids = distance_travelled.index[indices]
