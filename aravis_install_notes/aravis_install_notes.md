@@ -36,3 +36,9 @@ sudo stop network-manager
 
 Make that permanent past reboot:
 echo "manual" | sudo tee /etc/init/network-manager.override
+
+
+
+----
+
+See also, for a different ROS driver:  https://github.com/magazino/pylon_camera
