@@ -1,0 +1,3 @@
+/multi_tracker/1/data_association/kalman_parameters_py_file: 'kalman_parameters.py'
+/multi_tracker/1/data_association/max_tracked_objects: 20
+/multi_tracker/1/data_association/n_covariances_to_reject_data: 3

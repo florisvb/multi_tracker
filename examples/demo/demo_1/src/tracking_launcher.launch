@@ -1,0 +1,26 @@
+<launch>
+
+# set up src and data directories
+<rosparam command="load" file="home_directory.yaml"/>
+
+# load parameters for the tracking, and the data association
+<rosparam command="load" file="tracker_parameters.yaml"/>
+<rosparam command="load" file="data_association_parameters.yaml"/>
+
+# launch tracking and data association nodes
+<node name="tracker_1" pkg="multi_tracker" type="tracker_simplebuffer.py" output="screen" args="--nodenum=1" />
+<node name="data_association_1" pkg="multi_tracker" type="data_association.py" output="screen" args="--nodenum=1" />
+
+# launch node to save data to hdf5
+<node name="save_hdf5_data_1" pkg="multi_tracker" type="save_data_to_hdf5.py" output="screen" args="--nodenum=1" />
+
+# load parameters for, and show live tracking
+<rosparam command="load" file="liveviewer_parameters.yaml"/>
+<node name="liveview_1" pkg="multi_tracker" type="liveviewer.py" output="screen" args="--nodenum=1" />
+
+# load parameters for, process, and save, delta video bag file
+<rosparam command="load" file="delta_video_parameters.yaml"/>
+<node name="delta_video_1" pkg="multi_tracker" type="delta_video_simplebuffer.py" output="screen" args="--nodenum=1" />
+<node name="save_delta_video" pkg="multi_tracker" type="save_bag.py" args="--config=delta_video_config.py --nodenum=1" output="screen" />
+
+</launch>

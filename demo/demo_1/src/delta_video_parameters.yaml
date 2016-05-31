@@ -1,8 +1,0 @@
-/multi_tracker/1/tracker/image_topic: '/camera/image_raw'
-/multi_tracker/1/tracker/threshold: 6
-/multi_tracker/1/tracker/camera_encoding: 'mono8'
-/multi_tracker/1/tracker/max_change_in_frame: 0.2
-/multi_tracker/1/tracker/roi_l: 0
-/multi_tracker/1/tracker/roi_r: -1
-/multi_tracker/1/tracker/roi_b: 0
-/multi_tracker/1/tracker/roi_t: -1
