@@ -21,7 +21,10 @@ class SaveBag:
         basename = config.basename
         directory = config.directory
         self.topics = config.topics
-        self.record_length_seconds = config.record_length_hours*3600
+        try:
+            self.record_length_seconds = config.record_length_hours*3600
+        except:
+            self.record_length_seconds = 24*3600
         self.time_start = time.time()
         
         experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
@@ -73,8 +76,16 @@ if __name__ == '__main__':
                         help="node number, for example, if running multiple tracker instances on one computer")
     (options, args) = parser.parse_args()
     
-    print "Loading configuration: ", options.config
-    configuration = imp.load_source('configuration', options.config)
+    
+    try:
+        configuration = imp.load_source('configuration', options.config)
+        print "Loaded configuration: ", options.config
+    except: # look in home directory for config file
+        home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/' + options.nodenum + '/home_directory') )
+        config_file = os.path.join(home_directory, options.config)
+        configuration = imp.load_source('configuration', config_file)
+        print "Loaded configuration: ", config_file
+    
     config = configuration.Config()
 
     rospy.init_node('SaveBag', log_level=rospy.INFO)
