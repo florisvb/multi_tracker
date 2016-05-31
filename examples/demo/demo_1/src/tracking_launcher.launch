@@ -1,7 +1,8 @@
 <launch>
 
-# set up src and data directories
+# set up src and data directories and define prefix name
 <rosparam command="load" file="home_directory.yaml"/>
+<node name="set_exp_basename_1" pkg="multi_tracker" type="set_basename_and_path.py" output="screen" args="--nodenum=1" />
 
 # load parameters for the tracking, and the data association
 <rosparam command="load" file="tracker_parameters.yaml"/>
