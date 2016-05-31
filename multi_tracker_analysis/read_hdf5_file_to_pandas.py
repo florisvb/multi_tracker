@@ -58,11 +58,12 @@ class Trajectory(object):
         return self.__getattribute__(key)
         
 class Dataset(object):
-    def __init__(self, pd, copy=False):
+    def __init__(self, pd, copy=False, config=None):
         self.pd = pd
         self.keys = []
         self.__processed_trajecs__ = {}
         self.copy = copy
+        self.config = config
         
         if copy:
             self.load_keys()

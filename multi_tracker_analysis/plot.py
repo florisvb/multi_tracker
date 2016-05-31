@@ -1,5 +1,19 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+
+def get_filename(path, contains):
+    cmd = 'ls ' + path
+    ls = os.popen(cmd).read()
+    all_filelist = ls.split('\n')
+    try:
+        all_filelist.remove('')
+    except:
+        pass
+    filelist = []
+    for i, filename in enumerate(all_filelist):
+        if contains in filename:
+            return os.path.join(path, filename)
 
 def get_bins_from_backgroundimage(backgroundimage, pixel_resolution=1):
     if type(backgroundimage) is str:
@@ -129,3 +143,37 @@ def plot_individual_trajectories_from_dataset_format(dataset, keys, backgroundim
         
         ax.plot(trajec.position_x, trajec.position_y)
 
+def plot_trajectories(dataset, keys, interpolated_data='hide'):
+    '''
+    interpolated_data - if trajectories contain interpolated data, use 'hide' to hide that data, 'dotted' to show it as a dotted line, or 'show' to show it in its entirety
+    '''
+    import fly_plot_lib.plot as fpl # download at: https://github.com/florisvb/FlyPlotLib
+    from fly_plot_lib.colormaps import viridis as viridis
+    
+    path = dataset.config.path
+    bgimg_filename = get_filename(path, 'bgimg_N1.png')
+    bgimg = plt.imread(bgimg_filename)
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
+    
+    ax.imshow(bgimg, cmap='gray')
+    
+    for key in keys: 
+        trajec = dataset.trajec(key)
+        if 'interpolated' in trajec.__dict__.keys():
+            interpolated_indices = np.where(trajec.interpolated==1)[0]
+            if interpolated_data == 'dotted':
+                r = np.arange(0, len(interpolated_indices), 5)
+                interpolated_indices = interpolated_indices[r]
+            if interpolated_data != 'show':
+                trajec.position_x[interpolated_indices] = np.nan
+                trajec.position_y[interpolated_indices] = np.nan
+        l = -1
+        fpl.colorline(ax, trajec.position_x[0:l], trajec.position_y[0:l], trajec.time_epoch[0:l]-trajec.time_epoch[0:l][0], linewidth=2, colormap='none', norm=None, zorder=1, alpha=1, linestyle='solid', cmap=viridis)
+    
+    fpl.adjust_spines(ax, [])
+    ax.set_frame_on(False)
+    
+    
