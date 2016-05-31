@@ -170,6 +170,24 @@ from multi_tracker.srv import resetBackgroundService</p>
 
 <img src="media/led_view_600x450.jpg" alt="Lighting panel 2" style="width:600px;height:450px;">
 
+<h3>Replaying Delta Video Movies</h3>
+
+Inside the multi_tracker/examples/sample_data you will find a delta_video bag file, along with its associated background image(s), and some launch files. The delta video bag file contains positions and values for each (x,y) pixel for each frame that are different from the background image by more than a threshold value (which was defined when the video was recorded). 
+
+To manually replay the delta video bag file as a standard ROS image feed, run the following commands, each in their own terminal window:
+
+<code>
+roscore<br>
+rosparam set use_sim_time true<br>
+rosbag play [BAG FILENAME] --clock --pause<br>
+rosrun multi_tracker delta_video_player --in=[DELTA VIDEO TOPIC, e.g. /multi_tracker/1/delta_video] --out=[RECONSTRUCTED CAMERA TOPIC, e.g. /camera/image_raw] --directory=[DIRECTORY WHERE BACKGROUND IMAGES ARE FOUND - FULL PATH REQ'D]<br>
+rosrun image_view image_view image:=[RECONSTRUCTED CAMERA TOPIC, e.g. /camera/image_raw]<br>
+</code>
+
+    
+
+
+
       </section>
     </div>
 
