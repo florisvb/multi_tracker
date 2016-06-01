@@ -172,19 +172,69 @@ from multi_tracker.srv import resetBackgroundService</p>
 
 <h3>Replaying Delta Video Movies</h3>
 
-Inside the multi_tracker/examples/sample_data you will find a delta_video bag file, along with its associated background image(s), and some launch files. The delta video bag file contains positions and values for each (x,y) pixel for each frame that are different from the background image by more than a threshold value (which was defined when the video was recorded). 
+<p>Inside the <em>multi_tracker/examples/sample_data</em> you will find a delta_video bag file, along with its associated background image(s), and some launch files. The delta video bag file contains positions and values for each (x,y) pixel for each frame that are different from the background image by more than a threshold value (which was defined when the video was recorded). In cases where the background changes by a signficant amount (e.g. 20%), a new background image is saved.</p>
 
-To manually replay the delta video bag file as a standard ROS image feed, run the following commands, each in their own terminal window:
+<p>To manually replay the delta video bag file as a standard ROS image topic, run the following commands, each in their own terminal window:</p>
 
-<code>
-roscore<br>
-rosparam set use_sim_time true<br>
-rosbag play [BAG FILENAME] --clock --pause<br>
-rosrun multi_tracker delta_video_player --in=[DELTA VIDEO TOPIC, e.g. /multi_tracker/1/delta_video] --out=[RECONSTRUCTED CAMERA TOPIC, e.g. /camera/image_raw] --directory=[DIRECTORY WHERE BACKGROUND IMAGES ARE FOUND - FULL PATH REQ'D]<br>
-rosrun image_view image_view image:=[RECONSTRUCTED CAMERA TOPIC, e.g. /camera/image_raw]<br>
-</code>
+<pre><code>roscore
+rosparam set use_sim_time true
+rosbag play [BAG FILENAME] --clock --pause
+rosrun multi_tracker delta_video_player --in=[DELTA VIDEO TOPIC, e.g. /multi_tracker/1/delta_video] --out=[RECONSTRUCTED CAMERA TOPIC, e.g. /camera/image_raw] --directory=[DIRECTORY WHERE BACKGROUND IMAGES ARE FOUND - FULL PATH REQ'D]
+rosrun image_view image_view image:=[RECONSTRUCTED CAMERA TOPIC, e.g. /camera/image_raw]
+</code></pre>
 
+<h5>Quick start example</h5>
+
+<p>Inside <em>multi_tracker/examples/sample_data</em> edit <em>launch_delta_video.launch</em> such that the line defining the default path matches the actual <b>full</b> path where the sample data is located: <em><arg name="path" default="/home/caveman/catkin_ws/src/multi_tracker/examples/sample_data" /></em></p>
     
+<p>Now launch the launch file using: <em>roslaunch launch_delta_video.launch</em></p>
+
+<p>This will play the example bag file in paused mode; with the terminal window selected press space bar to start the movie.</p>
+
+<h3>Tracking</h3>
+
+<h5>Quick start example</h5>
+
+<ol>
+<li>copy the /examples/demo folder to your home directory as demo <br>(eg: <em>cp -r ~/catkin_ws/src/multi_tracker/examples/demo ~/</em>)</li>
+<li>play the sample delta video according to instructions above</li>
+<li>create the empty directory ~/demo/demo_1/data</li>
+<li>from inside ~/demo/demo_1/src folder, run <em>roslaunch tracking_launcher.launch</em>
+<br>This will load all the yaml (parameter) files, and launch the tracker, data_association, save_hdf5_data, delta_video, delta_video saving, and liveviewer nodes.</li>
+<li>After the flies have all moved from their original position, with the liveviewer window selected, press 'a'. This will create a new background image, effectively erasing the flies starting positions from the background.</li>
+<li>Hit control-c to stop the nodes (and cease collecting data).</li>
+<li>Rename the data directory <br>(eg: <em>mv ~/demo/demo_1/data ~/demo/demo_1/test_data</em>)</i> 
+</ol>
+
+<h5>Use your own camera</h5>
+
+<p>Set up your own camera to publish image topics to ROS. See, for example:</p>
+
+<p><a href="http://wiki.ros.org/pointgrey_camera_driver">Point grey cameras</a>
+<br><em>Notes: you may need to add a rule. For the firefly camera copy the rule multi_tracker/rules/99-point-grey-firefly.rules to /etc/udev/init.d, restart your computer, and replug in your camera. For other USB cameras, plug in the camera, run <i>dmesg</i> and note the idProduct and idVendor values for the camera, make the appropriate changes to multi_tracker/rules/99-point-grey-firefly.rules, and copy that new rule over to /etc/udev/init.d, restart, and replug your camera.</em><p>
+
+<p><a href="https://github.com/florisvb/multi_tracker/blob/master/aravis_install_notes/aravis_install_notes.md">GigE cameras, e.g. Basler Ace</a></p>
+
+<p>Check the image topic that your camera publishes to using <em>rostopic list</em>. If a image_mono topic is available, use that one. Edit the tracker_parameters.yaml file in ~/demo/demo_1/src to match that image topic. Now, with the camera topic running, and an empty data directory in ~/demo/demo_1 launch the tracking_launcher.launch file.</p>
+
+<h3>Data Analysis</h3>
+
+<p>Follow the instructions from the tracking quick start example (using the sample delta video, for example). Now you should have a data directory in ~/demo/demo_1/test_data with an hdf5 file (your tracked data), delta_video bag file, and background images for the delta video and tracking. Copy the configuration file multi_tracker/examples/sample_data/config_20160412_134708_N1.py to your data directory. Rename the file such that the data-time stamp matches the prefix of the hdf5 file.</p>
+
+<p>Open the jupyter notebook, update the data path, and run each segment for simple examples: multi_tracker/examples/data_processing/example_data_processing.ipynb</p>
+
+<h3>Data visualization and editing GUI</h3>
+
+<p>Follow the Data Analysis steps. Then, from multi_tracker/multi_tracker_analysis, run: <em>python ./trajectory_viewer_gui_v2.py --path=[DATA PATH]</em></p>
+
+<p>The bottom panel shows the time history of the number of trajectories. Drag / resize the light blue box to select a region of time. Trajectories in that time region are displayed in the top panel. Move / zoom / change aspect of the top panel using the left mouse / scroll wheel / right mouse. 
+
+<li>Load / Play movie: loads delta video bag and plays back the movie. May produce erratic behavior in the case of the included example because of colliding delta video topics. In original data it works fine.</li>
+<li>Join Trajectories: Click "select trajecs" and select 2 or more trajectories (id's appear in the box, and selected trajectory is bold). Click "join trajecs". Instructions are saved to an instruction file - original data is never modified.</li>
+<li>Cut Trajectories: Click "cut trajecs" and click on a a trajectory where you wish to clip it. The trajectory will get cut into 2.</li>
+<li>Delete Trajectories: Click "delete trajecs" and click on a trajectory to delete it. Or: click "select trajecs" and select a trajectory, then click "delete trajecs".</li>
+<li>Erratic behavior: click "clear selection / data"</li>
+<li>Annotations: select a trajectory, add a text annotation to the box, click the check box, and click "save annotation". This saves the annotation to a pickle file for use in analysis.</li>
 
 
 
