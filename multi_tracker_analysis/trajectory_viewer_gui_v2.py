@@ -660,8 +660,21 @@ class QTrajectory(TemplateBaseClass):
         self.image_sequence = []
         self.image_sequence_timestamps = []
         t0 = None
+        self.delta_video_background_img_filename = None
+        self.delta_video_background_img = None
+        
         for m, msg in enumerate(self.msgs):
-            imgcopy = copy.copy(self.backgroundimg)
+            delta_video_background_img_filename = os.path.join( self.path, os.path.basename(msg[1].background_image) )
+            if os.path.exists(delta_video_background_img_filename):            
+                if delta_video_background_img_filename != self.delta_video_background_img_filename:
+                    self.delta_video_background_img_filename = delta_video_background_img_filename
+                    self.delta_video_background_img = cv2.imread(self.delta_video_background_img_filename, cv2.CV_8UC1)
+            else: # if we can't find the bgimg, do the best we can
+                if self.delta_video_background_img is None:
+                    self.delta_video_background_img_filename = get_filename(self.path, 'deltavideo_bgimg')
+                    self.delta_video_background_img = cv2.imread(self.delta_video_background_img_filename, cv2.CV_8UC1)
+                    
+            imgcopy = copy.copy(self.delta_video_background_img)
             if len(msg[1].values) > 0:
                 imgcopy[ msg[1].xpixels, msg[1].ypixels] = msg[1].values # if there's an error, check if you're using ROS hydro?
             self.image_sequence.append(imgcopy)
