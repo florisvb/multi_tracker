@@ -143,7 +143,7 @@ def plot_individual_trajectories_from_dataset_format(dataset, keys, backgroundim
         
         ax.plot(trajec.position_x, trajec.position_y)
 
-def plot_trajectories(dataset, keys, interpolated_data='hide'):
+def plot_trajectories_from_dataset(dataset, keys, interpolated_data='hide'):
     '''
     interpolated_data - if trajectories contain interpolated data, use 'hide' to hide that data, 'dotted' to show it as a dotted line, or 'show' to show it in its entirety
     '''
