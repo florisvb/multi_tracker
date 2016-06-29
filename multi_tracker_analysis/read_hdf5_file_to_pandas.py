@@ -18,7 +18,7 @@ def get_filenames(path, contains):
         pass
     filelist = []
     for i, filename in enumerate(all_filelist):
-        if contains in filename:
+        if contains in filename and '~' not in filename:
             filelist.append( os.path.join(path, filename) )
     return filelist
     
@@ -32,7 +32,7 @@ def get_filename(path, contains):
         pass
     filelist = []
     for i, filename in enumerate(all_filelist):
-        if contains in filename:
+        if contains in filename and '~' not in filename:
             return os.path.join(path, filename)
     return None
             
