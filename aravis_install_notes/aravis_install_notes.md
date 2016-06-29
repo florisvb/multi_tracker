@@ -4,6 +4,8 @@ sudo apt-get install intltool gobject-introspection gtk-doc-tools
 download newest (tested with 0.3.7) aravis: more info: http://wiki.ros.org/camera_aravis
 https://git.gnome.org/browse/aravis/tag/?id=ARAVIS_0_3_7
 
+May need to install: libgirepository1.0-dev libtool gtk-doc-tools
+
 from inside the aravis directory run:
 ./autogen.sh
 make
