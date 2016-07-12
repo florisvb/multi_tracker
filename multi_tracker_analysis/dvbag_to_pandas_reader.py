@@ -1,5 +1,6 @@
 from optparse import OptionParser
 import sys, os
+import cv2
 
 import numpy as np
 
@@ -26,9 +27,15 @@ class DVBag2PandasReader(object):
             self.hdf = pandas.HDFStore(self.saveto)
             print 'Loaded pre-existing HDF with ' + str(len(self.dataframe)) + ' rows'
         else:
-            self.dataframe = pandas.DataFrame([[0, 0, 0, 0, 0, 0]], columns=['x','y','value', 'frames', 'time_secs', 'time_nsecs'], index=[0])
+            self.dataframe = pandas.DataFrame([[0, 0, 0, 0, 0, 0, 0]], columns=['x','y','value', 'frames', 'difference', 'time_secs', 'time_nsecs'], index=[0])
             self.hdf = pandas.HDFStore(self.saveto)
             self.hdf.put('data', self.dataframe, format='table', data_columns=True)
+          
+        first_message = self.dvbag.read_messages().next()[1]
+        self.background_image_filename = os.path.basename(first_message.background_image) 
+        directory = os.path.dirname(dvbag_filename)
+        directory_and_filename = os.path.join(directory, self.background_image_filename)
+        self.background_image = cv2.imread(directory_and_filename, 0 )
           
         self.lockBuffer = threading.Lock()
         self.df_buffer = None
@@ -43,6 +50,9 @@ class DVBag2PandasReader(object):
                 secs = [delta_vid.header.stamp.secs for i in range(len(delta_vid.values))]
                 nsecs = [delta_vid.header.stamp.nsecs for i in range(len(delta_vid.values))]
                 
+                if os.path.basename(delta_vid.background_image) != self.background_image_filename:
+                    print 'Warning: not using new background image!'
+                
                 x = pandas.Series(delta_vid.xpixels)
                 y = pandas.Series(delta_vid.ypixels)
                 value = pandas.Series(delta_vid.values)
@@ -51,9 +61,11 @@ class DVBag2PandasReader(object):
                 df = pandas.DataFrame({'x': x,
                                        'y': y,
                                        'value': value,
+                                       'difference': value - self.background_image[x,y],
                                        'frames': frames,
                                        'time_secs': secs,
                                        'time_nsecs': nsecs})
+                print df    
                 if self.df_buffer is None:
                     self.df_buffer = df
                 else:
@@ -106,12 +118,17 @@ class DVBag2PandasReader(object):
                 self.process_message(delta_vid)
         
         pbar.finish()
+        
+        self.save_pandas_dataframe()
         self.dataframe = pandas.read_hdf(self.saveto)
-        return frame_index_list
+        return frame_index_list, self.dataframe
         
     def save_pandas_dataframe(self):
+        self.dump_buffer_to_disk()
         self.hdf.close() # closes the file
         return
+        
+#def plot_heatmap_of_dvbag(dvbag, threshold = 
         
 #####################################################################################################
     
