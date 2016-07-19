@@ -128,7 +128,23 @@ class DVBag2PandasReader(object):
         self.hdf.close() # closes the file
         return
         
-#def plot_heatmap_of_dvbag(dvbag, threshold = 
+def plot_heatmap_of_dvbag(dvbag_pandas, threshold, bgimg_filename=None):
+
+    if bgimg_filename is not None:
+        background_image = cv2.imread(bgimg_filename, 0 )
+        shape = background_image.shape
+    else:
+        shape = (600,800)
+        
+    binsx = np.arange(0,shape[0],5)
+    binsy = np.arange(0,shape[1],5)
+        
+        
+    
+        
+    dvbag_pandas_subset = dvbag_pandas.query('difference < -30')
+    hist, binsx, binsy = np.histogram2d(dvbag_pandas_subset.x.values, dvbag_pandas_subset.y.values, (binsx, binsy))
+    
         
 #####################################################################################################
     
