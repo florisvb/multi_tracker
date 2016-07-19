@@ -119,6 +119,7 @@ class DeCompressor:
         rospy.spin()
         if self.videowriter is not None:
             self.videowriter.release()
+            print "Note: use this command to make a mac / quicktime friendly video: avconv -i test.avi -c:v libx264 -c:a copy outputfile.mp4"
 #####################################################################################################
     
 if __name__ == '__main__':
@@ -134,7 +135,7 @@ if __name__ == '__main__':
     parser.add_option("--mode", type="str", dest="mode", default='mono',
                         help="color if desired to convert to color image")
     parser.add_option("--saveto", type="str", dest="saveto", default='',
-                        help="filename where to save video, default is none")
+                        help="filename where to save video, default is none. Note: use this command to make a mac / quicktime friendly video: avconv -i test.avi -c:v libx264 -c:a copy outputfile.mp4")
     
     (options, args) = parser.parse_args()
     
