@@ -8,7 +8,7 @@ import pickle
 import scipy.interpolate
 import warnings
 
-def get_filenames(path, contains, does_not_contain=[]):
+def get_filenames(path, contains, does_not_contain=['~', '.pyc']):
     cmd = 'ls ' + path
     ls = os.popen(cmd).read()
     all_filelist = ls.split('\n')
@@ -27,8 +27,8 @@ def get_filenames(path, contains, does_not_contain=[]):
                 filelist.append( os.path.join(path, filename) )
     return filelist
     
-def get_filename(path, contains, does_not_contain=[]):
-    filelist = get_filenames(path, contains, does_not_contain=[])
+def get_filename(path, contains, does_not_contain=['~', '.pyc']):
+    filelist = get_filenames(path, contains, does_not_contain)
     if len(filelist) == 1:
         return filelist[0]
     else:
