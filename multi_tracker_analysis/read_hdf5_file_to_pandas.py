@@ -8,7 +8,7 @@ import pickle
 import scipy.interpolate
 import warnings
 
-def get_filenames(path, contains):
+def get_filenames(path, contains, does_not_contain=[]):
     cmd = 'ls ' + path
     ls = os.popen(cmd).read()
     all_filelist = ls.split('\n')
@@ -18,23 +18,22 @@ def get_filenames(path, contains):
         pass
     filelist = []
     for i, filename in enumerate(all_filelist):
-        if contains in filename and '~' not in filename:
-            filelist.append( os.path.join(path, filename) )
+        if contains in filename:
+            fileok = True
+            for nc in does_not_contain:
+                if nc in filename:
+                    fileok = False
+            if fileok:
+                filelist.append( os.path.join(path, filename) )
     return filelist
     
-def get_filename(path, contains):
-    cmd = 'ls ' + path
-    ls = os.popen(cmd).read()
-    all_filelist = ls.split('\n')
-    try:
-        all_filelist.remove('')
-    except:
-        pass
-    filelist = []
-    for i, filename in enumerate(all_filelist):
-        if contains in filename and '~' not in filename:
-            return os.path.join(path, filename)
-    return None
+def get_filename(path, contains, does_not_contain=[]):
+    filelist = get_filenames(path, contains, does_not_contain=[])
+    if len(filelist) == 1:
+        return filelist[0]
+    else:
+        print filelist
+        raise ValueError('Found too many files')
             
 def load_bag_as_hdf5(bag, skip_messages=[]):
     output_fname = bag.split('.')[0] + '.hdf5'
