@@ -33,7 +33,8 @@ def get_filename(path, contains, does_not_contain=['~', '.pyc']):
         return filelist[0]
     else:
         print filelist
-        raise ValueError('Found too many files')
+        print 'Found too many, or too few files'
+    return None
             
 def load_bag_as_hdf5(bag, skip_messages=[]):
     output_fname = bag.split('.')[0] + '.hdf5'
