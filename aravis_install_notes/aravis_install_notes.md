@@ -15,6 +15,8 @@ for this version of aravis, download thise camera aravis rosnode:
 https://github.com/CaeruleusAqua/camera_aravis
 run catkin_make
 
+If you get some G OBJECT INIT error, uncomment the line "g_type_init ();"
+
 Note: you may need to download:
 ros-indigo-camera-info-manager
 ros-indigo-driver-common
