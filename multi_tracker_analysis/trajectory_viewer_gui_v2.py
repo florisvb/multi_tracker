@@ -29,19 +29,6 @@ path = os.path.dirname(os.path.abspath(__file__))
 uiFile = os.path.join(path, 'trajectory_viewer_gui.ui')
 WindowTemplate, TemplateBaseClass = pg.Qt.loadUiType(uiFile)
   
-def get_filename(path, contains):
-    cmd = 'ls ' + path
-    ls = os.popen(cmd).read()
-    all_filelist = ls.split('\n')
-    try:
-        all_filelist.remove('')
-    except:
-        pass
-    filelist = []
-    for i, filename in enumerate(all_filelist):
-        if contains in filename:
-            return os.path.join(path, filename)
-            
 def get_random_color():
     color = (np.random.randint(0,255), np.random.randint(0,255), np.random.randint(0,255))
     return color
@@ -671,7 +658,7 @@ class QTrajectory(TemplateBaseClass):
                     self.delta_video_background_img = cv2.imread(self.delta_video_background_img_filename, cv2.CV_8UC1)
             else: # if we can't find the bgimg, do the best we can
                 if self.delta_video_background_img is None:
-                    self.delta_video_background_img_filename = get_filename(self.path, 'deltavideo_bgimg')
+                    self.delta_video_background_img_filename = mta.read_hdf5_file_to_pandas.get_filename(self.path, 'deltavideo_bgimg')
                     self.delta_video_background_img = cv2.imread(self.delta_video_background_img_filename, cv2.CV_8UC1)
                     
             imgcopy = copy.copy(self.delta_video_background_img)
@@ -762,10 +749,10 @@ if __name__ == '__main__':
     if options.path != 'none':
         if not os.path.isdir(options.path):
             raise ValueError('Path needs to be a directory!')
-        options.filename = get_filename(options.path, 'trackedobjects.hdf5')
-        options.config = get_filename(options.path, 'config')
-        options.dvbag = get_filename(options.path, 'delta_video.bag')
-        options.bgimg = get_filename(options.path, '_bgimg_')
+        options.filename = mta.read_hdf5_file_to_pandas.get_filename(options.path, 'trackedobjects.hdf5')
+        options.config = mta.read_hdf5_file_to_pandas.get_filename(options.path, 'config')
+        options.dvbag = mta.read_hdf5_file_to_pandas.get_filename(options.path, 'delta_video.bag')
+        options.bgimg = mta.read_hdf5_file_to_pandas.get_filename(options.path, '_bgimg_')
     
     if options.movie != 1:
         options.dvbag = 'none'
