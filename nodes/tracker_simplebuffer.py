@@ -50,6 +50,8 @@ class Tracker:
                         'camera_encoding'           : 'mono8', # fireflies are bgr8, basler gige cams are mono8
                         'erode'                     : 1,
                         'dilate'                    : 2,
+                        'morph_open_kernel_size'
+: 3,
                         'max_change_in_frame'       : 0.2,
                         'min_size'                  : 5,
                         'max_size'                  : 200,
