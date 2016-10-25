@@ -174,8 +174,12 @@ def load_and_preprocess_data(hdf5_filename):
 
 def load_config_from_path(path):
     config_filename = get_filename(path, 'config')
-    hdf5_file = os.path.basename(get_filename(path, 'trackedobjects.hdf5'))
-    identifiercode = hdf5_file.split('_trackedobjects')[0]
+    try:
+        hdf5_file = os.path.basename(get_filename(path, 'trackedobjects.hdf5'))
+        identifiercode = hdf5_file.split('_trackedobjects')[0]
+    except:
+        config_file_basename = os.path.basename(config_filename)
+        identifiercode = config_file_basename.split('config_')[1].split('.py')[0]
     print 'identifiercode: ', identifiercode
     if config_filename is not None:
         Config = imp.load_source('Config', config_filename)
