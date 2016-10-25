@@ -25,16 +25,20 @@ import progressbar
 import subprocess
 import warnings
 
+from distutils.version import LooseVersion, StrictVersion
+
 print('Using numpy: ' + np.version.version)
 print('Using pyqtgraph: ' + pg.__version__)
 
 # video would not load before installing most recent version of pyqtgraph from github repo
 # this is the version of the commit that fixed the
 # issue with current numpy: pyqtgraph-0.9.10-118-ge495bbc (in commit e495bbc...)
-if pg.__version__ < 'pyqtgraph-0.9.10-118' and numpy.version.version > '1.10':
-    warnings.warn('Using pyqtgraph probably incompatible with numpy. Video may not load.')
-    quit()
-  
+# version checking with distutils.version. See: http://stackoverflow.com/questions/11887762/compare-version-strings
+if StrictVersion(pg.__version__) < StrictVersion("0.9.10"):
+    if StrictVersion(np.version.version) > StrictVersion("1.10"):
+        warnings.warn('Using pyqtgraph may be incompatible with numpy. Video may not load.')
+        quit()
+
 pg.mkQApp()
   
 ## Define main window class from template
@@ -693,7 +697,7 @@ class QTrajectory(TemplateBaseClass):
                     msg[1].xpixels = tuple(x - 1 for x in msg[1].xpixels)
                     msg[1].ypixels = tuple(y - 1 for y in msg[1].ypixels)
                 else:
-                    print('Not ros kinetic.')
+                    pass #print('Not ros kinetic.')
 
                 imgcopy[msg[1].xpixels, msg[1].ypixels] = msg[1].values # if there's an error, check if you're using ROS hydro?
             self.image_sequence.append(imgcopy)
