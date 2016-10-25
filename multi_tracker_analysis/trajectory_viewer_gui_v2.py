@@ -40,6 +40,21 @@ if StrictVersion(pg.__version__) < StrictVersion("0.9.10"):
         quit()
 pg.mkQApp()
 
+import gtk, pygtk
+window = gtk.Window()
+screen = window.get_screen()
+screen_width = screen.get_width()
+screen_height = screen.get_height()
+
+# check screen size - if "small" screen use smaller ui
+path = os.path.dirname(os.path.abspath(__file__))
+if screen_height < 900:
+    uiFile = os.path.join(path, 'trajectory_viewer_small_screens.ui')
+else:
+    uiFile = os.path.join(path, 'trajectory_viewer_gui.ui')
+#uiFile = '/home/caveman/catkin_ws/src/multi_tracker/multi_tracker_analysis/trajectory_viewer_small_screens.ui'
+WindowTemplate, TemplateBaseClass = pg.Qt.loadUiType(uiFile)
+
 def get_random_color():
     color = (np.random.randint(0,255), np.random.randint(0,255), np.random.randint(0,255))
     return color
@@ -778,25 +793,8 @@ if __name__ == '__main__':
     parser.add_option('--bgimg', type=str, help="name and path of the background image")
     parser.add_option('--dvbag', type=str, default='none', help="name and path of the delta video bag file, optional")
     parser.add_option('--config', type=str, default='none', help="name and path of a configuration file, optional. If the configuration file has an attribute 'sensory_stimulus_on', which should be a list of epoch timestamps e.g. [[t1,t2],[t3,4]], then these timeframes will be highlighted in the gui.")
-    parser.add_option('--force-ui', type=str, default='auto', dest="force_ui", help="filename for ui file you want to use, defaults to auto, which tries to select based on screen height")
     (options, args) = parser.parse_args()
     
-    import gtk, pygtk
-    window = gtk.Window()
-    screen = window.get_screen()
-    screen_width = screen.get_width()
-    screen_height = screen.get_height()
-
-    # check screen size - if "small" screen use smaller ui
-    path = os.path.dirname(os.path.abspath(__file__))
-    if parser.force_ui == 'auto':
-        if screen_height < 1000:
-            uiFile = os.path.join(path, 'trajectory_viewer_small_screens.ui')
-        else:
-            uiFile = os.path.join(path, 'trajectory_viewer_gui.ui')
-    WindowTemplate, TemplateBaseClass = pg.Qt.loadUiType(uiFile)
-    
-
     if options.path != 'none':
         if not os.path.isdir(options.path):
             raise ValueError('Path needs to be a directory!')
