@@ -195,7 +195,7 @@ def convert_to_gray_if_necessary(self):
         self.threshed = np.uint8(cv2.cvtColor(self.threshed, cv2.COLOR_BGR2GRAY))
         
 def erode_and_dialate(self):
-    kernel = np.ones((3,3),np.uint8)
+    kernel = np.ones((3,3), np.uint8)
     self.threshed = cv2.dilate(self.threshed, kernel, iterations=self.params['dilate'])
     self.threshed = cv2.erode(self.threshed, kernel, iterations=self.params['erode'])
     
@@ -261,7 +261,7 @@ def background_subtraction(self):
     cv2.accumulateWeighted(np.float32(self.imgScaled), self.backgroundImage, self.params['backgroundupdate']) # this needs to be here, otherwise there's an accumulation of something in the background
     
     retval, self.threshed = cv2.threshold(self.absdiff, self.params['threshold'], 255, 0)
-    
+
     convert_to_gray_if_necessary(self)
     erode_and_dialate(self)
     extract_and_publish_contours(self)
@@ -316,11 +316,12 @@ def dark_or_light_objects_only(self, color='dark'):
             self.medianbgimages.pop(0)
             self.medianbgimages_times.pop(0)
             print 'reset background with median image'
-            
+
     try:
         kernel = self.kernel
     except:
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+        kern_d = self.params['morph_open_kernel_size']
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kern_d,kern_d))
         self.kernel = kernel
     
     if color == 'dark':
@@ -334,11 +335,11 @@ def dark_or_light_objects_only(self, color='dark'):
         dark = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
         light = cv2.compare(np.float32(self.imgScaled), self.backgroundImage+self.params['threshold'], cv2.CMP_GT) # CMP_GT is greater than
         self.threshed = dark+light
+
     convert_to_gray_if_necessary(self)
     
-    
     # noise removal
-    self.threshed = cv2.morphologyEx(self.threshed,cv2.MORPH_OPEN,kernel, iterations = 1)
+    self.threshed = cv2.morphologyEx(self.threshed,cv2.MORPH_OPEN, kernel, iterations = 1)
 
     # sure background area
     #sure_bg = cv2.dilate(opening,kernel,iterations=3)
@@ -351,13 +352,15 @@ def dark_or_light_objects_only(self, color='dark'):
     # Finding unknown region
     #sure_fg = np.uint8(sure_fg)
     
-    # publish the processed image
-    c = cv2.cvtColor(np.uint8(self.threshed), cv2.COLOR_GRAY2BGR)
-    img = self.cvbridge.cv2_to_imgmsg(c, 'bgr8') # might need to change to bgr for color cameras
-    self.pubProcessedImage.publish(img)
-    
     #self.threshed = sure_fg
     erode_and_dialate(self)
+
+    # publish the processed image
+    c = cv2.cvtColor(np.uint8(self.threshed), cv2.COLOR_GRAY2BGR)
+    # commented for now, because publishing unthresholded difference
+    img = self.cvbridge.cv2_to_imgmsg(c, 'bgr8') # might need to change to bgr for color cameras
+    self.pubProcessedImage.publish(img)
+
     extract_and_publish_contours(self)
     #reset_background_if_difference_is_very_large(self, color)
         
