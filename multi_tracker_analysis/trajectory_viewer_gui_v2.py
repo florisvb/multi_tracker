@@ -21,6 +21,19 @@ import cv2
 import copy
 
 import progressbar
+
+import subprocess
+import warnings
+
+print('Using numpy: ' + np.version.version)
+print('Using pyqtgraph: ' + pg.__version__)
+
+# video would not load before installing most recent version of pyqtgraph from github repo
+# this is the version of the commit that fixed the
+# issue with current numpy: pyqtgraph-0.9.10-118-ge495bbc (in commit e495bbc...)
+if pg.__version__ < 'pyqtgraph-0.9.10-118' and numpy.version.version > '1.10':
+    warnings.warn('Using pyqtgraph probably incompatible with numpy. Video may not load.')
+    quit()
   
 pg.mkQApp()
   
@@ -121,7 +134,7 @@ class QTrajectory(TemplateBaseClass):
         
         self.ui.qtplot_timetrace.enableAutoRange('xy', False)
         if self.config is not None:
-            print '**** Sensory stimulus: ', self.config.sensory_stimulus_on
+            print('**** Sensory stimulus: ', self.config.sensory_stimulus_on)
             for r, row in enumerate(self.config.sensory_stimulus_on):
                 v1 = pg.PlotDataItem([self.config.sensory_stimulus_on[r][0],self.config.sensory_stimulus_on[r][0]], [0,10])
                 v2 = pg.PlotDataItem([self.config.sensory_stimulus_on[r][-1],self.config.sensory_stimulus_on[r][-1]], [0,10])
@@ -133,9 +146,9 @@ class QTrajectory(TemplateBaseClass):
         lr.sigRegionChanged.connect(self.__getattribute__(f))
         self.ui.qtplot_timetrace.addItem(lr)
         
-        print 'drawing interesting time points'
+        print('drawing interesting time points')
         self.draw_timeseries_vlines_for_interesting_timepoints()
-        print 'done drawing interesting time points'
+        print('done drawing interesting time points')
         self.ui.qtplot_timetrace.setRange(xRange=[np.min(self.time_epoch_continuous), np.max(self.time_epoch_continuous)], yRange=[0, np.max(self.nflies)])
         self.ui.qtplot_timetrace.setLimits(yMin=0, yMax=np.max(self.nflies))
         self.ui.qtplot_timetrace.setLimits(minYRange=np.max(self.nflies), maxYRange=np.max(self.nflies))
@@ -180,7 +193,7 @@ class QTrajectory(TemplateBaseClass):
     def save_annotation(self):
         notes = self.get_annotations_from_checked_boxes()
 
-        print notes
+        print(notes)
         self.annotations = os.path.join(self.path, 'annotations.pickle')
         if os.path.exists(self.annotations):
             f = open(self.annotations, 'r+')
@@ -203,7 +216,7 @@ class QTrajectory(TemplateBaseClass):
         f = open(self.annotations, 'r+')
         pickle.dump(data, f)
         f.close()
-        print 'Saved annotation'
+        print('Saved annotation')
         
         self.toggle_trajec_join_clear()
                 
@@ -264,19 +277,19 @@ class QTrajectory(TemplateBaseClass):
     def movie_pause(self):
         if self.play is True:
             self.play = False
-            print 'pause movie'
+            print('pause movie')
         elif self.play is False:
             self.play = True
-            print 'playing movie'
+            print('playing movie')
             self.updateTime = ptime.time()
             self.updateData()
             
     def movie_play(self):
         self.play = True
-        print 'loading image sequence'
+        print('loading image sequence')
         self.load_image_sequence()
     
-        print 'playing movie'
+        print('playing movie')
         self.updateTime = ptime.time()
         self.updateData()
         
@@ -290,7 +303,7 @@ class QTrajectory(TemplateBaseClass):
 
         self.delete_objects = True
         self.crosshair_pen = pg.mkPen('r', width=1)
-        print 'Deleting objects!'
+        print('Deleting objects!')
         
         for key in self.object_id_numbers:
             self.delete_object_id_number(key)
@@ -300,7 +313,7 @@ class QTrajectory(TemplateBaseClass):
 
         self.cut_objects = True
         self.crosshair_pen = pg.mkPen('y', width=1)
-        print 'Cutting objects!'
+        print('Cutting objects!')
     
     def toggle_trajec_join_collect(self):
         self.set_all_buttons_false()
@@ -309,7 +322,7 @@ class QTrajectory(TemplateBaseClass):
         self.crosshair_pen = pg.mkPen('g', width=1)
         self.ui.qttext_selected_objids.clear()
         
-        print 'Ready to collect object id numbers. Click on traces to add object id numbers to the list. Click "save object id numbers" to save, and reset the list'
+        print('Ready to collect object id numbers. Click on traces to add object id numbers to the list. Click "save object id numbers" to save, and reset the list')
         
     def toggle_trajec_join_add_data(self):
         self.set_all_buttons_false()
@@ -317,7 +330,7 @@ class QTrajectory(TemplateBaseClass):
         self.data_to_add = []
         self.add_data = True
         self.crosshair_pen = pg.mkPen((0,0,255), width=1)
-        print 'Adding data!'
+        print('Adding data!')
    
     def toggle_trajec_join_clear(self):
         self.set_all_buttons_false()
@@ -330,7 +343,7 @@ class QTrajectory(TemplateBaseClass):
         self.object_id_numbers = []
         self.add_data = []
         self.ui.qttext_selected_objids.clear()
-        print 'Join list cleared'
+        print('Join list cleared')
         self.draw_trajectories()
         
         self.toggle_trajec_join_collect()
@@ -515,6 +528,15 @@ class QTrajectory(TemplateBaseClass):
         self.linear_region = linear_region
         self.troi = linear_region.getRegion()
         self.draw_trajectories()
+
+    def init_bg_image(self):
+        if self.binsx is None:
+            self.binsx, self.binsy = mta.plot.get_bins_from_backgroundimage(self.backgroundimg_filename)
+            self.backgroundimg = cv2.imread(self.backgroundimg_filename, cv2.CV_8UC1)
+        img = copy.copy(self.backgroundimg)
+
+        self.img = pg.ImageItem(img)
+
         
     def draw_trajectories(self):
         for plotted_trace in self.plotted_traces:
@@ -524,15 +546,15 @@ class QTrajectory(TemplateBaseClass):
         pd_subset = mta.data_slicing.get_data_in_epoch_timerange(self.pd, self.troi)
         self.dataset = read_hdf5_file_to_pandas.Dataset(self.pd)
         
-        if self.binsx is None:
-            self.binsx, self.binsy = mta.plot.get_bins_from_backgroundimage(self.backgroundimg_filename)
-            self.backgroundimg = cv2.imread(self.backgroundimg_filename, cv2.CV_8UC1)
-        img = copy.copy(self.backgroundimg)
+        self.init_bg_image()
         
         # plot a heatmap of the trajectories, for error checking
         h = mta.plot.get_heatmap(pd_subset, self.binsy, self.binsx, position_x='position_y', position_y='position_x', position_z='position_z', position_z_slice=None)
         indices = np.where(h != 0)
+
+        img = copy.copy(self.backgroundimg)
         img[indices] = 0
+
         self.img = pg.ImageItem(img)
         self.ui.qtplot_trajectory.addItem(self.img)
         self.img.setZValue(-200)  # make sure image is behind other data
@@ -636,6 +658,8 @@ class QTrajectory(TemplateBaseClass):
         self.instructions.append(instructions)
   
     def load_image_sequence(self):
+        version = subprocess.check_output(["rosversion", "-d"])
+
         timerange = self.troi
         print 'loading image sequence from delta video bag - may take a moment'
         pbar = progressbar.ProgressBar().start()
@@ -662,8 +686,16 @@ class QTrajectory(TemplateBaseClass):
                     self.delta_video_background_img = cv2.imread(self.delta_video_background_img_filename, cv2.CV_8UC1)
                     
             imgcopy = copy.copy(self.delta_video_background_img)
+
             if len(msg[1].values) > 0:
-                imgcopy[ msg[1].xpixels, msg[1].ypixels] = msg[1].values # if there's an error, check if you're using ROS hydro?
+
+                if 'kinetic' in version:
+                    msg[1].xpixels = tuple(x - 1 for x in msg[1].xpixels)
+                    msg[1].ypixels = tuple(y - 1 for y in msg[1].ypixels)
+                else:
+                    print('Not ros kinetic.')
+
+                imgcopy[msg[1].xpixels, msg[1].ypixels] = msg[1].values # if there's an error, check if you're using ROS hydro?
             self.image_sequence.append(imgcopy)
             #s = int((m / float(len(self.msgs)))*100)
             tfloat = msg[1].header.stamp.secs + msg[1].header.stamp.nsecs*1e-9
@@ -709,7 +741,11 @@ class QTrajectory(TemplateBaseClass):
         if self.play:
             ## Display the data
             time_epoch, cvimg = self.get_next_reconstructed_image()
-            self.img.setImage(cvimg)
+            try:
+                self.img.setImage(cvimg)
+            except AttributeError:
+                self.init_bg_image()
+                self.img.setImage(cvimg)
             
             QtCore.QTimer.singleShot(1, self.updateData)
             now = ptime.time()
@@ -745,7 +781,7 @@ if __name__ == '__main__':
     parser.add_option('--dvbag', type=str, default='none', help="name and path of the delta video bag file, optional")
     parser.add_option('--config', type=str, default='none', help="name and path of a configuration file, optional. If the configuration file has an attribute 'sensory_stimulus_on', which should be a list of epoch timestamps e.g. [[t1,t2],[t3,4]], then these timeframes will be highlighted in the gui.")
     (options, args) = parser.parse_args()
-    
+
     if options.path != 'none':
         if not os.path.isdir(options.path):
             raise ValueError('Path needs to be a directory!')

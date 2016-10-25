@@ -31,6 +31,10 @@ def get_filename(path, contains, does_not_contain=['~', '.pyc']):
     filelist = get_filenames(path, contains, does_not_contain)
     if len(filelist) == 1:
         return filelist[0]
+    elif len(filelist) > 0 and 'bgimg' in contains:
+        pick = sorted(filelist)[-1]
+        print('Found multiple background images, using ' + str(pick))
+        return pick
     else:
         print filelist
         print 'Found too many, or too few files'
@@ -113,7 +117,12 @@ def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
     if '.pickle' in filename:
         pd = pandas.read_pickle(filename)
         return pd
-    data = h5py.File(filename, 'r', swmr=True)['data']
+
+    try:
+        data = h5py.File(filename, 'r', swmr=True)['data']
+    except ValueError:
+        data = h5py.File(filename, 'r', swmr=False)['data']
+
     if attributes is None:
         attributes = {   'objid'                : 'objid',
                          'time_epoch_secs'      : 'header.stamp.secs',
@@ -144,6 +153,7 @@ def load_and_preprocess_data(hdf5_filename):
     
     returns: pandas dataframe, processed according to configuration file, and the configuration file instance
     '''
+
     if 'trackedobjects' not in hdf5_filename:
         print 'File is not a trackedobjects file, looking for a trackedobjects file in this directory'
         fname = get_filename(hdf5_filename, 'trackedobjects.hdf5')
