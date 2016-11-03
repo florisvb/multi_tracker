@@ -4,7 +4,7 @@ from optparse import OptionParser
 import rospy
 import rosparam
 import copy
-import cv
+# import cv: open cv 1 not used
 import cv2
 import numpy as np
 import threading
