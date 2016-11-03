@@ -99,7 +99,7 @@ class LiveViewer:
         self.nodenum = nodenum
         
         # initialize display
-        self.window_name = 'output'
+        self.window_name = 'liveviewer_' + nodenum
         self.subTrackedObjects = rospy.Subscriber('/multi_tracker/' + nodenum + '/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
         self.subContours = rospy.Subscriber('/multi_tracker/' + nodenum + '/contours', Contourlist, self.contour_callback)
             
