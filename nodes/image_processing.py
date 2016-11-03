@@ -18,6 +18,20 @@ from multi_tracker.srv import resetBackgroundService
 
 import time, os
 
+from distutils.version import LooseVersion, StrictVersion
+print 'Using open cv: ' + cv2.__version__
+
+# video would not load before installing most recent version of pyqtgraph from github repo
+# this is the version of the commit that fixed the
+# issue with current numpy: pyqtgraph-0.9.10-118-ge495bbc (in commit e495bbc...)
+# version checking with distutils.version. See: http://stackoverflow.com/questions/11887762/compare-version-strings
+if StrictVersion(cv2.__version__.split('-')[0]) >= StrictVersion("3.0.0"):
+    OPENCV_VERSION = 3
+    print 'Open CV 3'
+else:
+    OPENCV_VERSION = 2
+    print 'Open CV 2'
+    
 ###########################################################################################################
 # Incredibly basic image processing function (self contained), to demonstrate the format custom image processing functions should follow
 #######################
@@ -45,7 +59,10 @@ def incredibly_basic(self):
     
     # extract and publish contours
     # http://docs.opencv.org/trunk/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html
-    contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if OPENCV_VERSION == 2:
+        contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    elif OPENCV_VERSION == 3:
+        image, contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     try:
         header  = Header(stamp=self.framestamp,frame_id=str(self.framenumber))
@@ -134,7 +151,10 @@ def add_data_to_contour_info(x,y,ecc,area,angle,dtCamera,header):
     return data
     
 def extract_and_publish_contours(self):
-    contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if OPENCV_VERSION == 2:
+        contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    elif OPENCV_VERSION == 3:
+        image, contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # http://docs.opencv.org/trunk/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html
     
     try:
