@@ -20,6 +20,18 @@ from multi_tracker.srv import resetBackgroundService, addImageToBackgroundServic
 
 import image_processing
 
+from distutils.version import LooseVersion, StrictVersion
+print 'Using open cv: ' + cv2.__version__
+if StrictVersion(cv2.__version__.split('-')[0]) >= StrictVersion("3.0.0"):
+    OPENCV_VERSION = 3
+    print 'Open CV 3'
+else:
+    OPENCV_VERSION = 2
+    print 'Open CV 2'
+
+if OPENCV_VERSION == 3:
+    raise ImportError('cv bridge not compatible with opencv 3, killing live viewer')
+
 # for basler ace cameras, use camera_aravis
 # https://github.com/ssafarik/camera_aravis
 # rosrun camera_aravis camnode
