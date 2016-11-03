@@ -39,12 +39,10 @@ else:
 def incredibly_basic(self):
     # If there is no background image, grab one, and move on to the next frame
     if self.backgroundImage is None:
-        if np.sum(self.threshed>0) / float(self.shapeImage[0]*self.shapeImage[1]) > self.params['max_change_in_frame']:
-            reset_background(self)
+        reset_background(self)
         return
     if self.reset_background_flag:
-        if np.sum(self.threshed>0) / float(self.shapeImage[0]*self.shapeImage[1]) > self.params['max_change_in_frame']:
-            reset_background(self)
+        reset_background(self)
         self.reset_background_flag = False
         return
       
@@ -62,6 +60,7 @@ def incredibly_basic(self):
     if OPENCV_VERSION == 2:
         contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     elif OPENCV_VERSION == 3:
+        self.threshed = np.uint8(self.threshed)
         image, contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     try:
@@ -355,12 +354,12 @@ def dark_or_light_objects_only(self, color='dark'):
         dark = cv2.compare(np.float32(self.imgScaled), self.backgroundImage-self.params['threshold'], cv2.CMP_LT) # CMP_LT is less than
         light = cv2.compare(np.float32(self.imgScaled), self.backgroundImage+self.params['threshold'], cv2.CMP_GT) # CMP_GT is greater than
         self.threshed = dark+light
-
+    
     convert_to_gray_if_necessary(self)
     
     # noise removal
     self.threshed = cv2.morphologyEx(self.threshed,cv2.MORPH_OPEN, kernel, iterations = 1)
-
+    
     # sure background area
     #sure_bg = cv2.dilate(opening,kernel,iterations=3)
 
@@ -378,9 +377,11 @@ def dark_or_light_objects_only(self, color='dark'):
     # publish the processed image
     c = cv2.cvtColor(np.uint8(self.threshed), cv2.COLOR_GRAY2BGR)
     # commented for now, because publishing unthresholded difference
-    img = self.cvbridge.cv2_to_imgmsg(c, 'bgr8') # might need to change to bgr for color cameras
-    self.pubProcessedImage.publish(img)
-
+    
+    if OPENCV_VERSION == 2: # cv bridge not compatible with open cv 3, at least at this time
+        img = self.cvbridge.cv2_to_imgmsg(c, 'bgr8') # might need to change to bgr for color cameras
+        self.pubProcessedImage.publish(img)
+    
     extract_and_publish_contours(self)
     #reset_background_if_difference_is_very_large(self, color)
         
