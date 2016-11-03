@@ -185,8 +185,12 @@ class LiveViewer:
             for c, contour in enumerate(self.contours.contours):
                 # b = contour.area / (np.pi*a)
                 # b = ecc*a
-                a = np.sqrt( contour.area / (np.pi*contour.ecc) )
-                b = contour.ecc*a
+                if contour.ecc != 0: # eccentricity of ellipse < 1 but > 0
+                    a = np.sqrt( contour.area / (np.pi*contour.ecc) )
+                    b = contour.ecc*a
+                else: # eccentricity of circle is 0 
+                    a = 1
+                    b = 1
                 center = (int(contour.x), int(contour.y))
                 angle = int(contour.angle)
                 axes = (int(np.min([a,b])), int(np.max([a,b])))
