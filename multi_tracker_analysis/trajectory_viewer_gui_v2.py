@@ -60,7 +60,7 @@ def get_random_color():
     return color
   
 class QTrajectory(TemplateBaseClass):
-    def __init__(self, data_filename, bgimg, delta_video_filename, load_original=False):
+    def __init__(self, data_filename, bgimg, delta_video_filename, load_original=False, clickable_width=6):
         self.load_original = load_original 
         
         TemplateBaseClass.__init__(self)
@@ -103,6 +103,7 @@ class QTrajectory(TemplateBaseClass):
         self.skip_frames = 1
         self.frame_delay = 0.03
         self.path = os.path.dirname(data_filename)
+        self.clickable_width = clickable_width
         
         # load delta video bag
         if delta_video_filename != 'none':
@@ -614,7 +615,7 @@ class QTrajectory(TemplateBaseClass):
                 self.plotted_traces_keys.append(key)
                 
             for i, key in enumerate(self.plotted_traces_keys):
-                self.plotted_traces[i].curve.setClickable(True, width=3)
+                self.plotted_traces[i].curve.setClickable(True, width=self.clickable_width)
                 self.plotted_traces[i].curve.key = key
                 self.plotted_traces[i].curve.sigClicked.connect(self.trace_clicked)
         
@@ -789,6 +790,7 @@ if __name__ == '__main__':
     parser.add_option('--path', type=str, default='none', help="option: path that points to standard named filename, background image, dvbag, config. If using 'path', no need to provide filename, bgimg, dvbag, and config. Note")
     parser.add_option('--movie', type=int, default=1, help="load and play the dvbag movie, default is 1, to load use 1")
     parser.add_option('--load-original', type=int, default=0, dest="load_original", help="load original (unprocessed) dataset for debugging, use 1 to load, default 0")
+    parser.add_option('--clickable-width', type=int, default=6, dest="clickable_width", help="pixel distance from trace to accept click (larger number means easier to click traces)")
     parser.add_option('--filename', type=str, help="name and path of the hdf5 tracked_objects filename")
     parser.add_option('--bgimg', type=str, help="name and path of the background image")
     parser.add_option('--dvbag', type=str, default='none', help="name and path of the delta video bag file, optional")
@@ -806,7 +808,7 @@ if __name__ == '__main__':
     if options.movie != 1:
         options.dvbag = 'none'
     
-    Qtrajec = QTrajectory(options.filename, options.bgimg, options.dvbag, options.load_original)
+    Qtrajec = QTrajectory(options.filename, options.bgimg, options.dvbag, options.load_original, options.clickable_width)
     Qtrajec.run()
     
     if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
