@@ -4,7 +4,6 @@ import roslib
 import rospy
 import rosparam
 import copy
-import cv
 import cv2
 import numpy as np
 import threading
@@ -35,6 +34,16 @@ import matplotlib.pyplot as plt
 # http://wiki.ros.org/pointgrey_camera_driver
 # rosrun pointgrey_camera_driver camera_node
 # default image: /camera/image_mono
+
+
+from distutils.version import LooseVersion, StrictVersion
+print 'Using open cv: ' + cv2.__version__
+if StrictVersion(cv2.__version__.split('-')[0]) >= StrictVersion("3.0.0"):
+    OPENCV_VERSION = 3
+    print 'Open CV 3'
+else:
+    OPENCV_VERSION = 2
+    print 'Open CV 2'
 
 # The main tracking class, a ROS node
 class DeCompressor:
@@ -105,7 +114,10 @@ class DeCompressor:
                 if self.videowriter is not None:
                     self.videowriter.write(new_image)
                 else:
-                    self.videowriter = cv2.VideoWriter(self.saveto,cv.CV_FOURCC('m','p','4','v'), 300,(new_image.shape[1], new_image.shape[0]),True) # works on Linux and Windows
+                    if OPENCV_VERSION == 2:
+                        self.videowriter = cv2.VideoWriter(self.saveto,cv2.cv.CV_FOURCC('m','p','4','v'), 300,(new_image.shape[1], new_image.shape[0]),True) # works on Linux and Windows
+                    elif OPENCV_VERSION == 3:
+                        self.videowriter = cv2.VideoWriter(self.saveto,cv2.VideoWriter_fourcc('m','p','4','v'), 300,(new_image.shape[1], new_image.shape[0]),True)
                     #self.videowriter.open(self.saveto, cv.CV_FOURCC('P','I','M','1'), 30, (new_image.shape[0], new_image.shape[1]))
 
             if self.mode == 'mono':
