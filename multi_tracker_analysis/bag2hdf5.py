@@ -168,7 +168,7 @@ def h5append(dset, arr):
     dset[n_old_rows:] = arr
 
 
-def bag2hdf5(fname, out_fname, topics=None, max_strlen=None, skip_messages=[]):
+def bag2hdf5(fname, out_fname, topics=None, max_strlen=None, skip_messages={}):
     assert max_strlen is not None  # don't accept default
 
     bag = rosbag.Bag(fname)
@@ -179,57 +179,81 @@ def bag2hdf5(fname, out_fname, topics=None, max_strlen=None, skip_messages=[]):
     # progressbar
     _pbw = ['converting %s: ' % fname, progressbar.Percentage()]
     pbar = progressbar.ProgressBar(widgets=_pbw, maxval=bag.size).start()
-
+    
+    if topics is None:
+        print 'AUTO FIND TOPICS'
+        topics = []
+        for topic, msg, t in bag.read_messages():
+            topics.append(topic)
+        topics = np.unique(topics).tolist()
+        print topics
+        
+    print 'skip messages: '
+    print skip_messages
+    print
+    
     try:
         with h5py.File(out_fname, mode='w') as out_f:
-            m = -1
-            for topic, msg, t in bag.read_messages(topics=topics):
-                m += 1
-                # update progressbar
-                pbar.update(bag._file.tell())
-                # get the data
-                this_row = flatten_msg(msg, t, max_strlen=max_strlen)
-                
-                if m in skip_messages:
-                    print 'skipping message: ', m
-                    continue
-                
-                # convert it to numpy element (and dtype)
-                if topic not in results2:
-                    try:
-                        dtype = make_dtype(msg, max_strlen=max_strlen)
-                    except:
-                        print >> sys.stderr, "*********************************"
-                        print >> sys.stderr, 'topic:', topic
-                        print >> sys.stderr, "\nerror while processing message:\n\n%r" % msg
-                        print >> sys.stderr, '\nROW:', this_row
-                        print >> sys.stderr, "*********************************"
-                        raise
-                    results2[topic] = dict(dtype=dtype,
-                                           object=[this_row])
-                else:
-                    results2[topic]['object'].append(this_row)
-
-                # now flush our caches periodically
-                if len(results2[topic]['object']) >= chunksize:
-                    arr = np.array(**results2[topic])
-                    if topic not in dsets:
-                        # initial creation
-                        dset = out_f.create_dataset(topic, data=arr, maxshape=(None,),
-                                                    compression='gzip',
-                                                    compression_opts=9)
-                        assert dset.compression == 'gzip'
-                        assert dset.compression_opts == 9
-                        dsets[topic] = dset
+            for topic in topics:
+                m = -1
+                for topic, msg, t in bag.read_messages(topics=[topic]):
+                    m += 1
+                    
+                    
+                    if topic not in skip_messages.keys():
+                        skip_messages[topic] = []
+                    
+                    #print topic, m, skip_messages[topic]
+                    
+                    # update progressbar
+                    pbar.update(bag._file.tell())
+                    # get the data
+                    
+                    if m not in skip_messages[topic]:
+                        this_row = flatten_msg(msg, t, max_strlen=max_strlen)
+                        
+                        # convert it to numpy element (and dtype)
+                        if topic not in results2:
+                            try:
+                                dtype = make_dtype(msg, max_strlen=max_strlen)
+                            except:
+                                print >> sys.stderr, "*********************************"
+                                print >> sys.stderr, 'topic:', topic
+                                print >> sys.stderr, "\nerror while processing message:\n\n%r" % msg
+                                print >> sys.stderr, '\nROW:', this_row
+                                print >> sys.stderr, "*********************************"
+                                raise
+                            results2[topic] = dict(dtype=dtype,
+                                                   object=[this_row])
+                        else:
+                            results2[topic]['object'].append(this_row)
+                    
+                        
+                        # now flush our caches periodically
+                        if len(results2[topic]['object']) >= chunksize:
+                            arr = np.array(**results2[topic])
+                            if topic not in dsets:
+                                # initial creation
+                                dset = out_f.create_dataset(topic, data=arr, maxshape=(None,),
+                                                            compression='gzip',
+                                                            compression_opts=9)
+                                assert dset.compression == 'gzip'
+                                assert dset.compression_opts == 9
+                                dsets[topic] = dset
+                            else:
+                                # append to existing dataset
+                                h5append(dsets[topic], arr)
+                            del arr
+                            # clear the cached values
+                            results2[topic]['object'] = []
+                    
                     else:
-                        # append to existing dataset
-                        h5append(dsets[topic], arr)
-                    del arr
-                    # clear the cached values
-                    results2[topic]['object'] = []
-
+                        print 'skipping message: ', m
             # done reading bag file. flush remaining data to h5 file
             for topic in results2:
+                print topic
+                print results2[topic]
+                print
                 if not len(results2[topic]['object']):
                     # no data
                     continue
@@ -247,6 +271,7 @@ def bag2hdf5(fname, out_fname, topics=None, max_strlen=None, skip_messages=[]):
             os.unlink(out_fname)
         raise
     finally:
+        pass
         pbar.finish()
 
 if __name__ == '__main__':
