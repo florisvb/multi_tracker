@@ -60,7 +60,7 @@ def get_random_color():
     return color
   
 class QTrajectory(TemplateBaseClass):
-    def __init__(self, data_filename, bgimg, delta_video_filename, load_original=False, clickable_width=6):
+    def __init__(self, data_filename, bgimg, delta_video_filename, load_original=False, clickable_width=6, draw_interesting_time_points=True, draw_config_function=False):
         self.load_original = load_original 
         
         TemplateBaseClass.__init__(self)
@@ -71,6 +71,10 @@ class QTrajectory(TemplateBaseClass):
         self.ui = WindowTemplate()
         self.ui.setupUi(self)
         #self.show()
+
+        # options
+        self.draw_interesting_time_points = draw_interesting_time_points
+        self.draw_config_function = draw_config_function
 
         # Buttons
         self.ui.movie_save.clicked.connect(self.save_image_sequence)
@@ -152,7 +156,10 @@ class QTrajectory(TemplateBaseClass):
             for r, row in enumerate(self.config.sensory_stimulus_on):
                 v1 = pg.PlotDataItem([self.config.sensory_stimulus_on[r][0],self.config.sensory_stimulus_on[r][0]], [0,10])
                 v2 = pg.PlotDataItem([self.config.sensory_stimulus_on[r][-1],self.config.sensory_stimulus_on[r][-1]], [0,10])
-                f12 = pg.FillBetweenItem(curve1=v1, curve2=v2, brush=pg.mkBrush((255,0,0,150)) )
+                try:
+                    f12 = pg.FillBetweenItem(curve1=v1, curve2=v2, brush=pg.mkBrush(self.config.sensory_stimulus_rgba[r]) )
+                except:
+                    f12 = pg.FillBetweenItem(curve1=v1, curve2=v2, brush=pg.mkBrush((255,0,0,150)) )
                 self.ui.qtplot_timetrace.addItem(f12)
         
         lr = pg.LinearRegionItem(values=self.troi)
@@ -498,31 +505,32 @@ class QTrajectory(TemplateBaseClass):
     ### Drawing functions
     
     def draw_timeseries_vlines_for_interesting_timepoints(self):
-        self.calc_time_etc()
-        
-        # clear
-        try:
-            self.ui.qtplot_timetrace.removeItem(self.nflies_plot)
-        except:
-            pass
-        for vline in self.trajectory_ends_vlines:
-            self.ui.qtplot_timetrace.removeItem(vline)
-        self.trajectory_ends_vlines = []
-        
-        # draw
-        self.nflies_plot = self.ui.qtplot_timetrace.plot(x=self.time_epoch_continuous, y=self.nflies)
-        
-        objid_ends = self.pd.groupby('objid').time_epoch.max()
-        for key in objid_ends.keys():
-            t = objid_ends[key]
-            vline = pg.InfiniteLine(angle=90, movable=False)
-            self.ui.qtplot_timetrace.addItem(vline, ignoreBounds=True)
-            vline.setPos(t)
-            pen = pg.mkPen(self.trajec_to_color_dict[key], width=1)
-            vline.setPen(pen)
-            self.trajectory_ends_vlines.append(vline)
-        
-        # TODO: times (or frames) where trajectories get very close to one another
+        if self.draw_interesting_time_points:
+            self.calc_time_etc()
+            
+            # clear
+            try:
+                self.ui.qtplot_timetrace.removeItem(self.nflies_plot)
+            except:
+                pass
+            for vline in self.trajectory_ends_vlines:
+                self.ui.qtplot_timetrace.removeItem(vline)
+            self.trajectory_ends_vlines = []
+            
+            # draw
+            self.nflies_plot = self.ui.qtplot_timetrace.plot(x=self.time_epoch_continuous, y=self.nflies)
+            
+            objid_ends = self.pd.groupby('objid').time_epoch.max()
+            for key in objid_ends.keys():
+                t = objid_ends[key]
+                vline = pg.InfiniteLine(angle=90, movable=False)
+                self.ui.qtplot_timetrace.addItem(vline, ignoreBounds=True)
+                vline.setPos(t)
+                pen = pg.mkPen(self.trajec_to_color_dict[key], width=1)
+                vline.setPen(pen)
+                self.trajectory_ends_vlines.append(vline)
+            
+            # TODO: times (or frames) where trajectories get very close to one another
         
     def draw_vlines_for_selected_trajecs(self):
         for vline in self.selected_trajectory_ends:
@@ -689,6 +697,7 @@ class QTrajectory(TemplateBaseClass):
         self.delta_video_background_img = None
         
         for m, msg in enumerate(self.msgs):
+            bag_time_stamp = float(msg[1].header.stamp.secs) + float(msg[1].header.stamp.nsecs)*1e-9
             delta_video_background_img_filename = os.path.join( self.path, os.path.basename(msg[1].background_image) )
             if os.path.exists(delta_video_background_img_filename):            
                 if delta_video_background_img_filename != self.delta_video_background_img_filename:
@@ -710,6 +719,11 @@ class QTrajectory(TemplateBaseClass):
                     pass #print('Not ros kinetic.')
 
                 imgcopy[msg[1].xpixels, msg[1].ypixels] = msg[1].values # if there's an error, check if you're using ROS hydro?
+            
+            if self.draw_config_function:
+                imgcopy = cv2.cvtColor(imgcopy, cv2.COLOR_GRAY2RGB)
+                self.config.draw(imgcopy, bag_time_stamp)
+
             self.image_sequence.append(imgcopy)
             #s = int((m / float(len(self.msgs)))*100)
             tfloat = msg[1].header.stamp.secs + msg[1].header.stamp.nsecs*1e-9
@@ -790,6 +804,8 @@ if __name__ == '__main__':
     parser.add_option('--path', type=str, default='none', help="option: path that points to standard named filename, background image, dvbag, config. If using 'path', no need to provide filename, bgimg, dvbag, and config. Note")
     parser.add_option('--movie', type=int, default=1, help="load and play the dvbag movie, default is 1, to load use 1")
     parser.add_option('--load-original', type=int, default=0, dest="load_original", help="load original (unprocessed) dataset for debugging, use 1 to load, default 0")
+    parser.add_option('--draw-interesting-time-points', type=int, default=1, dest="draw_interesting_time_points", help="draw interesting time points (e.g. vertical lines). Default = True, set to False if VERY large dataset.")
+    parser.add_option('--draw-config-function', type=int, default=0, dest="draw_config_function", help="If config has a draw function, apply this function to movie frames")
     parser.add_option('--clickable-width', type=int, default=6, dest="clickable_width", help="pixel distance from trace to accept click (larger number means easier to click traces)")
     parser.add_option('--filename', type=str, help="name and path of the hdf5 tracked_objects filename")
     parser.add_option('--bgimg', type=str, help="name and path of the background image")
@@ -808,7 +824,9 @@ if __name__ == '__main__':
     if options.movie != 1:
         options.dvbag = 'none'
     
-    Qtrajec = QTrajectory(options.filename, options.bgimg, options.dvbag, options.load_original, options.clickable_width)
+    Qtrajec = QTrajectory(options.filename, options.bgimg, options.dvbag, options.load_original, options.clickable_width, 
+        options.draw_interesting_time_points,
+        options.draw_config_function)
     Qtrajec.run()
     
     if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
