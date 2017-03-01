@@ -165,6 +165,40 @@ class ClickPixels(object):
             self.draw()
         cv2.destroyAllWindows();
             
+            
+##############################################################################################
+# Line
+
+class ClickLine(object):
+    def __init__(self, filename):
+        self.image = cv2.imread(filename)
+        
+        self.display_name = "Display"
+        cv2.namedWindow(self.display_name)
+        
+        cv2.setMouseCallback(self.display_name, self.on_mouse_click)
+        
+        self.points = []
+        
+    def on_mouse_click(self, event, x, y, flags, param):
+        if event == cv2.EVENT_LBUTTONUP:
+            print x, y
+            self.points.append(np.array([x,y]))
+            
+    def draw(self):
+        canvas = copy.copy(self.image)
+        for point in self.points:
+            cv2.circle(canvas, (point[0], point[1]), 2, [0,0,255], 2)
+        if len(self.points) > 1:
+            print np.linalg.norm(self.points[1] - self.points[0])
+        cv2.imshow("Display", canvas)
+        #cv2.waitKey(1)
+        
+    def run(self):
+        while (cv2.waitKey(30) != 27):
+            self.draw()
+        cv2.destroyAllWindows();
+        
 if __name__ == '__main__':
     
     parser = OptionParser()
@@ -180,6 +214,8 @@ if __name__ == '__main__':
         imageGUI = ClickCircle(options.filename)
     elif options.analysis == 'ellipse':
         imageGUI = ClickEllipse(options.filename)
+    elif options.analysis == 'line':
+        imageGUI = ClickLine(options.filename)
         
     imageGUI.run()
             
