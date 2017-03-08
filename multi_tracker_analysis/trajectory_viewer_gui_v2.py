@@ -757,7 +757,10 @@ class QTrajectory(TemplateBaseClass):
             print i, img_name
         print 'To turn the PNGs into a movie, you can run this command from inside the directory with the tmp files: '
         print 'mencoder \'mf://*.png\' -mf type=png:fps=30 -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o animation.avi'
-            
+        print ' or '
+        print "mencoder 'mf://*.jpg' -mf type=jpg:fps=30 -ovc x264 -x264encopts preset=slow:tune=film:crf=22 -oac copy -o animation.mp4"
+        print "might need: https://www.faqforge.com/linux/how-to-install-ffmpeg-on-ubuntu-14-04/"
+        print ''
     def get_next_reconstructed_image(self):
         self.current_frame += self.skip_frames
         if self.current_frame >= len(self.image_sequence)-1:
