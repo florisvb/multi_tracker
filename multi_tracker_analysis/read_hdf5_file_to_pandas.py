@@ -9,6 +9,8 @@ import scipy.interpolate
 import warnings
 import time
 import matplotlib.pyplot as plt
+import inspect
+import types
 
 def get_filenames(path, contains, does_not_contain=['~', '.pyc']):
     cmd = 'ls ' + path
@@ -54,23 +56,19 @@ def load_bag_as_hdf5(bag, skip_messages=[]):
     return metadata
 
 class Trajectory(object):
-    def __init__(self, pd, objid):
+    def __init__(self, pd, objid, functions=None):
         self.pd = pd[pd['objid']==objid]
-        
         for column in self.pd.columns:
             self.__setattr__(column, self.pd[column].values)
+        if functions is not None:
+            self.__attach_analysis_functions__(functions)
+
             
     def __getitem__(self, key): # trajec attributes can be accessed just like a dictionary this way
         return self.__getattribute__(key)
 
-    def plot(self, ax=None, x='position_x', y='position_y', linestyle='-'):
-        if ax is None:
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            ax.plot(self.__dict__[x], self.__dict__[y], linestyle=linestyle)
-        
 class Dataset(object):
-    def __init__(self, pd, path=None, save=False, convert_to_units=False):
+    def __init__(self, pd, path=None, save=False, convert_to_units=False, annotations=None):
         '''
         highly recommended to provide directory path
         
@@ -84,13 +82,12 @@ class Dataset(object):
         self.__processed_trajecs__ = {}
         self.save = save
         self.path = path
+        self.annotations = annotations
 
         self.units = {'length': 'pixels', 'speed': 'pixels per frame'}
-
         if path is not None:
             if convert_to_units:
                 self.load_config()
-
                 pixels_per_unit_key = []
                 for key in self.config.__dict__.keys():
                     if 'pixels_per_' in key:
@@ -98,10 +95,8 @@ class Dataset(object):
                         self.units['length'] = key.split('pixels_per_')[1]
                         self.units['speed'] = self.units['length'] + ' per second'
                         break
-
                 self.pixels_per_unit = self.config.__dict__[pixels_per_unit_key]
                 self.frames_per_second = self.config.frames_per_second
-
                 self.convert_to_units()
             
             raw_data_filename = get_filename(self.path, 'trackedobjects.hdf5')
@@ -111,6 +106,7 @@ class Dataset(object):
             self.load_keys()
             self.copy_trajectory_objects_to_dataset()
             del(self.pd)
+            self.pd = None
             print
             print 'Dataset loaded as a stand alone object - to save your dataset, use: '
             print 'dataset.save_dataset()'
@@ -143,11 +139,13 @@ class Dataset(object):
         f.close()
 
     def trajec(self, key):
-        if not self.save:
-            return Trajectory(self.pd, key)
+        if self.pd is not None:
+            trajec = Trajectory(self.pd, key)
+            return trajec
         else:
-            #raise ValueError('This is a copied dataset, use dictionary acccess: dataset.trajecs[key]') 
             return self.trajecs[key]
+            #raise ValueError('This is a saved dataset, use dict access: Dataset.trajecs[key] for data')
+
 
     def framestamp_to_timestamp(self, frame):
         t = self.pd.ix[frame]['time_epoch']
@@ -165,17 +163,27 @@ class Dataset(object):
         return int(func(t))
         
     def load_keys(self, keys=None):
-        if keys is None:
-            self.keys = np.unique(self.pd.objid).tolist()
+        if self.annotations is None:
+            if keys is None:
+                self.keys = np.unique(self.pd.objid).tolist()
+            else:
+                self.keys = keys
         else:
-            self.keys = keys
-            
+            self.keys = []
+            for key, note in self.annotations.items():
+                if 'confirmed' in note['notes']:
+                    self.keys.append(key)
+
     def copy_trajectory_objects_to_dataset(self):
         self.trajecs = {}
         for key in self.keys:
-            trajec = copy.copy(Trajectory(self.pd, key))
+            trajec = copy.copy( Trajectory(self.pd, key) )
             self.trajecs.setdefault(key, trajec)
-            
+
+    def calculate_function_for_all_trajecs(self, function):
+        for key, trajec in self.trajecs.items():
+            function(trajec)
+
 def load_dataset_from_path(path, load_saved=False, convert_to_units=True):
     '''
     load_saved only recommended for reasonably sized datasets, < 500 mb
@@ -206,7 +214,19 @@ def load_dataset_from_path(path, load_saved=False, convert_to_units=True):
 
     data_filename = get_filename(path, 'trackedobjects.hdf5')
     pd, config = load_and_preprocess_data(data_filename)
-    dataset = Dataset(pd, path=path, save=load_saved, convert_to_units=convert_to_units) # if load_saved is True, copy the dataset, so it can be cached
+
+    annotations_file = open(get_filename(path, 'annotations'))
+    annotations = pickle.load(annotations_file)
+    annotations_file.close()
+    
+
+    dataset = Dataset(pd, path=path, 
+                          save=load_saved, 
+                          convert_to_units=convert_to_units,
+                          annotations=annotations) # if load_saved is True, copy the dataset, so it can be cached
+
+    if load_saved:
+        dataset.save_dataset()
 
     return dataset
             
