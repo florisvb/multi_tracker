@@ -6,3 +6,4 @@ import estimate_R_and_Q
 import Kalman
 import stitch_trajectories
 import dvbag_to_pandas_reader
+import trajectory_analysis
