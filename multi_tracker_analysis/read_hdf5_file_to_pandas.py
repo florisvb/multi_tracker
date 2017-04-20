@@ -13,7 +13,7 @@ import inspect
 import types
 
 def get_filenames(path, contains, does_not_contain=['~', '.pyc']):
-    cmd = 'ls ' + path
+    cmd = 'ls ' + '"' + path + '"'
     ls = os.popen(cmd).read()
     all_filelist = ls.split('\n')
     try:
@@ -184,7 +184,7 @@ class Dataset(object):
         for key, trajec in self.trajecs.items():
             function(trajec)
 
-def load_dataset_from_path(path, load_saved=False, convert_to_units=True):
+def load_dataset_from_path(path, load_saved=False, convert_to_units=True, use_annotations=True):
     '''
     load_saved only recommended for reasonably sized datasets, < 500 mb
     convert_to_units - see Dataset; converts pixels and frames to mm (or cm) and seconds, based on config
@@ -192,6 +192,7 @@ def load_dataset_from_path(path, load_saved=False, convert_to_units=True):
     if load_saved:
         data_filename = get_filename(path, 'trackedobjects_dataset.pickle')
         if data_filename is not None:
+            print data_filename
             delete_cut_join_instructions_filename = get_filename(path, 'delete_cut_join_instructions.pickle')
             epoch_time_when_dcjif_modified = os.path.getmtime(delete_cut_join_instructions_filename)
             epoch_time_when_dataset_modified = os.path.getmtime(data_filename)
@@ -215,10 +216,12 @@ def load_dataset_from_path(path, load_saved=False, convert_to_units=True):
     data_filename = get_filename(path, 'trackedobjects.hdf5')
     pd, config = load_and_preprocess_data(data_filename)
 
-    annotations_file = open(get_filename(path, 'annotations'))
-    annotations = pickle.load(annotations_file)
-    annotations_file.close()
-    
+    if use_annotations:
+        annotations_file = open(get_filename(path, 'annotations'))
+        annotations = pickle.load(annotations_file)
+        annotations_file.close()
+    else:
+        annotations = None
 
     dataset = Dataset(pd, path=path, 
                           save=load_saved, 
