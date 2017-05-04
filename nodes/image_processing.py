@@ -117,7 +117,7 @@ def fit_ellipse_to_contour(self, contour):
     b /= 2.
     ecc = np.min((a,b)) / np.max((a,b))
     area = np.pi*a*b
-    if self.params['use_moments']:
+    if self.params['use_moments']: # inefficient - double calculating. Is ecc use somewhere else? If not, the ellipse is not at all needed
         try:
             moments = get_centroid_from_moments(contour) # get these values from moments - might be more robust?
         except:
