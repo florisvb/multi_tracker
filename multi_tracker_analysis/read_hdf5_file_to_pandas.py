@@ -11,6 +11,7 @@ import time
 import matplotlib.pyplot as plt
 import inspect
 import types
+import warnings
 
 def get_filenames(path, contains, does_not_contain=['~', '.pyc']):
     cmd = 'ls ' + '"' + path + '"'
@@ -99,8 +100,7 @@ class Dataset(object):
                 self.frames_per_second = self.config.frames_per_second
                 self.convert_to_units()
             
-            raw_data_filename = get_filename(self.path, 'trackedobjects.hdf5')
-            self.dataset_filename = raw_data_filename.split('trackedobjects.hdf5')[0] + 'trackedobjects_dataset.pickle'
+            self.set_dataset_filename()
 
         if save:
             self.load_keys()
@@ -118,6 +118,10 @@ class Dataset(object):
             print 'f = open(dataset.dataset_filename, "w+")'
             print 'pickle.dump(dataset, f)'
             print 'f.close()'
+
+    def set_dataset_filename(self):
+        raw_data_filename = get_filename(self.path, 'trackedobjects.hdf5')
+        self.dataset_filename = raw_data_filename.split('trackedobjects.hdf5')[0] + 'trackedobjects_dataset.pickle'
 
     def convert_to_units(self):
         self.pd.position_x = (self.pd.position_x-self.config.position_zero[0])/float(self.pixels_per_unit)
@@ -184,6 +188,36 @@ class Dataset(object):
         for key, trajec in self.trajecs.items():
             function(trajec)
 
+    def remove_zero_length_objects(self):
+        if 'trajecs' in self.__dict__:
+            for key, trajec in self.trajecs.items():    
+                if len(trajec.speed) == 0:
+                    try: 
+                        del(self.trajecs[key]) 
+                    except: 
+                        pass
+                    try: 
+                        self.keys.remove(key) 
+                    except: 
+                        pass
+            for key in self.keys:
+                if key not in self.trajecs.keys():
+                    self.keys.remove(key)
+        else:
+            warnings.warn('remove zero length objects only works on copyied datasets')
+
+    def has_zero_length_objects(self):
+        if 'trajecs' in self.__dict__:
+            for key, trajec in self.trajecs.items():    
+                if len(trajec.speed) == 0:
+                    return True
+            for key in self.keys:
+                if key not in self.trajecs.keys():
+                    return True
+            return False
+        else:
+            warnings.warn('remove zero length objects only works on copyied datasets')
+
 def load_dataset_from_path(path, load_saved=False, convert_to_units=True, use_annotations=True):
     '''
     load_saved only recommended for reasonably sized datasets, < 500 mb
@@ -204,6 +238,13 @@ def load_dataset_from_path(path, load_saved=False, convert_to_units=True, use_an
                 f = open(data_filename)
                 dataset = pickle.load(f)
                 f.close()
+                # check path
+                if dataset.path != path: # an issue if the files get moved around
+                    dataset.path = path 
+                    dataset.set_dataset_filename()
+                if dataset.has_zero_length_objects():
+                    dataset.remove_zero_length_objects()
+                    dataset.save_dataset()
                 print 'Loaded cached dataset last modified: '
                 print time.localtime(epoch_time_when_dataset_modified)
                 print
@@ -229,6 +270,7 @@ def load_dataset_from_path(path, load_saved=False, convert_to_units=True, use_an
                           annotations=annotations) # if load_saved is True, copy the dataset, so it can be cached
 
     if load_saved:
+        dataset.remove_zero_length_objects()
         dataset.save_dataset()
 
     return dataset
@@ -317,6 +359,12 @@ def load_config_from_path(path):
     else:
         config = None
     return config
+
+def load_data_selection_from_path(path):
+    filename = get_filename(path, contains='dataframe_')
+    pd = pandas.read_pickle(filename)
+    config = load_config_from_path(os.path.dirname(path))
+    return pd, config
     
 def find_instructions_related_to_objid(instructions, objid):
     for i, instruction in enumerate(instructions):
