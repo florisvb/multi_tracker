@@ -77,6 +77,7 @@ class QTrajectory(TemplateBaseClass):
         self.draw_config_function = draw_config_function
 
         # Buttons
+        self.ui.save_trajecs.clicked.connect(self.save_trajectories)
         self.ui.movie_save.clicked.connect(self.save_image_sequence)
         self.ui.movie_speed.sliderMoved.connect(self.set_movie_speed)
         self.ui.trajec_undo.clicked.connect(self.trajec_undo)
@@ -181,6 +182,30 @@ class QTrajectory(TemplateBaseClass):
         self.current_time_vline.setPen(pen)
         
     ### Button Callbacks
+
+    def save_trajectories(self):
+        self.troi = self.linear_region.getRegion()
+
+        start_frame = self.dataset.timestamp_to_framestamp(self.troi[0])
+        end_frame = self.dataset.timestamp_to_framestamp(self.troi[-1])
+        dirname = 'data_selection_' + str(start_frame) + '_to_' + str(end_frame)
+        dirname = os.path.join(self.path, dirname)
+
+        if os.path.exists(dirname):
+            print 'Data selection path exists!'
+        else:
+            os.mkdir(dirname)
+
+        fname = 'dataframe_' + str(start_frame) + '_to_' + str(end_frame) + '.pickle'
+        fname = os.path.join(dirname, fname)
+        print 'Saving stand alone pandas dataframe to file: '
+        print '    ' + fname
+
+        pd_subset = mta.data_slicing.get_data_in_epoch_timerange(self.pd, self.troi)
+
+        pd_subset.to_pickle(fname)
+
+        #self.config.plot_trajectories(self.troi)
     
     def set_all_buttons_false(self):
         self.cut_objects = False
@@ -740,13 +765,24 @@ class QTrajectory(TemplateBaseClass):
         
     def save_image_sequence(self):
         start_frame = self.dataset.timestamp_to_framestamp(self.troi[0])
-        dirname = 'image_sequence_' + str(start_frame)
+        end_frame = self.dataset.timestamp_to_framestamp(self.troi[-1])
+        dirname = 'data_selection_' + str(start_frame) + '_to_' + str(end_frame)
         dirname = os.path.join(self.path, dirname)
+
         if os.path.exists(dirname):
-            print 'Path exists! Will not overwrite'
-            return
+            print 'Data selection path exists!'
         else:
             os.mkdir(dirname)
+
+        image_sequence_dirname = 'image_sequence_' + str(start_frame) + '_to_' + str(end_frame)
+        dirname = os.path.join(dirname, image_sequence_dirname)
+        print 'Image sequence directory: ', dirname
+
+        if os.path.exists(dirname):
+            print 'Image selection path exists!'
+        else:
+            os.mkdir(dirname)
+
         print 'saving image sequence: ', len(self.image_sequence)
         zs = int(np.ceil( np.log10(len(self.image_sequence)) )+1)
         print 'zs: ', zs
