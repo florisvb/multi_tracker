@@ -15,7 +15,7 @@ from multi_tracker.msg import Trackedobject, Trackedobjectlist
             
 # The main tracking class, a ROS node
 class PrefObjPicker:
-    def __init__(self, nodenum):
+    def __init__(self, nodenum, rate):
         '''
         Default image_topic for:
             Basler ace cameras with camera_aravis driver: camera/image_raw
@@ -35,7 +35,10 @@ class PrefObjPicker:
         rospy.init_node('prefobj_' + nodenum)
         self.nodename = rospy.get_name().rstrip('/')
         self.nodenum = nodenum
-        
+
+        self.rate = rate
+        self.msg = None
+
         self.prefObjId = None
         self.subTrackedObjects = rospy.Subscriber('/multi_tracker/' + nodenum + '/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
         self.pubPrefObj = rospy.Publisher('/multi_tracker/' + nodenum + '/prefobj', Float32MultiArray, queue_size=3)
@@ -54,22 +57,34 @@ class PrefObjPicker:
                 obj_ids.append(tracked_object.objid)
                 index.append(i)
                 
-        p = np.argmax(persistances)
-        self.prefObjId = obj_ids[p]
-        
-        tracked_object = tracked_objects.tracked_objects[i]
-        
-        msg = Float32MultiArray()
-        msg.data = [tracked_object.objid, 
-                    tracked_object.position.x,
-                    tracked_object.position.y,
-                    tracked_object.velocity.x,
-                    tracked_object.velocity.y]
-        self.pubPrefObj.publish(msg)
-        
+        if len(persistances) > 0:
+            p = np.argmax(persistances)
+            self.prefObjId = obj_ids[p]
+            
+            tracked_object = tracked_objects.tracked_objects[i]
+            
+            self.msg = Float32MultiArray()
+            self.msg.data = [tracked_object.objid, 
+                                tracked_object.position.x,
+                                tracked_object.position.y,
+                                tracked_object.velocity.x,
+                                tracked_object.velocity.y]
+            
+            if self.rate == 0:
+                self.pubPrefObj.publish(self.msg)
+        else:
+            self.msg = None
+
     def Main(self):
-        while (not rospy.is_shutdown()):
-            rospy.spin()
+        if self.rate == 0:
+            while (not rospy.is_shutdown()):
+                rospy.spin()
+        else:
+            rate = rospy.Rate(self.rate) # 10hz
+            while not rospy.is_shutdown():
+                if self.msg is not None:
+                    self.pubPrefObj.publish(self.msg)
+                    rate.sleep()
 
 #####################################################################################################
     
@@ -77,7 +92,9 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("--nodenum", type="str", dest="nodenum", default='1',
                         help="node number, for example, if running multiple tracker instances on one computer")
+    parser.add_option("--rate", type="float", dest="rate", default='0',
+                        help="rate at which to (re)publish preferred object location. default=0 means continuous.")
     (options, args) = parser.parse_args()
     
-    prefobjpicker = PrefObjPicker(options.nodenum)
+    prefobjpicker = PrefObjPicker(options.nodenum, options.rate)
     prefobjpicker.Main()
