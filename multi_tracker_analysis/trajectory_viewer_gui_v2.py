@@ -13,6 +13,7 @@ import numpy as np
 
 import read_hdf5_file_to_pandas
 import data_slicing
+import find_flies_in_image_directory
 
 import matplotlib.pyplot as plt
 
@@ -208,6 +209,14 @@ class QTrajectory(TemplateBaseClass):
 
         self.ui.qtplot_gphoto2image.hideAxis('left')
         self.ui.qtplot_gphoto2image.hideAxis('bottom')
+
+        img_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_img') for a in ['A', 'B', 'C', 'D']]
+        hist_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_hist') for a in ['A', 'B', 'C', 'D']]
+        for i in range(len(img_boxes)):
+            img_boxes[i].hideAxis('left')
+            img_boxes[i].hideAxis('bottom')
+            hist_boxes[i].hideAxis('left')
+            hist_boxes[i].hideAxis('bottom')
         #
 
 
@@ -643,11 +652,51 @@ class QTrajectory(TemplateBaseClass):
                 pen = pen = pg.mkPen(1, width=5)
             pline.setPen(pen)
 
-        gphoto2img = cv2.imread(item.filename, cv2.CV_8UC1)
+        gphoto2img = cv2.imread(item.filename)
+        
+
+        if hasattr(self, 'gphoto2_flies'):
+            pass
+        else:
+            fname = os.path.join(self.gphoto2directory, 'fly_ellipses.pickle')
+            if not os.path.exists(fname):
+                find_flies_in_image_directory.find_flies_in_images(self.gphoto2directory)
+            f = open(fname)
+            self.gphoto2_flies = pickle.load(f)
+            f.close()
+
+        img_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_img') for a in ['A', 'B', 'C', 'D']]
+        hist_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_hist') for a in ['A', 'B', 'C', 'D']]
+        last_fly = -1
+        for i, ellipse in enumerate(self.gphoto2_flies[item.filename]):
+            if i < len(img_boxes):
+                r = np.max(ellipse[1])
+                zoom = gphoto2img[ellipse[0][1]-r:ellipse[0][1]+r, ellipse[0][0]-r:ellipse[0][0]+r, :]
+
+                bins = np.arange(0,255,1)
+                hist_red, b = np.histogram(zoom[:,:,0], bins=bins)
+                hist_green, b = np.histogram(zoom[:,:,1], bins=bins)
+                hist_blue, b = np.histogram(zoom[:,:,2], bins=bins)
+                hist_boxes[i].clear()
+                hist_boxes[i].plot(bins[1:], hist_red,   pen=pg.mkPen((255,0,0), width=2))
+                hist_boxes[i].plot(bins[1:], hist_green, pen=pg.mkPen((0,255,0), width=2))
+                hist_boxes[i].plot(bins[1:], hist_blue,  pen=pg.mkPen((0,0,255), width=2))
+
+
+                zoom = pg.ImageItem(zoom)
+                img_boxes[i].clear()
+                img_boxes[i].addItem(zoom)
+
+            gphoto2img = cv2.ellipse(gphoto2img,ellipse,(0,255,0),20)
+            last_fly = i
+
+        for j in range(last_fly+1, len(hist_boxes)):
+            img_boxes[j].clear()
+            hist_boxes[j].clear()
+
         gphoto2img = pg.ImageItem(gphoto2img)
+        self.ui.qtplot_gphoto2image.clear()
         self.ui.qtplot_gphoto2image.addItem(gphoto2img)
-
-
 
     def update_time_region(self, linear_region):
         self.linear_region = linear_region

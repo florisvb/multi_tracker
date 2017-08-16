@@ -29,7 +29,7 @@
      <rect>
       <x>200</x>
       <y>780</y>
-      <width>1261</width>
+      <width>1271</width>
       <height>81</height>
      </rect>
     </property>
@@ -591,7 +591,7 @@
      <rect>
       <x>200</x>
       <y>870</y>
-      <width>1261</width>
+      <width>1271</width>
       <height>41</height>
      </rect>
     </property>
@@ -603,6 +603,86 @@
       <y>60</y>
       <width>321</width>
       <height>211</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyA_img">
+    <property name="geometry">
+     <rect>
+      <x>1150</x>
+      <y>280</y>
+      <width>121</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyA_hist">
+    <property name="geometry">
+     <rect>
+      <x>1280</x>
+      <y>280</y>
+      <width>191</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyB_img">
+    <property name="geometry">
+     <rect>
+      <x>1150</x>
+      <y>400</y>
+      <width>121</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyC_img">
+    <property name="geometry">
+     <rect>
+      <x>1150</x>
+      <y>520</y>
+      <width>121</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyD_img">
+    <property name="geometry">
+     <rect>
+      <x>1150</x>
+      <y>640</y>
+      <width>121</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyB_hist">
+    <property name="geometry">
+     <rect>
+      <x>1280</x>
+      <y>400</y>
+      <width>191</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyC_hist">
+    <property name="geometry">
+     <rect>
+      <x>1280</x>
+      <y>520</y>
+      <width>191</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyD_hist">
+    <property name="geometry">
+     <rect>
+      <x>1280</x>
+      <y>640</y>
+      <width>191</width>
+      <height>111</height>
      </rect>
     </property>
    </widget>
