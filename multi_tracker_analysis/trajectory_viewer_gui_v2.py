@@ -51,7 +51,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 if screen_height < 900:
     uiFile = os.path.join(path, 'trajectory_viewer_small_screens.ui')
 else:
-    uiFile = os.path.join(path, 'trajectory_viewer_gui.ui')
+    uiFile = os.path.join(path, 'trajectory_viewer_gui_gphoto2.ui')
 #uiFile = '/home/caveman/catkin_ws/src/multi_tracker/multi_tracker_analysis/trajectory_viewer_small_screens.ui'
 WindowTemplate, TemplateBaseClass = pg.Qt.loadUiType(uiFile)
 
@@ -103,7 +103,7 @@ class QTrajectory(TemplateBaseClass):
         self.backgroundimg = None
         self.binsx = None
         self.binsy = None
-        trange = np.max(self.pd.time_epoch.values) - np.min(self.pd.time_epoch.values) 
+        trange = np.float( np.max(self.pd.time_epoch.values) - np.min(self.pd.time_epoch.values) )
         self.troi = [np.min(self.pd.time_epoch.values), np.min(self.pd.time_epoch.values)+trange*0.1] 
         self.skip_frames = 1
         self.frame_delay = 0.03
@@ -115,6 +115,14 @@ class QTrajectory(TemplateBaseClass):
             self.dvbag = rosbag.Bag(delta_video_filename)
         else:
             self.dvbag = None
+
+        # find gphoto2 directory
+        s = self.config.identifiercode + '_' + 'gphoto2'
+        self.gphoto2directory = os.path.join(self.config.path, s)
+        if os.path.exists( self.gphoto2directory ):
+            self.draw_gphoto2_timepoints()
+        else:
+            self.gphoto2directory = None 
             
         # Initialize 
         self.trajec_width_dict = {}
@@ -180,7 +188,36 @@ class QTrajectory(TemplateBaseClass):
         self.current_time_vline.setPos(0)
         pen = pg.mkPen((255,255,255), width=2)
         self.current_time_vline.setPen(pen)
-        
+
+        self.ui.qtplot_gphoto2times.enableAutoRange('xy', False)
+        self.ui.qtplot_gphoto2times.setRange(xRange=[np.min(self.time_epoch_continuous), np.max(self.time_epoch_continuous)], yRange=[0, 1])
+        self.ui.qtplot_gphoto2times.setLimits(yMin=0, yMax=1)
+        self.ui.qtplot_gphoto2times.setLimits(minYRange=1, maxYRange=1)
+
+        self.ui.qtplot_timetrace.sigXRangeChanged.connect(self.update_time_range)
+
+        # hide a bunch of the axes
+        self.ui.qtplot_gphoto2times.hideAxis('left')
+        self.ui.qtplot_gphoto2times.hideAxis('bottom')
+
+        self.ui.qtplot_timetrace.hideAxis('left')
+        self.ui.qtplot_timetrace.hideAxis('bottom')
+
+        self.ui.qtplot_trajectory.hideAxis('left')
+        self.ui.qtplot_trajectory.hideAxis('bottom')
+
+        self.ui.qtplot_gphoto2image.hideAxis('left')
+        self.ui.qtplot_gphoto2image.hideAxis('bottom')
+        #
+
+
+
+
+    ### widgety stuff
+
+    def update_time_range(self, view, range):
+        self.ui.qtplot_gphoto2times.setRange(xRange=range, yRange=[0, 1], padding=0)
+     
     ### Button Callbacks
 
     def save_trajectories(self):
@@ -570,7 +607,48 @@ class QTrajectory(TemplateBaseClass):
             vline.setPen(pen)
             self.selected_trajectory_ends.append(vline)
             
-    
+    def draw_gphoto2_timepoints(self):
+        self.gphoto2_file_to_time = {}
+        self.gphoto2_line_to_file = {}
+        try:
+            pens = self.gphoto2_pens
+        except:
+            self.gphoto2_pens = {}
+        file_list = read_hdf5_file_to_pandas.get_filenames(self.gphoto2directory, '.jpg')
+        for file in file_list:
+            s = file.split('_')
+            time_epoch_secs = int(s[-2])
+            time_epoch_nsecs = int(s[-1].split('.')[-2])
+            time_epoch = float(time_epoch_secs) + float(time_epoch_nsecs*1e-9)
+
+            if file in self.gphoto2_pens.keys():
+                pen = self.gphoto2_pens[file]
+            else:
+                pen = pg.mkPen(1, width=5)
+                self.gphoto2_pens[file] = pen
+            pline = self.ui.qtplot_gphoto2times.plot([time_epoch, time_epoch+0.0001], [0,1], pen=pen) 
+            pline.curve.setClickable(True, width=self.clickable_width)
+            pline.curve.filename = file
+            pline.curve.sigClicked.connect(self.gphoto2_clicked)
+
+            self.gphoto2_file_to_time[file] = time_epoch
+            self.gphoto2_line_to_file[pline] = file
+
+    def gphoto2_clicked(self, item):
+        print item.filename
+        for pline, file in self.gphoto2_line_to_file.items():
+            if file == item.filename:
+                pen = pg.mkPen((50,50,255), width=10)
+            else:
+                pen = pen = pg.mkPen(1, width=5)
+            pline.setPen(pen)
+
+        gphoto2img = cv2.imread(item.filename, cv2.CV_8UC1)
+        gphoto2img = pg.ImageItem(gphoto2img)
+        self.ui.qtplot_gphoto2image.addItem(gphoto2img)
+
+
+
     def update_time_region(self, linear_region):
         self.linear_region = linear_region
         self.troi = linear_region.getRegion()
