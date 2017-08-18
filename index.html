@@ -240,7 +240,10 @@ rosrun image_view image_view image:=[RECONSTRUCTED CAMERA TOPIC, e.g. /camera/im
 
       <h5>I already have a movie, how can I track it?</h5>
       Use the ROS package <a href="http://wiki.ros.org/video_stream_opencv">video_stream_opencv</a>.
-
+      <h5>My movie has one object, and it moves very fast, why can't I track it well?</h5>
+      Try increasing the following parameter in the data_association_parameters.yaml file: 
+      <code>/multi_tracker/1/data_association/n_covariances_to_reject_data: 3</code>
+      
       </section>
     </div>
 
