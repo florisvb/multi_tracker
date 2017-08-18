@@ -243,6 +243,7 @@ rosrun image_view image_view image:=[RECONSTRUCTED CAMERA TOPIC, e.g. /camera/im
       <h5>My movie has one object, and it moves very fast, why can't I track it well?</h5>
       Try increasing the following parameter in the data_association_parameters.yaml file: 
       <code>/multi_tracker/1/data_association/n_covariances_to_reject_data: 3</code>
+      This number is multiplied by the covariance of each tracked object to give an acceptance radius. Any objects in the next frame that lie within this radius are considered viable. The nearest of these objects will be chosen for the update step. Larger values mean more continuous tracking, but a higher likelihood for eroneous tracking if there are multiple objects or noise. To smooth the tracking, adjust the coefficients for R and Q in the kalman parameters. 
       
       </section>
     </div>
