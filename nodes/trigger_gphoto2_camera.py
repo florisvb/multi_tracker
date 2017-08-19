@@ -72,15 +72,15 @@ class GPhotoCamera:
 
 
     def gphoto_callback(self, msg):
-        
-        print('Capturing image')
 
         file_path = gp.check_result(gp.gp_camera_capture(
             self.camera, gp.GP_CAPTURE_IMAGE, self.context))
         print('Camera file path: {0}/{1}'.format(file_path.folder, file_path.name))
 
+        print('Captured image')
         t = rospy.Time.now()
         time_base = time.strftime("%Y%m%d_%H%M%S_N" + self.nodenum, time.localtime())
+        print time_base
         name = time_base + '_' + str(t.secs) + '_' + str(t.nsecs) + '.jpg'
         target = os.path.join(self.destination, name)
 
