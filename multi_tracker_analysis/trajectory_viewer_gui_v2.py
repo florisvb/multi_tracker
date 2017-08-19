@@ -50,7 +50,8 @@ screen_height = screen.get_height()
 # check screen size - if "small" screen use smaller ui
 path = os.path.dirname(os.path.abspath(__file__))
 if screen_height < 900:
-    uiFile = os.path.join(path, 'trajectory_viewer_small_screens.ui')
+    #uiFile = os.path.join(path, 'trajectory_viewer_small_screens.ui')
+    uiFile = os.path.join(path, 'trajectory_viewer_gui_gphoto2.ui')
 else:
     uiFile = os.path.join(path, 'trajectory_viewer_gui_gphoto2.ui')
 #uiFile = '/home/caveman/catkin_ws/src/multi_tracker/multi_tracker_analysis/trajectory_viewer_small_screens.ui'
