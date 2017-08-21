@@ -1,0 +1,600 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1477</width>
+    <height>962</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="PlotWidget" name="qtplot_trajectory">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>0</y>
+      <width>811</width>
+      <height>521</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_timetrace">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>530</y>
+      <width>811</width>
+      <height>81</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="groupBox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>0</y>
+      <width>171</width>
+      <height>191</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Movie Player</string>
+    </property>
+    <widget class="QPushButton" name="movie_play">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>111</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>Load Movie</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="movie_pause">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>50</y>
+       <width>111</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>Play / Pause</string>
+     </property>
+    </widget>
+    <widget class="QSlider" name="movie_speed">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>90</y>
+       <width>161</width>
+       <height>29</height>
+      </rect>
+     </property>
+     <property name="minimum">
+      <number>-30</number>
+     </property>
+     <property name="maximum">
+      <number>30</number>
+     </property>
+     <property name="singleStep">
+      <number>1</number>
+     </property>
+     <property name="value">
+      <number>1</number>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>80</y>
+       <width>66</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>Speed</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="movie_save">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>120</y>
+       <width>111</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Save Img Seq</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="save_trajecs">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>150</y>
+       <width>151</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Save data selection</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>180</y>
+      <width>181</width>
+      <height>341</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Edit Trajectories</string>
+    </property>
+    <widget class="QPushButton" name="trajec_delete">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>60</y>
+       <width>111</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color: rgb(255, 2, 2); text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>Delete trajecs</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="trajec_cut">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>90</y>
+       <width>111</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color: rgb(191, 194, 12); text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>Cut trajecs</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="trajec_join_add_data">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>150</y>
+       <width>151</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color: rgb(26, 75, 255); text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>Add data  points</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="trajec_join_save">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>190</y>
+       <width>171</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">font-weight: bold; text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>Join selected trajecs</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="trajec_undo">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>61</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">font-weight: bold; text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>Undo</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="trajec_join_collect">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>120</y>
+       <width>151</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color: rgb(43, 193, 1); text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>Select trajecs</string>
+     </property>
+    </widget>
+    <widget class="Line" name="line_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>40</y>
+       <width>151</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="Line" name="line_4">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>170</y>
+       <width>151</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="Line" name="line_5">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>270</y>
+       <width>151</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="trajec_join_clear">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>220</y>
+       <width>171</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">font-weight: bold; text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>Clear Selection / Data</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="load_annotations">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>250</y>
+       <width>171</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">font-weight: bold; text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>Load Annotations</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="Line" name="line">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>170</y>
+      <width>181</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_3">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>540</y>
+      <width>181</width>
+      <height>271</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Annotate Selection</string>
+    </property>
+    <widget class="QPushButton" name="save_annotation">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>60</y>
+       <width>141</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">font-weight: bold; text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>Save Annotation</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="annotated_color_checkbox">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>90</y>
+       <width>151</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Annotated = Black</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="annotated_checkbox_1">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>20</y>
+       <width>171</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QPlainTextEdit" name="annotated_text_1">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>20</y>
+       <width>161</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="plainText">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="annotated_hide_checkbox">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>110</y>
+       <width>151</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Hide Annotated</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_4">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>470</y>
+      <width>181</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Selected Object ID's</string>
+    </property>
+    <widget class="QPlainTextEdit" name="qttext_selected_objids">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>171</width>
+       <height>41</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QPushButton" name="save_colors">
+    <property name="geometry">
+     <rect>
+      <x>1020</x>
+      <y>10</y>
+      <width>81</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Save Colors</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="get_original_objid">
+    <property name="geometry">
+     <rect>
+      <x>1110</x>
+      <y>10</y>
+      <width>81</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: rgb(255, 129, 234); text-align: left; padding-left: 10px</string>
+    </property>
+    <property name="text">
+     <string>Original ID</string>
+    </property>
+   </widget>
+   <widget class="QPlainTextEdit" name="qttext_show_original_objid">
+    <property name="geometry">
+     <rect>
+      <x>1200</x>
+      <y>10</y>
+      <width>91</width>
+      <height>31</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="Line" name="line_6">
+    <property name="geometry">
+     <rect>
+      <x>1020</x>
+      <y>40</y>
+      <width>271</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2times">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>620</y>
+      <width>811</width>
+      <height>41</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2image">
+    <property name="geometry">
+     <rect>
+      <x>1020</x>
+      <y>60</y>
+      <width>271</width>
+      <height>211</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyA_img">
+    <property name="geometry">
+     <rect>
+      <x>1020</x>
+      <y>280</y>
+      <width>121</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyA_hist">
+    <property name="geometry">
+     <rect>
+      <x>1150</x>
+      <y>280</y>
+      <width>141</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyB_img">
+    <property name="geometry">
+     <rect>
+      <x>1020</x>
+      <y>400</y>
+      <width>121</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyC_img">
+    <property name="geometry">
+     <rect>
+      <x>1020</x>
+      <y>520</y>
+      <width>121</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyB_hist">
+    <property name="geometry">
+     <rect>
+      <x>1150</x>
+      <y>400</y>
+      <width>141</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="qtplot_gphoto2_flyC_hist">
+    <property name="geometry">
+     <rect>
+      <x>1150</x>
+      <y>520</y>
+      <width>141</width>
+      <height>111</height>
+     </rect>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1477</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PlotWidget</class>
+   <extends>QGraphicsView</extends>
+   <header>pyqtgraph</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

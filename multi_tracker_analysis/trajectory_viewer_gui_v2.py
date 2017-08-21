@@ -51,9 +51,11 @@ screen_height = screen.get_height()
 path = os.path.dirname(os.path.abspath(__file__))
 if screen_height < 900:
     #uiFile = os.path.join(path, 'trajectory_viewer_small_screens.ui')
-    uiFile = os.path.join(path, 'trajectory_viewer_gui_gphoto2.ui')
+    uiFile = os.path.join(path, 'trajectory_viewer_gui_gphoto2_small.ui')
+    SMALL = True
 else:
     uiFile = os.path.join(path, 'trajectory_viewer_gui_gphoto2.ui')
+    SMALL = False
 #uiFile = '/home/caveman/catkin_ws/src/multi_tracker/multi_tracker_analysis/trajectory_viewer_small_screens.ui'
 WindowTemplate, TemplateBaseClass = pg.Qt.loadUiType(uiFile)
 
@@ -211,8 +213,12 @@ class QTrajectory(TemplateBaseClass):
         self.ui.qtplot_gphoto2image.hideAxis('left')
         self.ui.qtplot_gphoto2image.hideAxis('bottom')
 
-        img_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_img') for a in ['A', 'B', 'C', 'D']]
-        hist_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_hist') for a in ['A', 'B', 'C', 'D']]
+        if SMALL:
+            self.fly_letters = ['A', 'B', 'C']
+        else:
+            self.fly_letters = ['A', 'B', 'C', 'D']
+        img_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_img') for a in self.fly_letters]
+        hist_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_hist') for a in self.fly_letters]
         for i in range(len(img_boxes)):
             img_boxes[i].hideAxis('left')
             img_boxes[i].hideAxis('bottom')
@@ -666,8 +672,8 @@ class QTrajectory(TemplateBaseClass):
             self.gphoto2_flies = pickle.load(f)
             f.close()
 
-        img_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_img') for a in ['A', 'B', 'C', 'D']]
-        hist_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_hist') for a in ['A', 'B', 'C', 'D']]
+        img_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_img') for a in self.fly_letters]
+        hist_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_hist') for a in self.fly_letters]
         last_fly = -1
         for i, ellipse in enumerate(self.gphoto2_flies[item.filename]):
             if i < len(img_boxes):
