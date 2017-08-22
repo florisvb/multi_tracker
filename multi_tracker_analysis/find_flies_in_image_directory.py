@@ -73,6 +73,14 @@ def find_flies_in_images(directory,
                          max_fly_ecc=5,
                          save_result=True):
     
+    try:
+        config = read_hdf5_file_to_pandas.load_config_from_path(path)
+        s = config.identifiercode + '_' + 'gphoto2'
+        gphoto2directory = os.path.join(config.path, s)
+        directory = gphoto2directory
+    except:
+        pass
+
     median = create_median_gray_small_image_from_directory(directory,  
                                                            N=3, 
                                                            resize_factor=resize_factor)
@@ -100,18 +108,117 @@ def find_flies_in_images(directory,
                              ellipse[2])
             large_fly_ellipses.append(large_ellipse)
         
-        flies[file] = large_fly_ellipses
+        flies[os.path.basename(file)] = large_fly_ellipses
         
     if save_result:
         fname = os.path.join(directory, 'fly_ellipses.pickle')
         f = open(fname, 'w')
         pickle.dump(flies, f)
         f.close()
-        
+
+def calculate_hue_for_flies(path):
+    try:
+        config = read_hdf5_file_to_pandas.load_config_from_path(path)
+        s = config.identifiercode + '_' + 'gphoto2'
+        gphoto2directory = os.path.join(config.path, s)
+    except:
+        gphoto2directory = path
+
+    fname = os.path.join(gphoto2directory, 'fly_ellipses.pickle')
+    if not os.path.exists(fname):
+        raise ValueError('Please run find_flies_in_image_directory.find_flies_in_directory')
+    f = open(fname)
+    gphoto2_flies = pickle.load(f)
+    f.close()
+
+    fly_ellipses_and_colors = {}
+
+    all_hues = []
+
+    for filename, flies in gphoto2_flies.items():
+        gphoto2img = cv2.imread(os.path.join(gphoto2directory, filename) )
+        fly_ellipses_and_colors[os.path.basename(filename)] = []
+        for i, ellipse in enumerate(flies):
+            r0 = int(ellipse[1][0])
+            r1 = int(ellipse[1][1])
+
+            _l = np.max([0, ellipse[0][1]-r1])
+            _r = np.min([gphoto2img.shape[0], ellipse[0][1]+r1])
+            _width = _r - _l
+            _b = np.max([0, ellipse[0][0]-r0])
+            _t = np.min([gphoto2img.shape[1], ellipse[0][0]+r0])
+            _height = _t - _b
+            zoom = gphoto2img[int(_l):int(_r), int(_b):int(_t), :]
+
+
+            zoom_hsv = cv2.cvtColor(zoom, cv2.COLOR_RGB2HSV)
+            # http://docs.opencv.org/trunk/df/d9d/tutorial_py_colorspaces.html
+
+            # ellipse mask
+            mask_ellipse = copy.copy(zoom[:,:,0])*0
+            zero_centered_ellipse = (( np.max([0,zoom.shape[1]-r0]), np.max([0,zoom.shape[0]-r1])), (ellipse[1][0], ellipse[1][1]), ellipse[2])
+            cv2.ellipse(mask_ellipse,zero_centered_ellipse,1,-1)
+
+            # saturation mask
+            mask_sat = copy.copy(zoom_hsv[:,:,1])
+            mask_sat = mask_sat>50
+
+            # luminance mask
+            mask_lum = copy.copy(zoom_hsv[:,:,2])
+            mask_lum = (mask_lum>50)*(mask_lum<220)
+
+            mask = mask_ellipse*mask_sat*mask_lum
+            mask /= np.max(mask)
+
+            print np.sum(mask)
+
+            dbin = 5
+            bins_179 = np.arange(0,179,dbin)
+            #bins_255 = np.arange(0,255,5)
+            hist_hue, b = np.histogram(zoom_hsv[:,:,0], bins=bins_179, weights=mask, normed=True)
+            bins = bins_179[1:]-dbin/2.
+            primary_hue = np.mean(bins[hist_hue>np.max(hist_hue)*0.75])
+
+            hsv_color = np.uint8([[[primary_hue, 255, 255]]])
+            rgb_color = cv2.cvtColor(hsv_color, cv2.COLOR_HSV2RGB)[0][0]
+            #hist_sat, b = np.histogram(zoom_hsv[:,:,1], bins=bins_255, weights=mask[:,:,1])
+            #hist_lum, b = np.histogram(zoom_hsv[:,:,2], bins=bins_255, weights=mask[:,:,2])
+
+            fly = {'ellipse': ellipse,
+                   'hue_actual': hist_hue,
+                   'hue_bins': bins,
+                   'rgb_color_peak': rgb_color.tolist()}
+
+            fly_ellipses_and_colors[os.path.basename(filename)].append(fly)
+            all_hues.append(hist_hue)
+
+    # get hue relative to the baseline. useful for focusing on small differences relative to a common baseline
+    # could try to cluster first, then get baseline based on selecting even number of flies from each cluster
+    baseline_hue = np.mean(all_hues, axis=0).astype('float')
+
+    for filename, flies in fly_ellipses_and_colors.items():
+        for i, fly in enumerate(flies):
+            #hue = fly['hue_actual'].astype(float)
+            #hue_relative = hue - baseline_hue
+            #hue_relative -= np.min(hue_relative)
+            #hue_relative /= float(np.sum(hue_relative))
+            fly['hue_relative'] = fly['hue_actual']
+
+            #primary_hue = fly['hue_bins'][np.argmax(hue_relative)]
+            #hsv_color = np.uint8([[[primary_hue, 255, 255]]])
+            #rgb_color = cv2.cvtColor(hsv_color, cv2.COLOR_HSV2RGB)[0][0]
+            #fly['rgb_color_peak'] = rgb_color.tolist()
+
+    fname = os.path.join(gphoto2directory, 'fly_ellipses_and_colors.pickle')
+    f = open(fname, 'w')
+    pickle.dump(fly_ellipses_and_colors, f)
+    f.close()
+
 
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option('--path', type=str, default='none', help="option: path that points to directory of images")
     (options, args) = parser.parse_args()
 
-    find_flies_in_images(options.path)
+    #find_flies_in_images(options.path)
+    calculate_hue_for_flies(options.path)

@@ -1,3 +1,4 @@
+from optparse import OptionParser
 
 import read_hdf5_file_to_pandas
 import find_flies_in_image_directory
@@ -53,7 +54,7 @@ def __calc_homography_from_tracker_to_gphoto2(points_2d_tracker, points_2d_gphot
     Hm = M[0]
     return Hm
 
-def reproject_tracker_point_onto_gphoto2(points_2d_tracker, points_2d_gphoto2, Hm):
+def reproject_tracker_point_onto_gphoto2(points_2d_tracker, Hm):
     h11, h12, h13, h21, h22, h23, h31, h32, h33 = np.ravel(Hm)
     points_2d_reprojected = []
     for point in points_2d_tracker:
@@ -63,9 +64,12 @@ def reproject_tracker_point_onto_gphoto2(points_2d_tracker, points_2d_gphoto2, H
         points_2d_reprojected.append([x_repr, y_repr])
     return points_2d_reprojected
 
+def reproject_gphoto2_point_onto_tracker(points_2d_gphoto2, Hm):
+    return reproject_tracker_point_onto_gphoto2(points_2d_gphoto2, np.linalg.inv(Hm))
+
 def __calc_reprojection_errors_from_tracker_to_gphoto2(points_2d_tracker, points_2d_gphoto2):
     Hm = __calc_homography_from_tracker_to_gphoto2(points_2d_tracker, points_2d_gphoto2)
-    points_2d_reprojected = reproject_tracker_point_onto_gphoto2(points_2d_tracker, points_2d_gphoto2, Hm)
+    points_2d_reprojected = reproject_tracker_point_onto_gphoto2(points_2d_tracker, Hm)
     return np.linalg.norm( np.array(points_2d_gphoto2) - np.array(points_2d_reprojected))
 
 def __calc_reprojection_errors_for_delay(delay, unique_gphoto2_flies, tracking_pd_frame):
@@ -90,26 +94,31 @@ def get_optimal_gphoto2_homography(path, delay_guess=1, save=True, recalculate=F
         delay_opt = __find_optimal_delay(unique_gphoto2_flies, tracking_pd_frame, delay=delay_guess)
         points_2d_tracker, points_2d_gphoto2 = __find_homologous_flies(unique_gphoto2_flies, tracking_pd_frame, delay=delay_opt)
         Hm = __calc_homography_from_tracker_to_gphoto2(points_2d_tracker, points_2d_gphoto2)
+        results = {'tracker_to_gphoto2_homography': Hm, 'delay_optimal': delay_opt}
         f = open(fname, 'w')
-        pickle.dump(Hm, f)
+        pickle.dump(results, f)
         f.close()
     else:
         f = open(fname)
-        Hm = pickle.load(f)
+        results = pickle.load(f)
         f.close()
+        Hm = results['tracker_to_gphoto2_homography']
+        delay_opt = results['delay_optimal']
 
-    return Hm
+    return Hm, delay_opt
 
 ### Analysis and testing functions
 
-def __plot_reprojected_points(points_2d_tracker, points_2d_gphoto2, Hm):
-    points_2d_reprojected = reproject_tracker_point_onto_gphoto2(points_2d_tracker, points_2d_gphoto2, Hm)
+def __plot_reprojected_points(points_2d_tracker, points_2d_gphoto2, Hm, plot_title='reprojections'):
+    points_2d_reprojected = reproject_tracker_point_onto_gphoto2(points_2d_tracker, Hm)
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
     ax.plot(np.array(points_2d_gphoto2)[:,0], np.array(points_2d_gphoto2)[:,1], 'o', markersize=10, color='green')
     ax.plot(np.array(points_2d_reprojected)[:,0], np.array(points_2d_reprojected)[:,1], 'o', markersize=3, color='red')
+
+    ax.set_title(plot_title)
 
 def __get_gphoto2_projection_of_tracker_point(point_2d_tracker, Hm):
     point_2d_tracker.append(1)
@@ -143,7 +152,7 @@ def __test(delay=0):
 
     Hm = __calc_homography_from_tracker_to_gphoto2(points_2d_tracker, points_2d_gphoto2)
 
-    points_2d_reprojected = reproject_tracker_point_onto_gphoto2(points_2d_tracker, points_2d_gphoto2, Hm)
+    points_2d_reprojected = reproject_tracker_point_onto_gphoto2(points_2d_tracker, Hm)
 
     print Hm
     print points_2d_reprojected
@@ -153,3 +162,29 @@ def __test(delay=0):
     __plot_reprojected_points(points_2d_tracker, points_2d_gphoto2, Hm)
 
     __plot_reprojected_points(points_2d_gphoto2, points_2d_tracker, numpy.linalg.inv(Hm))
+
+if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option('--path', type=str, default='none', help="option: path that points to standard named filename, background image, dvbag, config. If using 'path', no need to provide filename, bgimg, dvbag, and config. Note")
+    parser.add_option('--delay', type=float, default=1.0, help="option: delay guess for optimizing calibration")    
+    (options, args) = parser.parse_args()
+
+    Hm, delay_opt = get_optimal_gphoto2_homography(options.path, delay_guess=options.delay, save=True, recalculate=True)
+
+    path = options.path    
+    config = read_hdf5_file_to_pandas.load_config_from_path(path)
+    s = config.identifiercode + '_' + 'gphoto2'
+    gphoto2directory = os.path.join(config.path, s)
+    fname = os.path.join(gphoto2directory, 'tracker_to_gphoto2_homography_matrix.pickle')
+    data_filename = read_hdf5_file_to_pandas.get_filename(path, 'trackedobjects.hdf5')
+    tracking_pd_frame, config = read_hdf5_file_to_pandas.load_and_preprocess_data(data_filename)
+    gphoto2_flies = load_gphoto2_flies(path)
+    unique_gphoto2_flies = __choose_frames_with_a_single_fly(gphoto2_flies)
+    points_2d_tracker, points_2d_gphoto2 = __find_homologous_flies(unique_gphoto2_flies, tracking_pd_frame, delay=delay_opt)
+
+
+    __plot_reprojected_points(points_2d_tracker, points_2d_gphoto2, Hm, 'tracker to gphoto2 reprojection')
+
+    __plot_reprojected_points(points_2d_gphoto2, points_2d_tracker, numpy.linalg.inv(Hm), 'gphoto2 to tracker reprojection')
+
+    plt.show()
