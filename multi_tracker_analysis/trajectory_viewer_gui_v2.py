@@ -15,8 +15,6 @@ import read_hdf5_file_to_pandas
 import data_slicing
 import find_flies_in_image_directory
 
-import calibrate_gphoto2_camera
-
 import matplotlib.pyplot as plt
 
 import multi_tracker_analysis as mta
@@ -52,13 +50,11 @@ screen_height = screen.get_height()
 # check screen size - if "small" screen use smaller ui
 path = os.path.dirname(os.path.abspath(__file__))
 if screen_height < 900:
-    #uiFile = os.path.join(path, 'trajectory_viewer_small_screens.ui')
-    uiFile = os.path.join(path, 'trajectory_viewer_gui_gphoto2_small.ui')
+    uiFile = os.path.join(path, 'gui_trajectory_viewer_smallscreens.ui')
     SMALL = True
 else:
-    uiFile = os.path.join(path, 'trajectory_viewer_gui_gphoto2.ui')
+    uiFile = os.path.join(path, 'gui_trajectory_viewer.ui')
     SMALL = False
-#uiFile = '/home/caveman/catkin_ws/src/multi_tracker/multi_tracker_analysis/trajectory_viewer_small_screens.ui'
 WindowTemplate, TemplateBaseClass = pg.Qt.loadUiType(uiFile)
 
 def get_random_color():
@@ -95,12 +91,14 @@ class QTrajectory(TemplateBaseClass):
         self.ui.trajec_join_add_data.clicked.connect(self.toggle_trajec_join_add_data)
         self.ui.trajec_join_save.clicked.connect(self.trajec_join_save)
         self.ui.trajec_join_clear.clicked.connect(self.toggle_trajec_join_clear)
-        self.ui.get_original_objid.clicked.connect(self.trajec_get_original_objid)
         self.ui.save_annotation.clicked.connect(self.save_annotation)
         self.ui.load_annotations.clicked.connect(self.load_annotations)
         self.ui.annotated_color_checkbox.stateChanged.connect(self.toggle_annotated_colors)
         self.ui.annotated_hide_checkbox.stateChanged.connect(self.toggle_annotated_hide)
-        self.ui.save_colors.clicked.connect(self.save_trajec_colors)
+
+        if not SMALL:
+            self.ui.get_original_objid.clicked.connect(self.trajec_get_original_objid)
+            self.ui.save_colors.clicked.connect(self.save_trajec_colors)
         
         # parameters
         self.data_filename = data_filename
@@ -122,14 +120,6 @@ class QTrajectory(TemplateBaseClass):
         else:
             self.dvbag = None
 
-        # find gphoto2 directory
-        s = self.config.identifiercode + '_' + 'gphoto2'
-        self.gphoto2directory = os.path.join(self.config.path, s)
-        if os.path.exists( self.gphoto2directory ):
-            self.draw_gphoto2_timepoints()
-        else:
-            self.gphoto2directory = None 
-            
         # Initialize 
         self.trajec_width_dict = {}
         try:
@@ -195,47 +185,13 @@ class QTrajectory(TemplateBaseClass):
         pen = pg.mkPen((255,255,255), width=2)
         self.current_time_vline.setPen(pen)
 
-        self.ui.qtplot_gphoto2times.enableAutoRange('xy', False)
-        self.ui.qtplot_gphoto2times.setRange(xRange=[np.min(self.time_epoch_continuous), np.max(self.time_epoch_continuous)], yRange=[0, 1])
-        self.ui.qtplot_gphoto2times.setLimits(yMin=0, yMax=1)
-        self.ui.qtplot_gphoto2times.setLimits(minYRange=1, maxYRange=1)
-
-        self.ui.qtplot_timetrace.sigXRangeChanged.connect(self.update_time_range)
-
         # hide a bunch of the axes
-        self.ui.qtplot_gphoto2times.hideAxis('left')
-        self.ui.qtplot_gphoto2times.hideAxis('bottom')
-
         self.ui.qtplot_timetrace.hideAxis('left')
         self.ui.qtplot_timetrace.hideAxis('bottom')
 
         self.ui.qtplot_trajectory.hideAxis('left')
         self.ui.qtplot_trajectory.hideAxis('bottom')
 
-        self.ui.qtplot_gphoto2image.hideAxis('left')
-        self.ui.qtplot_gphoto2image.hideAxis('bottom')
-
-        if SMALL:
-            self.fly_letters = ['A', 'B', 'C']
-        else:
-            self.fly_letters = ['A', 'B', 'C', 'D']
-        img_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_img') for a in self.fly_letters]
-        hist_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_hist') for a in self.fly_letters]
-        for i in range(len(img_boxes)):
-            img_boxes[i].hideAxis('left')
-            img_boxes[i].hideAxis('bottom')
-            hist_boxes[i].hideAxis('left')
-            hist_boxes[i].hideAxis('bottom')
-        #
-
-
-
-
-    ### widgety stuff
-
-    def update_time_range(self, view, range):
-        self.ui.qtplot_gphoto2times.setRange(xRange=range, yRange=[0, 1], padding=0)
-     
     ### Button Callbacks
 
     def save_trajectories(self):
@@ -625,128 +581,6 @@ class QTrajectory(TemplateBaseClass):
             vline.setPen(pen)
             self.selected_trajectory_ends.append(vline)
             
-    def draw_gphoto2_timepoints(self):
-        if hasattr(self, 'gphoto2_calibration'):
-            pass
-        else:
-            # note: use calibrate_gphoto2_camera.py to precalculate with optional delay
-            self.gphoto2_calibration, self.gphoto2_delay_opt = calibrate_gphoto2_camera.get_optimal_gphoto2_homography(self.path) 
-
-        if hasattr(self, 'gphoto2_flies'):
-            pass
-        else:
-            fname = os.path.join(self.gphoto2directory, 'fly_ellipses_and_colors.pickle')
-            if not os.path.exists(fname):
-                raise ValueError('Please run find_flies_in_image_directory.calculate_hue_for_flies')
-            f = open(fname)
-            self.gphoto2_flies = pickle.load(f)
-            f.close()
-
-        self.gphoto2_file_to_time = {}
-        self.gphoto2_line_to_file = {}
-        try:
-            pens = self.gphoto2_pens
-        except:
-            self.gphoto2_pens = {}
-        file_list = read_hdf5_file_to_pandas.get_filenames(self.gphoto2directory, '.jpg')
-        for file in file_list:
-            s = file.split('_')
-            time_epoch_secs = int(s[-2])
-            time_epoch_nsecs = int(s[-1].split('.')[-2])
-            time_epoch = float(time_epoch_secs) + float(time_epoch_nsecs*1e-9) - self.gphoto2_delay_opt
-
-            flies = self.gphoto2_flies[os.path.basename(file)]
-            if len(flies) == 0:
-                self.gphoto2_pens[os.path.basename(file)] = pg.mkPen(0.2, width=2)
-
-            if os.path.basename(file) in self.gphoto2_pens.keys():
-                pen = self.gphoto2_pens[os.path.basename(file)]
-            else:
-                pen = pg.mkPen(1, width=5)
-                self.gphoto2_pens[os.path.basename(file)] = pen
-            pline = self.ui.qtplot_gphoto2times.plot([time_epoch, time_epoch+0.0001], [0,1], pen=pen) 
-            pline.curve.setClickable(True, width=self.clickable_width)
-            pline.curve.filename = file
-            pline.curve.sigClicked.connect(self.gphoto2_clicked)
-
-            self.gphoto2_file_to_time[file] = time_epoch
-            self.gphoto2_line_to_file[pline] = file
-
-    def gphoto2_clicked(self, item):
-        print item.filename
-        for pline, file in self.gphoto2_line_to_file.items():
-            if file == item.filename:
-                pen = pg.mkPen((50,50,255), width=10)
-            else:
-                pen = self.gphoto2_pens[os.path.basename(file)]
-            pline.setPen(pen)
-
-        gphoto2img = cv2.imread(item.filename)
-        
-        img_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_img') for a in self.fly_letters]
-        hist_boxes = [eval('self.ui.qtplot_gphoto2_fly' + a + '_hist') for a in self.fly_letters]
-        last_fly = -1
-        self.gphoto2_fly_ellipses_to_draw_on_tracker = []
-
-
-        for i, fly in enumerate(self.gphoto2_flies[os.path.basename(item.filename)]):
-            if i < len(img_boxes):
-                ellipse = fly['ellipse']
-                rgb_color = fly['rgb_color_peak']
-
-                r0 = int(ellipse[1][0])
-                r1 = int(ellipse[1][1])
-
-                _l = np.max([0, ellipse[0][1]-r1])
-                _r = np.min([gphoto2img.shape[0], ellipse[0][1]+r1])
-                _width = _r - _l
-                _b = np.max([0, ellipse[0][0]-r0])
-                _t = np.min([gphoto2img.shape[1], ellipse[0][0]+r0])
-                _height = _t - _b
-                zoom = copy.copy(gphoto2img[_l:_r, _b:_t, :])
-                print zoom.shape
-
-                hist_boxes[i].clear()
-                hist_boxes[i].plot(fly['hue_bins'], fly['hue_relative'],   pen=pg.mkPen(rgb_color, width=2))
-
-                tracker_point = calibrate_gphoto2_camera.reproject_gphoto2_point_onto_tracker([ellipse[0]], self.gphoto2_calibration)[0]
-                fly = {'tracker_point': tracker_point, 'color': rgb_color}
-                self.gphoto2_fly_ellipses_to_draw_on_tracker.append(fly)
-
-                # ellipse mask
-                
-                mask_ellipse = copy.copy(zoom)*0
-                zero_centered_ellipse = (( np.max([0,zoom.shape[1]-r0]), np.max([0,zoom.shape[0]-r1])), (ellipse[1][0], ellipse[1][1]), ellipse[2])
-                cv2.ellipse(mask_ellipse,zero_centered_ellipse,(255,255,255),-1)
-
-                zoom = cv2.ellipse(zoom,zero_centered_ellipse,rgb_color,20)
-
-                zoom = pg.ImageItem(zoom, autoLevels=False)
-                img_boxes[i].clear()
-                img_boxes[i].addItem(zoom)
-
-                
-
-                #mask_ellipse = pg.ImageItem(mask_ellipse, autoLevels=False)
-                #img_boxes[i].clear()
-                #img_boxes[i].addItem(mask_ellipse)
-
-            else:
-                rgb_color = [200, 200, 200]
-
-            gphoto2img = cv2.ellipse(gphoto2img,ellipse,rgb_color,20)
-            last_fly = i
-
-        for j in range(last_fly+1, len(hist_boxes)):
-            img_boxes[j].clear()
-            hist_boxes[j].clear()
-
-        gphoto2img = pg.ImageItem(gphoto2img, autoLevels=False)
-        self.ui.qtplot_gphoto2image.clear()
-        self.ui.qtplot_gphoto2image.addItem(gphoto2img)
-
-        self.draw_trajectories()
-
     def update_time_region(self, linear_region):
         self.linear_region = linear_region
         self.troi = linear_region.getRegion()
@@ -830,7 +664,6 @@ class QTrajectory(TemplateBaseClass):
         
         self.draw_data_to_add()
         self.draw_vlines_for_selected_trajecs()
-        self.draw_gphoto2_flies_on_tracker()
         #self.save_trajec_color_width_dicts()
     
     def draw_data_to_add(self):
@@ -838,11 +671,6 @@ class QTrajectory(TemplateBaseClass):
             print data
             self.ui.qtplot_trajectory.plot([data[1]], [data[2]], pen=(0,0,0), symbol='o', symbolSize=10) 
 
-    def draw_gphoto2_flies_on_tracker(self):
-        if hasattr(self, 'gphoto2_fly_ellipses_to_draw_on_tracker'):
-            for fly in self.gphoto2_fly_ellipses_to_draw_on_tracker:
-                self.ui.qtplot_trajectory.plot([fly['tracker_point'][1]], [fly['tracker_point'][0]], symbolPen=pg.mkPen(color=fly['color'], symbol='o', symbolSize=10), symbolBrush=pg.mkBrush(color=fly['color']))#mkPen(color=fly['color']), symbol='o', symbolSize=10) 
-    
     ### Load / read / save data functions
     
     def load_data(self):
