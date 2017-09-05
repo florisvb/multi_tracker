@@ -43,6 +43,11 @@
       <height>191</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <pointsize>9</pointsize>
+     </font>
+    </property>
     <property name="title">
      <string>Movie Player</string>
     </property>
@@ -54,6 +59,11 @@
        <width>111</width>
        <height>27</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
      </property>
      <property name="styleSheet">
       <string notr="true">text-align: left; padding-left: 10px</string>
@@ -70,6 +80,11 @@
        <width>111</width>
        <height>27</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
      </property>
      <property name="styleSheet">
       <string notr="true">text-align: left; padding-left: 10px</string>
@@ -111,6 +126,11 @@
        <width>66</width>
        <height>17</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
      </property>
      <property name="styleSheet">
       <string notr="true">text-align: left; padding-left: 10px</string>
@@ -155,6 +175,11 @@
       <height>341</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <pointsize>9</pointsize>
+     </font>
+    </property>
     <property name="title">
      <string>Edit Trajectories</string>
     </property>
@@ -166,6 +191,11 @@
        <width>111</width>
        <height>27</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
      </property>
      <property name="styleSheet">
       <string notr="true">color: rgb(255, 2, 2); text-align: left; padding-left: 10px</string>
@@ -183,6 +213,11 @@
        <height>27</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
      <property name="styleSheet">
       <string notr="true">color: rgb(191, 194, 12); text-align: left; padding-left: 10px</string>
      </property>
@@ -198,6 +233,11 @@
        <width>151</width>
        <height>27</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
      </property>
      <property name="styleSheet">
       <string notr="true">color: rgb(26, 75, 255); text-align: left; padding-left: 10px</string>
@@ -215,6 +255,13 @@
        <height>27</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
      <property name="styleSheet">
       <string notr="true">font-weight: bold; text-align: left; padding-left: 10px</string>
      </property>
@@ -231,6 +278,13 @@
        <height>27</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
      <property name="styleSheet">
       <string notr="true">font-weight: bold; text-align: left; padding-left: 10px</string>
      </property>
@@ -243,9 +297,14 @@
       <rect>
        <x>10</x>
        <y>120</y>
-       <width>151</width>
+       <width>121</width>
        <height>27</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
      </property>
      <property name="styleSheet">
       <string notr="true">color: rgb(43, 193, 1); text-align: left; padding-left: 10px</string>
@@ -302,6 +361,13 @@
        <height>27</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
      <property name="styleSheet">
       <string notr="true">font-weight: bold; text-align: left; padding-left: 10px</string>
      </property>
@@ -318,11 +384,41 @@
        <height>27</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
      <property name="styleSheet">
       <string notr="true">font-weight: bold; text-align: left; padding-left: 10px</string>
      </property>
      <property name="text">
       <string>Load Annotations</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="trajec_select_all">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>120</y>
+       <width>51</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color: rgb(0, 0, 0); text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>ALL</string>
      </property>
     </widget>
    </widget>
@@ -348,6 +444,11 @@
       <height>271</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <pointsize>9</pointsize>
+     </font>
+    </property>
     <property name="title">
      <string>Annotate Selection</string>
     </property>
@@ -359,6 +460,13 @@
        <width>141</width>
        <height>27</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
      </property>
      <property name="styleSheet">
       <string notr="true">font-weight: bold; text-align: left; padding-left: 10px</string>
@@ -429,6 +537,11 @@
       <height>71</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <pointsize>9</pointsize>
+     </font>
+    </property>
     <property name="title">
      <string>Selected Object ID's</string>
     </property>
@@ -450,7 +563,7 @@
      <x>0</x>
      <y>0</y>
      <width>1477</width>
-     <height>22</height>
+     <height>31</height>
     </rect>
    </property>
   </widget>

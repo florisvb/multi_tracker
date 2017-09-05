@@ -88,6 +88,7 @@ class QTrajectory(TemplateBaseClass):
         self.ui.trajec_delete.clicked.connect(self.toggle_trajec_delete)
         self.ui.trajec_cut.clicked.connect(self.toggle_trajec_cut)
         self.ui.trajec_join_collect.clicked.connect(self.toggle_trajec_join_collect)
+        self.ui.trajec_select_all.clicked.connect(self.select_all_trajecs)
         self.ui.trajec_join_add_data.clicked.connect(self.toggle_trajec_join_add_data)
         self.ui.trajec_join_save.clicked.connect(self.trajec_join_save)
         self.ui.trajec_join_clear.clicked.connect(self.toggle_trajec_join_clear)
@@ -381,6 +382,14 @@ class QTrajectory(TemplateBaseClass):
         
         print('Ready to collect object id numbers. Click on traces to add object id numbers to the list. Click "save object id numbers" to save, and reset the list')
         
+    def select_all_trajecs(self):
+        pd_subset = mta.data_slicing.get_data_in_epoch_timerange(self.pd, self.troi)
+        keys = np.unique(pd_subset.objid.values)
+
+        for trace in self.plotted_traces:
+            key = trace.curve.key
+            self.trace_clicked(trace.curve)
+
     def toggle_trajec_join_add_data(self):
         self.set_all_buttons_false()
 
