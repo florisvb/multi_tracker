@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1484</width>
-    <height>1008</height>
+    <height>1025</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
       <x>220</x>
       <y>0</y>
       <width>1131</width>
-      <height>811</height>
+      <height>851</height>
      </rect>
     </property>
    </widget>
@@ -28,7 +28,7 @@
     <property name="geometry">
      <rect>
       <x>220</x>
-      <y>820</y>
+      <y>865</y>
       <width>1131</width>
       <height>91</height>
      </rect>
@@ -182,7 +182,7 @@
       <x>10</x>
       <y>200</y>
       <width>211</width>
-      <height>371</height>
+      <height>391</height>
      </rect>
     </property>
     <property name="font">
@@ -239,7 +239,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>170</y>
+       <y>240</y>
        <width>131</width>
        <height>27</height>
       </rect>
@@ -260,7 +260,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>220</y>
+       <y>284</y>
        <width>191</width>
        <height>27</height>
       </rect>
@@ -366,7 +366,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>310</y>
+       <y>369</y>
        <width>191</width>
        <height>20</height>
       </rect>
@@ -379,7 +379,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>250</y>
+       <y>314</y>
        <width>191</width>
        <height>27</height>
       </rect>
@@ -402,7 +402,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>280</y>
+       <y>344</y>
        <width>191</width>
        <height>27</height>
       </rect>
@@ -425,7 +425,7 @@
      <property name="geometry">
       <rect>
        <x>150</x>
-       <y>134</y>
+       <y>191</y>
        <width>51</width>
        <height>27</height>
       </rect>
@@ -438,7 +438,7 @@
       </font>
      </property>
      <property name="styleSheet">
-      <string notr="true">color: rgb(0, 0, 0); text-align: left; padding-left: 10px</string>
+      <string notr="true">color: rgb(0, 200, 0); text-align: left; padding-left: 10px</string>
      </property>
      <property name="text">
       <string>ALL</string>
@@ -448,13 +448,86 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>200</y>
+       <y>267</y>
        <width>151</width>
        <height>20</height>
       </rect>
      </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="QPlainTextEdit" name="min_selection_length">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>190</y>
+       <width>51</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="plainText">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QPlainTextEdit" name="max_selection_length">
+     <property name="geometry">
+      <rect>
+       <x>80</x>
+       <y>190</y>
+       <width>61</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="plainText">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>6</x>
+       <y>170</y>
+       <width>66</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>8</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>min len</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_3">
+     <property name="geometry">
+      <rect>
+       <x>66</x>
+       <y>170</y>
+       <width>66</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>8</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">text-align: left; padding-left: 10px</string>
+     </property>
+     <property name="text">
+      <string>max len</string>
      </property>
     </widget>
    </widget>
@@ -475,7 +548,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>640</y>
+      <y>687</y>
       <width>201</width>
       <height>271</height>
      </rect>
@@ -646,7 +719,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>530</y>
+      <y>582</y>
       <width>181</width>
       <height>111</height>
      </rect>
@@ -715,7 +788,7 @@
       <x>1370</x>
       <y>90</y>
       <width>101</width>
-      <height>31</height>
+      <height>41</height>
      </rect>
     </property>
    </widget>

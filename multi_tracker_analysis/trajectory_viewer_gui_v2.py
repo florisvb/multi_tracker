@@ -100,6 +100,9 @@ class QTrajectory(TemplateBaseClass):
         if not SMALL:
             self.ui.get_original_objid.clicked.connect(self.trajec_get_original_objid)
             self.ui.save_colors.clicked.connect(self.save_trajec_colors)
+
+            self.ui.min_selection_length.setPlainText(str(0))
+            self.ui.max_selection_length.setPlainText(str(-1)) # -1 means all
         
         # parameters
         self.data_filename = data_filename
@@ -225,7 +228,7 @@ class QTrajectory(TemplateBaseClass):
         self.delete_objects = False
         self.add_data = False
         self.get_original_objid = False
-    
+
     def set_movie_speed(self, data):
         if data >0:
             self.skip_frames = data
@@ -358,14 +361,20 @@ class QTrajectory(TemplateBaseClass):
     
     def toggle_trajec_delete(self):
         self.set_all_buttons_false()
-
         self.delete_objects = True
         self.crosshair_pen = pg.mkPen('r', width=1)
         print('Deleting objects!')
+
+        # first delete selected trajectories
+        print 'Deleting selected objects: ', self.object_id_numbers
+        while len(self.object_id_numbers) > 0:
+            key = self.object_id_numbers.pop()
+            self.delete_object_id_number(key, redraw=False)
+
+        self.draw_trajectories()
+        self.draw_timeseries_vlines_for_interesting_timepoints()
+        #
         
-        for key in self.object_id_numbers:
-            self.delete_object_id_number(key)
-    
     def toggle_trajec_cut(self):
         self.set_all_buttons_false()
 
@@ -383,12 +392,30 @@ class QTrajectory(TemplateBaseClass):
         print('Ready to collect object id numbers. Click on traces to add object id numbers to the list. Click "save object id numbers" to save, and reset the list')
         
     def select_all_trajecs(self):
+        if not self.join_objects:
+            self.toggle_trajec_join_collect()
+        
+        if not SMALL:
+            min_len = self.ui.__getattribute__('min_selection_length')
+            min_len = int(min_len.toPlainText())
+
+            max_len = self.ui.__getattribute__('max_selection_length')
+            max_len = int(max_len.toPlainText())
+            if max_len == -1:
+                max_len = np.inf
+        else:
+            min_len = 0
+            max_len = np.inf
+            
         pd_subset = mta.data_slicing.get_data_in_epoch_timerange(self.pd, self.troi)
         keys = np.unique(pd_subset.objid.values)
 
         for trace in self.plotted_traces:
             key = trace.curve.key
-            self.trace_clicked(trace.curve)
+            trajec_length = len(self.pd[self.pd.objid==key])
+            if trajec_length > min_len and trajec_length < max_len:
+                self.trace_clicked(trace.curve)
+
 
     def toggle_trajec_join_add_data(self):
         self.set_all_buttons_false()
@@ -442,7 +469,7 @@ class QTrajectory(TemplateBaseClass):
             self.ui.qttext_show_original_objid.clear()
             self.ui.qttext_show_original_objid.setPlainText(str(int(objid)))
         
-    def trace_clicked(self, item): 
+    def trace_clicked(self, item, redraw=True): 
         if self.join_objects:
             if item.key not in self.object_id_numbers:
                 print 'Saving object to object list: ', item.key
@@ -466,7 +493,7 @@ class QTrajectory(TemplateBaseClass):
             print 'Cutting trajectory: ', item.key, ' at: ', self.mouse_position
             self.cut_trajectory(item.key, self.mouse_position)
         elif self.delete_objects:
-            self.delete_object_id_number(item.key)
+            self.delete_object_id_number(item.key, redraw=redraw)
         elif self.add_data:
             self.add_data_to_trajecs_to_join()
             
@@ -536,7 +563,7 @@ class QTrajectory(TemplateBaseClass):
         
         print 'Reset object id list - you may collect a new selection of objects now'
         
-    def delete_object_id_number(self, key):
+    def delete_object_id_number(self, key, redraw=True):
         instructions = {'action': 'delete',
                         'order': time.time(),
                         'objid': key}
@@ -544,8 +571,9 @@ class QTrajectory(TemplateBaseClass):
         # update gui
         #self.trajec_to_color_dict[key] = (0,0,0,0) 
         self.pd = mta.read_hdf5_file_to_pandas.delete_cut_join_trajectories_according_to_instructions(self.pd, instructions, interpolate_joined_trajectories=True)
-        self.draw_trajectories()
-        self.draw_timeseries_vlines_for_interesting_timepoints()
+        if redraw:
+            self.draw_trajectories()
+            self.draw_timeseries_vlines_for_interesting_timepoints()
     
     ### Drawing functions
     
