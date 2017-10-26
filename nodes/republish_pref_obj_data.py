@@ -15,7 +15,7 @@ from multi_tracker.msg import Trackedobject, Trackedobjectlist
             
 # The main tracking class, a ROS node
 class PrefObjPicker:
-    def __init__(self, nodenum, rate):
+    def __init__(self, nodenum, rate, simulate=False):
         '''
         Default image_topic for:
             Basler ace cameras with camera_aravis driver: camera/image_raw
@@ -40,9 +40,18 @@ class PrefObjPicker:
         self.msg = None
 
         self.prefObjId = None
-        self.subTrackedObjects = rospy.Subscriber('/multi_tracker/' + nodenum + '/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
+
+        if not simulate:
+            self.subTrackedObjects = rospy.Subscriber('/multi_tracker/' + nodenum + '/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
+        else:
+            print 'Simulating!'
+            self.create_simulated_msg()
         self.pubPrefObj = rospy.Publisher('/multi_tracker/' + nodenum + '/prefobj', Float32MultiArray, queue_size=3)
         
+    def create_simulated_msg(self):
+        self.msg = Float32MultiArray()
+        self.msg.data = [0, 0, 0, 0, 0]
+
     def tracked_object_callback(self, tracked_objects):
         
         obj_ids = []
@@ -94,7 +103,9 @@ if __name__ == '__main__':
                         help="node number, for example, if running multiple tracker instances on one computer")
     parser.add_option("--rate", type="float", dest="rate", default='0',
                         help="rate at which to (re)publish preferred object location. default=0 means continuous.")
+    parser.add_option("--simulate", action="store_true", dest="simulate", default=False,
+                        help="if simulate is true, will continuously send out a meaningless msg at the specified rate.")
     (options, args) = parser.parse_args()
     
-    prefobjpicker = PrefObjPicker(options.nodenum, options.rate)
+    prefobjpicker = PrefObjPicker(options.nodenum, options.rate, simulate=options.simulate)
     prefobjpicker.Main()
