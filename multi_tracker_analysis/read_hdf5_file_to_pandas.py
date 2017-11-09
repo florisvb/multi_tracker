@@ -431,7 +431,7 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
                     dataset = Dataset(pd)
                     last_frame = dataset.trajec(keys[k]).frames[-1]
                     first_frame = dataset.trajec(keys[k+1]).frames[0]
-                    if first_frame < last_frame: # overlap between objects, keep the second object's data, since the first is likely bad kalman projections
+                    if first_frame <= last_frame: # overlap between objects, keep the second object's data, since the first is likely bad kalman projections
                         mask = np.invert( (pd['objid']==keys[k]) & (pd['frames']>=first_frame) )
                         pd = pd[mask]
                     else:
