@@ -22,7 +22,8 @@ class PrefObjPicker:
             Pt Grey Firefly cameras with pt grey driver : camera/image_mono
         '''
         # default parameters (parameter server overides them)
-        self.params = { 'min_persistence'   : 10,
+        self.params = { 'min_persistence'   : 100,  #  min number of frames
+                        'min_travel'   : 20,        #  min number of pixels object must travel, helps prevent noise triggers
                         }
         for parameter, value in self.params.items():
             try:
@@ -40,6 +41,8 @@ class PrefObjPicker:
         self.msg = None
 
         self.prefObjId = None
+        self.pref_obj_position_x = []
+        self.pref_obj_position_y = []
 
         if not simulate:
             self.subTrackedObjects = rospy.Subscriber('/multi_tracker/' + nodenum + '/tracked_objects', Trackedobjectlist, self.tracked_object_callback)
@@ -61,26 +64,46 @@ class PrefObjPicker:
         i = -1
         for tracked_object in tracked_objects.tracked_objects:
             i += 1
-            if tracked_object.persistence > self.params['min_persistence']:
-                persistances.append(tracked_object.persistence)
-                obj_ids.append(tracked_object.objid)
-                index.append(i)
+            #if tracked_object.persistence > self.params['min_persistence']:
+            persistances.append(tracked_object.persistence)
+            obj_ids.append(tracked_object.objid)
+            index.append(i)
                 
         if len(persistances) > 0:
             p = np.argmax(persistances)
-            self.prefObjId = obj_ids[p]
+
+            if obj_ids[p] == self.prefObjId: # same object as before
+                self.pref_obj_position_x.append(tracked_object.position.x)
+                self.pref_obj_position_y.append(tracked_object.position.y)
+            else: # new object
+                self.prefObjId = obj_ids[p]
+                self.pref_obj_position_x = []
+                self.pref_obj_position_y = []
+
+            tracked_object = tracked_objects.tracked_objects[p]
             
-            tracked_object = tracked_objects.tracked_objects[i]
+
+            if len(self.pref_obj_position_x) > 1:
+                xtravel = np.max(np.abs(np.array(self.pref_obj_position_x) - tracked_object.position.x))
+                ytravel = np.max(np.abs(np.array(self.pref_obj_position_y) - tracked_object.position.y))
+                travel = np.sqrt(xtravel**2 + ytravel**2)
+            else:
+                travel = 0
             
-            self.msg = Float32MultiArray()
-            self.msg.data = [tracked_object.objid, 
-                                tracked_object.position.x,
-                                tracked_object.position.y,
-                                tracked_object.velocity.x,
-                                tracked_object.velocity.y]
-            
-            if self.rate == 0:
-                self.pubPrefObj.publish(self.msg)
+            if travel > self.params['min_travel'] and persistances[p] > self.params['min_persistence']:            
+                self.msg = Float32MultiArray()
+                self.msg.data = [tracked_object.objid, 
+                                    tracked_object.position.x,
+                                    tracked_object.position.y,
+                                    tracked_object.velocity.x,
+                                    tracked_object.velocity.y]
+                self.pref_obj_position_x.append(tracked_object.position.x)
+                
+                if self.rate == 0:
+                    self.pubPrefObj.publish(self.msg)
+            else:
+                self.msg = None
+
         else:
             self.msg = None
 
