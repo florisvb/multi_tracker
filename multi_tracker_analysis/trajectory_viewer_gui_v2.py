@@ -13,7 +13,7 @@ import numpy as np
 
 import read_hdf5_file_to_pandas
 import data_slicing
-import find_flies_in_image_directory
+#import find_flies_in_image_directory
 
 import matplotlib.pyplot as plt
 
@@ -49,7 +49,7 @@ screen_height = screen.get_height()
 
 # check screen size - if "small" screen use smaller ui
 path = os.path.dirname(os.path.abspath(__file__))
-if screen_height < 900:
+if screen_height < 1500:
     uiFile = os.path.join(path, 'gui_trajectory_viewer_smallscreens.ui')
     SMALL = True
 else:

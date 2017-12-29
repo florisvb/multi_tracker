@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1484</width>
-    <height>1025</height>
+    <width>1726</width>
+    <height>1207</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,9 +17,9 @@
    <widget class="PlotWidget" name="qtplot_trajectory">
     <property name="geometry">
      <rect>
-      <x>220</x>
+      <x>260</x>
       <y>0</y>
-      <width>1131</width>
+      <width>1091</width>
       <height>851</height>
      </rect>
     </property>
@@ -27,9 +27,9 @@
    <widget class="PlotWidget" name="qtplot_timetrace">
     <property name="geometry">
      <rect>
-      <x>220</x>
+      <x>260</x>
       <y>865</y>
-      <width>1131</width>
+      <width>1091</width>
       <height>91</height>
      </rect>
     </property>
@@ -39,7 +39,7 @@
      <rect>
       <x>10</x>
       <y>0</y>
-      <width>171</width>
+      <width>201</width>
       <height>191</height>
      </rect>
     </property>
@@ -56,7 +56,7 @@
       <rect>
        <x>10</x>
        <y>30</y>
-       <width>111</width>
+       <width>121</width>
        <height>27</height>
       </rect>
      </property>
@@ -77,7 +77,7 @@
       <rect>
        <x>10</x>
        <y>60</y>
-       <width>111</width>
+       <width>121</width>
        <height>27</height>
       </rect>
      </property>
@@ -144,7 +144,7 @@
       <rect>
        <x>10</x>
        <y>130</y>
-       <width>111</width>
+       <width>121</width>
        <height>27</height>
       </rect>
      </property>
@@ -162,7 +162,7 @@
       <rect>
        <x>10</x>
        <y>160</y>
-       <width>151</width>
+       <width>171</width>
        <height>27</height>
       </rect>
      </property>
@@ -181,7 +181,7 @@
      <rect>
       <x>10</x>
       <y>200</y>
-      <width>211</width>
+      <width>241</width>
       <height>391</height>
      </rect>
     </property>
@@ -261,7 +261,7 @@
       <rect>
        <x>10</x>
        <y>284</y>
-       <width>191</width>
+       <width>211</width>
        <height>27</height>
       </rect>
      </property>
@@ -380,7 +380,7 @@
       <rect>
        <x>10</x>
        <y>314</y>
-       <width>191</width>
+       <width>211</width>
        <height>27</height>
       </rect>
      </property>
@@ -403,7 +403,7 @@
       <rect>
        <x>10</x>
        <y>344</y>
-       <width>191</width>
+       <width>211</width>
        <height>27</height>
       </rect>
      </property>
@@ -424,7 +424,7 @@
     <widget class="QPushButton" name="trajec_select_all">
      <property name="geometry">
       <rect>
-       <x>150</x>
+       <x>190</x>
        <y>191</y>
        <width>51</width>
        <height>27</height>
@@ -462,8 +462,8 @@
       <rect>
        <x>20</x>
        <y>190</y>
-       <width>51</width>
-       <height>31</height>
+       <width>61</width>
+       <height>41</height>
       </rect>
      </property>
      <property name="plainText">
@@ -473,10 +473,10 @@
     <widget class="QPlainTextEdit" name="max_selection_length">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>90</x>
        <y>190</y>
-       <width>61</width>
-       <height>31</height>
+       <width>91</width>
+       <height>41</height>
       </rect>
      </property>
      <property name="font">
@@ -514,7 +514,7 @@
       <rect>
        <x>66</x>
        <y>170</y>
-       <width>66</width>
+       <width>81</width>
        <height>17</height>
       </rect>
      </property>
@@ -589,7 +589,7 @@
       <rect>
        <x>20</x>
        <y>220</y>
-       <width>171</width>
+       <width>191</width>
        <height>22</height>
       </rect>
      </property>
@@ -764,8 +764,8 @@
    <widget class="QPushButton" name="get_original_objid">
     <property name="geometry">
      <rect>
-      <x>1370</x>
-      <y>50</y>
+      <x>1480</x>
+      <y>10</y>
       <width>101</width>
       <height>27</height>
      </rect>
@@ -785,10 +785,10 @@
    <widget class="QPlainTextEdit" name="qttext_show_original_objid">
     <property name="geometry">
      <rect>
-      <x>1370</x>
-      <y>90</y>
+      <x>1590</x>
+      <y>10</y>
       <width>101</width>
-      <height>41</height>
+      <height>31</height>
      </rect>
     </property>
    </widget>
@@ -796,8 +796,8 @@
     <property name="geometry">
      <rect>
       <x>1370</x>
-      <y>130</y>
-      <width>101</width>
+      <y>50</y>
+      <width>321</width>
       <height>20</height>
      </rect>
     </property>
@@ -811,8 +811,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1484</width>
-     <height>31</height>
+     <width>1726</width>
+     <height>33</height>
     </rect>
    </property>
   </widget>
