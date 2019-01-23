@@ -22,8 +22,8 @@ class PrefObjPicker:
             Pt Grey Firefly cameras with pt grey driver : camera/image_mono
         '''
         # default parameters (parameter server overides them)
-        self.params = { 'min_persistence'   : 100,  #  min number of frames
-                        'min_travel'   : 20,        #  min number of pixels object must travel, helps prevent noise triggers
+        self.params = { 'min_persistence'   : 300,  #  min number of frames
+                        'min_travel'   : 50,        #  min number of pixels object must travel, helps prevent noise triggers
                         }
         for parameter, value in self.params.items():
             try:
@@ -98,6 +98,7 @@ class PrefObjPicker:
                                     tracked_object.velocity.x,
                                     tracked_object.velocity.y]
                 self.pref_obj_position_x.append(tracked_object.position.x)
+                self.pref_obj_position_y.append(tracked_object.position.y)
                 
                 if self.rate == 0:
                     self.pubPrefObj.publish(self.msg)
