@@ -41,7 +41,7 @@ if StrictVersion(pg.__version__) < StrictVersion("0.9.10"):
         quit()
 pg.mkQApp()
 
-import gtk, pygtk
+from gi.repository import Gtk as gtk
 window = gtk.Window()
 screen = window.get_screen()
 screen_width = screen.get_width()
