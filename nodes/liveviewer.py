@@ -173,7 +173,11 @@ class LiveViewer:
         
         # Image for display
         if self.params['camera_encoding'] == 'mono8':
-            self.imgOutput = cv2.cvtColor(self.imgScaled, cv2.COLOR_GRAY2RGB)
+            try:
+                self.imgOutput = cv2.cvtColor(self.imgScaled, cv2.COLOR_GRAY2RGB)
+            except:
+                self.imgOutput = self.imgScaled
+                print("To get rid of this error warning, set rosparam /multi_tracker/1/liveviewer/camera_encoding to something other than mono8 (e.g. color)")
         elif self.params['camera_encoding'] == 'binary':
             self.imgOutput = self.imgScaled
         else:
