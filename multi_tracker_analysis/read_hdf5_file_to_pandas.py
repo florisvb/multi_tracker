@@ -304,7 +304,8 @@ def load_data_as_pandas_dataframe_from_hdf5_file(filename, attributes=None):
     for attribute, name in attributes.items():
         d.setdefault(attribute, data[name].flat)
     pd = pandas.DataFrame(d, index=index)
-    pd = pd.drop(pd.index==[0]) # delete 0 frames (frames with no data)
+    #pd = pd.drop(pd.index==[0]) # delete 0 frames (frames with no data)
+    pd = pd[pd.frames!=0] # new pandas doesn't work with above line
     pd = calc_additional_columns(pd)
     # pd_subset = pd[pd.objid==key]
     return pd
