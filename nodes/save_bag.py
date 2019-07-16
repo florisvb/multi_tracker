@@ -27,11 +27,17 @@ class SaveBag:
             self.record_length_seconds = 24*3600
         self.time_start = time.time()
         
-        experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
-        if experiment_basename == 'none':
-            experiment_basename = time.strftime("%Y%m%d_%H%M%S_N" + nodenum, time.localtime())
-        
-        filename = experiment_basename + '_' + basename + '.bag'
+        try:
+            filename = config.filename  
+        except:
+            try:
+                experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
+                if experiment_basename == 'none':
+                    experiment_basename = time.strftime("%Y%m%d_%H%M%S_N" + nodenum, time.localtime())
+                
+                filename = experiment_basename + '_' + basename + '.bag'
+            except:
+                raise ValueError('Need to define filename in config, or use the multi_tracker infrastructure')
 
         # Make sure path exists.
         try:
