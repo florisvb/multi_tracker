@@ -295,7 +295,6 @@ if __name__ == '__main__':
         output_fname = os.path.expanduser(output_fname)
     else:
         output_fname = fname + '.hdf5'
-        os.path.us
         if os.path.exists(output_fname):
             print >> sys.stderr, 'will not overwrite %s' % output_fname
             sys.exit(1)
