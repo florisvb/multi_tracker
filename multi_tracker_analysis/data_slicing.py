@@ -15,23 +15,29 @@ def get_data_in_epoch_timerange(pd, timerange):
     return pd[(pd.time_epoch>timerange[0]) & (pd.time_epoch<timerange[1])]
     
 def get_nframes_per_key(pd):
-    first_key = np.min(pd.objid)
-    last_key = np.max(pd.objid)
-    bins = np.arange(first_key, last_key+2, dtype=float)
-    bins -= 0.5
-    h, b = np.histogram(pd.objid, bins)
-    keys = np.arange(first_key, last_key+1, dtype=int)
-    return keys, h
-    
+    try:
+        first_key = np.min(pd.objid)
+        last_key = np.max(pd.objid)
+        bins = np.arange(first_key, last_key+2, dtype=float)
+        bins -= 0.5
+        h, b = np.histogram(pd.objid, bins)
+        keys = np.arange(first_key, last_key+1, dtype=int)
+        return keys, h
+    except:
+        return [], [0]
+
 def get_nkeys_per_frame(pd):
-    first_key = np.min(pd.frames)
-    last_key = np.max(pd.frames)
-    bins = np.arange(first_key, last_key, dtype=float)
-    bins -= 0.5
-    h, b = np.histogram(pd.frames, bins)
-    # can use pd.frames.groupby(pd.frames).agg('count')
-    return h
-    
+    try:
+        first_key = np.min(pd.frames)
+        last_key = np.max(pd.frames)
+        bins = np.arange(first_key, last_key, dtype=float)
+        bins -= 0.5
+        h, b = np.histogram(pd.frames, bins)
+        # can use pd.frames.groupby(pd.frames).agg('count')
+        return h
+    except:
+        return [], [0]
+        
 def calc_frames_with_object_in_circular_region(pd, center, radius, region_name='region'):
     '''
     center  - list (x,y) units should match units of position_x and position_y
