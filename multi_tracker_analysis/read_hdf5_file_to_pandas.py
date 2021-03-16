@@ -375,6 +375,11 @@ def find_instructions_related_to_objid(instructions, objid):
         if 'objids' in instruction.keys():
             if objid in instruction['objids']:
                 print i
+
+def mass_delete(pd, objids_to_delete):
+    print('Mass deleting objects as requested...')
+    pd = pd[~pd['objid'].isin(objids_to_delete)]
+    return pd
     
 def delete_cut_join_trajectories_according_to_instructions(pd, instructions, interpolate_joined_trajectories=True):
     if type(instructions) is str:
@@ -411,7 +416,11 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
     for instruction in instructions:
         if instruction['action'] == 'delete':
             #pass
-            pd = pd[pd.objid!=instruction['objid']]
+            if type(instruction['objid']) == list:
+                pd = mass_delete(pd, instruction['objid'])
+            else:
+                pd = pd[pd.objid!=instruction['objid']]
+                
         elif instruction['action'] == 'cut':
             mask = (pd['objid']==instruction['objid']) & (pd['frames']>instruction['cut_frame_global'])
             pd.loc[mask,'objid'] = instruction['new_objid']
