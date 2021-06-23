@@ -1,0 +1,128 @@
+drainfly@drainfly:~$ roslaunch demo/demo_1/src/tracking_launcher.launch 
+... logging to /home/drainfly/.ros/log/0374adf4-d3b1-11eb-94fa-3c7c3f7ddc02/roslaunch-drainfly-1863.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+
+started roslaunch server http://drainfly:41993/
+
+SUMMARY
+========
+
+PARAMETERS
+ * /multi_tracker/1/data_association/kalman_parameters_py_file: kalman_parameters.py
+ * /multi_tracker/1/data_association/max_tracked_objects: 20
+ * /multi_tracker/1/data_association/n_covariances_to_reject_data: 3
+ * /multi_tracker/1/data_directory: ~/demo/demo_1/data
+ * /multi_tracker/1/delta_video/camera_encoding: mono8
+ * /multi_tracker/1/delta_video/image_topic: /camera/image_raw
+ * /multi_tracker/1/delta_video/max_change_in_frame: 0.2
+ * /multi_tracker/1/delta_video/roi_b: 0
+ * /multi_tracker/1/delta_video/roi_l: 0
+ * /multi_tracker/1/delta_video/roi_r: -1
+ * /multi_tracker/1/delta_video/roi_t: -1
+ * /multi_tracker/1/delta_video/threshold: 6
+ * /multi_tracker/1/home_directory: ~/demo/demo_1/src
+ * /multi_tracker/1/liveviewer/camera_encoding: mono8
+ * /multi_tracker/1/liveviewer/image_topic: /camera/image_raw
+ * /multi_tracker/1/liveviewer/max_frames_to_draw: 50
+ * /multi_tracker/1/liveviewer/min_persistence_to_draw: 10
+ * /multi_tracker/1/liveviewer/roi_b: 0
+ * /multi_tracker/1/liveviewer/roi_l: 0
+ * /multi_tracker/1/liveviewer/roi_r: -1
+ * /multi_tracker/1/liveviewer/roi_t: -1
+ * /multi_tracker/1/tracker/backgroundupdate: 0
+ * /multi_tracker/1/tracker/camera_encoding: mono8
+ * /multi_tracker/1/tracker/circular_mask_r: none
+ * /multi_tracker/1/tracker/circular_mask_x: none
+ * /multi_tracker/1/tracker/circular_mask_y: none
+ * /multi_tracker/1/tracker/dilate: 2
+ * /multi_tracker/1/tracker/erode: 2
+ * /multi_tracker/1/tracker/image_processing_module: default
+ * /multi_tracker/1/tracker/image_processor: dark_objects_only
+ * /multi_tracker/1/tracker/image_topic: /pylon_camera_nod...
+ * /multi_tracker/1/tracker/max_change_in_frame: 0.2
+ * /multi_tracker/1/tracker/max_expected_area: 90
+ * /multi_tracker/1/tracker/max_frames_to_draw: 50
+ * /multi_tracker/1/tracker/max_size: 30000
+ * /multi_tracker/1/tracker/medianbgupdateinterval: 0
+ * /multi_tracker/1/tracker/min_persistence_to_draw: 10
+ * /multi_tracker/1/tracker/min_size: 5
+ * /multi_tracker/1/tracker/roi_b: 0
+ * /multi_tracker/1/tracker/roi_l: 0
+ * /multi_tracker/1/tracker/roi_r: -1
+ * /multi_tracker/1/tracker/roi_t: -1
+ * /multi_tracker/1/tracker/std_dev_update: 2e-05
+ * /multi_tracker/1/tracker/threshold: 6
+ * /rosdistro: melodic
+ * /rosversion: 1.14.11
+
+NODES
+  /
+    data_association_1 (multi_tracker/data_association.py)
+    delta_video_1 (multi_tracker/delta_video_simplebuffer.py)
+    liveview_1 (multi_tracker/liveviewer.py)
+    save_delta_video (multi_tracker/save_bag.py)
+    save_hdf5_data_1 (multi_tracker/save_data_to_hdf5.py)
+    set_exp_basename_1 (multi_tracker/set_basename_and_path.py)
+    tracker_1 (multi_tracker/tracker_simplebuffer.py)
+
+ROS_MASTER_URI=http://localhost:11311
+
+process[set_exp_basename_1-1]: started with pid [1910]
+process[tracker_1-2]: started with pid [1911]
+process[data_association_1-3]: started with pid [1912]
+process[save_hdf5_data_1-4]: started with pid [1915]
+process[liveview_1-5]: started with pid [1916]
+process[delta_video_1-6]: started with pid [1917]
+process[save_delta_video-7]: started with pid [1918]
+Saving hdf5 data to:  /home/drainfly/demo/demo_1/data/20210623_133659_N1_trackedobjects.hdf5
+Traceback (most recent call last):
+  File "/home/drainfly/catkin_ws/src/multi_tracker/nodes/save_data_to_hdf5.py", line 149, in <module>
+    datalistener = DataListener(options.nodenum, options.record_time_hrs)
+  File "/home/drainfly/catkin_ws/src/multi_tracker/nodes/save_data_to_hdf5.py", line 40, in __init__
+    self.hdf5.swmr_mode = True # helps prevent file corruption if closed improperly
+  File "h5py/_objects.pyx", line 54, in h5py._objects.with_phil.wrapper
+  File "h5py/_objects.pyx", line 55, in h5py._objects.with_phil.wrapper
+  File "/home/drainfly/.local/lib/python2.7/site-packages/h5py/_hl/files.py", line 311, in swmr_mode
+    self.id.start_swmr_write()
+  File "h5py/_objects.pyx", line 54, in h5py._objects.with_phil.wrapper
+  File "h5py/_objects.pyx", line 55, in h5py._objects.with_phil.wrapper
+  File "h5py/h5f.pyx", line 541, in h5py.h5f.FileID.start_swmr_write
+ValueError: Unable to convert file format (file superblock version - should be at least 3)
+[set_exp_basename_1-1] process has finished cleanly
+log file: /home/drainfly/.ros/log/0374adf4-d3b1-11eb-94fa-3c7c3f7ddc02/set_exp_basename_1-1*.log
+[save_hdf5_data_1-4] process has died [pid 1915, exit code 1, cmd /home/drainfly/catkin_ws/src/multi_tracker/nodes/save_data_to_hdf5.py --nodenum=1 __name:=save_hdf5_data_1 __log:=/home/drainfly/.ros/log/0374adf4-d3b1-11eb-94fa-3c7c3f7ddc02/save_hdf5_data_1-4.log].
+log file: /home/drainfly/.ros/log/0374adf4-d3b1-11eb-94fa-3c7c3f7ddc02/save_hdf5_data_1-4*.log
+Using open cv: 3.2.0
+Open CV 3
+Using open cv: 3.2.0
+Open CV 3
+Loaded configuration:  /home/drainfly/demo/demo_1/src/delta_video_config.py
+Using open cv: 3.2.0
+Open CV 3
+Using default parameter:  use_moments  =  True
+Using open cv: 3.2.0
+Open CV 3
+Using default parameter:  liveview  =  False
+Using default parameter:  morph_open_kernel_size  =  3
+Traceback (most recent call last):
+  File "/home/drainfly/catkin_ws/src/multi_tracker/nodes/data_association.py", line 18, in <module>
+    import multi_tracker_analysis.Kalman as Kalman
+  File "/home/drainfly/.local/lib/python2.7/site-packages/multi_tracker_analysis/__init__.py", line 2, in <module>
+    import bag2hdf5
+  File "/home/drainfly/.local/lib/python2.7/site-packages/multi_tracker_analysis/bag2hdf5.py", line 19, in <module>
+    import progressbar
+ImportError: No module named progressbar
+
+
+Solution:
+
+pip install progressbar --user
+
+pip install pandas --user
+pip install scipy --user
+
+git clone https://github.com/florisvb/FlyPlotLib
+remove sympy dependency, since sympy does not seem to want to install and it's not really needed
+python ./setup.py install --user
