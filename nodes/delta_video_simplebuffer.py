@@ -120,8 +120,14 @@ class Compressor:
             rospy.logwarn ('Exception converting background image from ROS to opencv:  %s' % e)
             img = np.zeros((320,240))
 
-        self.imgScaled = img[self.params['roi_b']:self.params['roi_t'], self.params['roi_l']:self.params['roi_r']]
+        self.imgScaled = img #[self.params['roi_b']:self.params['roi_t'], self.params['roi_l']:self.params['roi_r']]
         self.shapeImage = self.imgScaled.shape # (height,width)
+
+        # add roi as mask
+        if self.image_mask is None:
+            self.image_mask = np.zeros_like(self.imgScaled)
+            self.image_mask[self.params['roi_b']:self.params['roi_t'], self.params['roi_l']:self.params['roi_r']] = 1
+        self.imgScaled = self.image_mask*self.imgScaled
         
         if self.params['circular_mask_x'] != 'none':
             if self.image_mask is None:
