@@ -45,7 +45,7 @@ def plot_heatmap(pd, binsx, binsy, ax=None, vmin=0, vmax=None, logcolorscale=Fal
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        
+
     heatmap = get_heatmap(pd, binsx, binsy, position_x, position_y, position_z, position_z_slice)
     if logcolorscale:
         heatmap = np.log(heatmap)
@@ -53,7 +53,7 @@ def plot_heatmap(pd, binsx, binsy, ax=None, vmin=0, vmax=None, logcolorscale=Fal
         vmax = 0.1*np.max(heatmap)
     ax.imshow(heatmap.T, cmap=plt.get_cmap('hot'), vmin=vmin, vmax=vmax, origin='lower', extent=[binsx[0],binsx[-1],binsy[0],binsy[-1]])
     
-    return ax
+    return heatmap
 
 def resampling_statistics_on_heatmaps(h_ons, h_offs, iterations=1000, neff=None):
     '''
@@ -128,7 +128,7 @@ def plot_trajectories(pd, binsx, binsy, backgroundimage=None, ax=None, position_
     ax.set_yticks([])
     ax.set_aspect('equal')
 
-def plot_individual_trajectories_from_dataset_format(dataset, keys, backgroundimage, ax=None, binsx=None, binsy=None):
+def plot_individual_trajectories_from_dataset_format(dataset, keys, backgroundimage, ax=None, binsx=None, binsy=None, colors=None):
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -138,10 +138,13 @@ def plot_individual_trajectories_from_dataset_format(dataset, keys, backgroundim
         binsx, binsy = get_bins_from_backgroundimage(backgroundimage)
         ax.imshow(backgroundimage, cmap=plt.get_cmap('gray'), extent=[binsx[0], binsx[-1], binsy[0], binsy[-1]])
         
-    for key in keys:
+    for i, key in enumerate(keys):
         trajec = dataset.trajec(key)
         
-        ax.plot(trajec.position_x, trajec.position_y)
+        if colors is not None:
+            ax.plot(trajec.position_x, trajec.position_y, color=colors[i])
+        else:
+            ax.plot(trajec.position_x, trajec.position_y)
 
 def plot_trajectories_from_dataset(dataset, keys, interpolated_data='hide'):
     '''

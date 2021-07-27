@@ -22,10 +22,9 @@ def estimate_circle_from_data_points(x_m, y_m):
     model.parameters['center_x'] = np.abs(model.parameters['center_x'])
     model.parameters['center_y'] = np.abs(model.parameters['center_y'])
     
-    print 'Circle Estimates'
-    print 'Center (x,y): ', model.parameters['center_x'], model.parameters['center_y']
-    print 'Radius: ', model.parameters['radius']
-    print
+    print ('Circle Estimates')
+    print ('Center (x,y): ', model.parameters['center_x'], model.parameters['center_y'])
+    print ('Radius: ', model.parameters['radius'])
     
     return model.parameters['center_x'], model.parameters['center_y'], model.parameters['radius']
     
@@ -122,7 +121,7 @@ class ClickEllipse(object):
         for i in range(len(self.circle_points_x)):
             cv2.circle(canvas, (self.circle_points_x[i], self.circle_points_y[i]), 2, [0,0,255], 2)
         if self.circle_fit is not None:
-            print self.circle_fit
+            print (self.circle_fit)
             print (int(self.circle_fit[0][0]), int(self.circle_fit[0][1]))
             cv2.ellipse(canvas, (int(self.circle_fit[0][0]), int(self.circle_fit[0][1])), (int(self.circle_fit[1][0]/2.), int(self.circle_fit[1][1]/2.)), int(self.circle_fit[2]), 0, 360, (0,255,0), 2 )
         
@@ -150,7 +149,7 @@ class ClickPixels(object):
         
     def on_mouse_click(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONUP:
-            print x, y
+            print( x, y)
             self.points.append([x,y])
             
     def draw(self):
@@ -182,7 +181,7 @@ class ClickLine(object):
         
     def on_mouse_click(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONUP:
-            print x, y
+            print (x, y)
             self.points.append(np.array([x,y]))
             
     def draw(self):
@@ -190,7 +189,7 @@ class ClickLine(object):
         for point in self.points:
             cv2.circle(canvas, (point[0], point[1]), 2, [0,0,255], 2)
         if len(self.points) > 1:
-            print np.linalg.norm(self.points[1] - self.points[0])
+            print (np.linalg.norm(self.points[1] - self.points[0]))
         cv2.imshow("Display", canvas)
         #cv2.waitKey(1)
         

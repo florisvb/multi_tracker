@@ -19,13 +19,13 @@ class DVBag2PandasReader(object):
         if dvbag_filename is not None:
             self.dvbag = rosbag.Bag(dvbag_filename)
         else:
-            print 'Processing from live stream'
+            print ('Processing from live stream')
         self.saveto = saveto
         
         if os.path.exists(self.saveto):
             self.dataframe = pandas.read_hdf(self.saveto)
             self.hdf = pandas.HDFStore(self.saveto)
-            print 'Loaded pre-existing HDF with ' + str(len(self.dataframe)) + ' rows'
+            print('Loaded pre-existing HDF with ' + str(len(self.dataframe)) + ' rows')
         else:
             self.dataframe = pandas.DataFrame([[0, 0, 0, 0, 0, 0, 0]], columns=['x','y','value', 'frames', 'difference', 'time_secs', 'time_nsecs'], index=[0])
             self.hdf = pandas.HDFStore(self.saveto)
@@ -51,7 +51,7 @@ class DVBag2PandasReader(object):
                 nsecs = [delta_vid.header.stamp.nsecs for i in range(len(delta_vid.values))]
                 
                 if os.path.basename(delta_vid.background_image) != self.background_image_filename:
-                    print 'Warning: not using new background image!'
+                    print('Warning: not using new background image!')
                 
                 x = pandas.Series(delta_vid.xpixels)
                 y = pandas.Series(delta_vid.ypixels)
@@ -65,7 +65,7 @@ class DVBag2PandasReader(object):
                                        'frames': frames,
                                        'time_secs': secs,
                                        'time_nsecs': nsecs})
-                print df    
+                print (df)    
                 if self.df_buffer is None:
                     self.df_buffer = df
                 else:
@@ -99,9 +99,9 @@ class DVBag2PandasReader(object):
             q = 'time_secs == ' + str(timeend)
             frameend = np.max(self.dataframe.query(q).frames)
             frame_index_list = np.arange(framestart, frameend).tolist()
-            print 'Loading already processed data'
+            print ('Loading already processed data')
         else:
-            print 'loading image sequence from delta video bag - may take a moment'
+            print ('loading image sequence from delta video bag - may take a moment')
             pbar = progressbar.ProgressBar().start()
             frame_index_list = []
             for msg in msgs:

@@ -41,13 +41,13 @@ def get_filename(path, contains, does_not_contain=['~', '.pyc']):
         print('Found multiple background images, using ' + str(pick))
         return pick
     else:
-        print filelist
-        print 'Found too many, or too few files'
+        print (filelist)
+        print ('Found too many, or too few files')
     return None
             
 def load_bag_as_hdf5(bag, skip_messages=[]):
     output_fname = bag.split('.')[0] + '.hdf5'
-    print output_fname
+    print (output_fname)
     if not os.path.exists(output_fname):
         mta.bag2hdf5.bag2hdf5(   bag,
                                  output_fname,
@@ -107,17 +107,17 @@ class Dataset(object):
             self.copy_trajectory_objects_to_dataset()
             del(self.pd)
             self.pd = None
-            print
-            print 'Dataset loaded as a stand alone object - to save your dataset, use: '
-            print 'dataset.save_dataset()'
-            print
-            print '  -- OR --  '
-            print
-            print 'del (dataset.config)'
-            print 'import pickle'
-            print 'f = open(dataset.dataset_filename, "w+")'
-            print 'pickle.dump(dataset, f)'
-            print 'f.close()'
+            print()
+            print ('Dataset loaded as a stand alone object - to save your dataset, use: ')
+            print ('dataset.save_dataset()')
+            print()
+            print ('  -- OR --  ')
+            print()
+            print ('del (dataset.config)')
+            print ('import pickle')
+            print ('f = open(dataset.dataset_filename, "w+")')
+            print( 'pickle.dump(dataset, f)')
+            print ('f.close()')
 
     def set_dataset_filename(self):
         raw_data_filename = get_filename(self.path, 'trackedobjects.hdf5')
@@ -226,13 +226,13 @@ def load_dataset_from_path(path, load_saved=False, convert_to_units=True, use_an
     if load_saved:
         data_filename = get_filename(path, 'trackedobjects_dataset.pickle')
         if data_filename is not None:
-            print data_filename
+            print (data_filename)
             delete_cut_join_instructions_filename = get_filename(path, 'delete_cut_join_instructions.pickle')
             epoch_time_when_dcjif_modified = os.path.getmtime(delete_cut_join_instructions_filename)
             epoch_time_when_dataset_modified = os.path.getmtime(data_filename)
 
             if epoch_time_when_dcjif_modified > epoch_time_when_dataset_modified:
-                print 'Delete cut join instructions modified - recalculating new dataset'
+                print ('Delete cut join instructions modified - recalculating new dataset')
 
             else:
                 f = open(data_filename)
@@ -245,14 +245,14 @@ def load_dataset_from_path(path, load_saved=False, convert_to_units=True, use_an
                 if dataset.has_zero_length_objects():
                     dataset.remove_zero_length_objects()
                     dataset.save_dataset()
-                print 'Loaded cached dataset last modified: '
-                print time.localtime(epoch_time_when_dataset_modified)
-                print
+                print ('Loaded cached dataset last modified: ')
+                print (time.localtime(epoch_time_when_dataset_modified))
+                print()
                 return dataset
         else:
-            print 'Could not find cached dataset in path: '
-            print path
-            print ' Loading dataset from raw data now...'
+            print ('Could not find cached dataset in path: ')
+            print (path)
+            print (' Loading dataset from raw data now...')
 
     data_filename = get_filename(path, 'trackedobjects.hdf5')
     pd, config = load_and_preprocess_data(data_filename)
@@ -318,11 +318,11 @@ def load_and_preprocess_data(hdf5_filename):
     '''
 
     if 'trackedobjects' not in hdf5_filename:
-        print 'File is not a trackedobjects file, looking for a trackedobjects file in this directory'
+        print ('File is not a trackedobjects file, looking for a trackedobjects file in this directory')
         fname = get_filename(hdf5_filename, 'trackedobjects.hdf5')
         if fname is not None:
             hdf5_filename = fname
-            print 'Found: ', fname
+            print ('Found: ', fname)
         else:
             raise ValueError('Could not find trackedobjects.hdf5 file')
                     
@@ -353,7 +353,7 @@ def load_config_from_path(path):
     except:
         config_file_basename = os.path.basename(config_filename)
         identifiercode = config_file_basename.split('config_')[1].split('.py')[0]
-    print 'identifiercode: ', identifiercode
+    print ('identifiercode: ', identifiercode)
     if config_filename is not None:
         Config = imp.load_source('Config', config_filename)
         config = Config.Config(path, identifiercode)
@@ -371,10 +371,10 @@ def find_instructions_related_to_objid(instructions, objid):
     for i, instruction in enumerate(instructions):
         if 'new_objid' in instruction.keys():
             if objid == instruction['new_objid']:
-                print i
+                print (i)
         if 'objids' in instruction.keys():
             if objid in instruction['objids']:
-                print i
+                print (i)
 
 def mass_delete(pd, objids_to_delete):
     print('Mass deleting objects as requested...')
@@ -429,7 +429,7 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
                 for key in instruction['objids']:
                     mask = pd['objid']==key
                     if 'new_objid' in instruction.keys():
-                        print '*** ASSIGNING NEW OBJID: ', instruction['new_objid']
+                        print ('*** ASSIGNING NEW OBJID: ', instruction['new_objid'])
                         pd.loc[mask,'objid'] = instruction['new_objid']
                     else:
                         warnings.warn("Warning: using old join method; not using unique objid numbers")
@@ -459,7 +459,7 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
                                 data_to_add_y = []
                                 for index, data_to_add in enumerate(instruction['data_to_add']):
                                     frame_for_data_to_add = dataset.timestamp_to_framestamp(data_to_add[0])
-                                    print frame_for_data_to_add, last_frame, first_frame
+                                    print( frame_for_data_to_add, last_frame, first_frame)
                                     if frame_for_data_to_add > last_frame and frame_for_data_to_add < first_frame:
                                         data_to_add_frames.append(frame_for_data_to_add)
                                         data_to_add_x.append(data_to_add[1])
@@ -504,7 +504,7 @@ def delete_cut_join_trajectories_according_to_instructions(pd, instructions, int
                 for key in instruction['objids']:
                     mask = pd['objid']==key
                     if 'new_objid' in instruction.keys():
-                        print '*** ASSIGNING NEW OBJID: ', key, '  to : ', instruction['new_objid']
+                        print ('*** ASSIGNING NEW OBJID: ', key, '  to : ', instruction['new_objid'])
                         pd.loc[mask,'objid'] = instruction['new_objid']
                     else:
                         warnings.warn("Warning: using old join method; not using unique objid numbers")

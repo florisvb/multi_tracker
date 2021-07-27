@@ -1,8 +1,8 @@
-import data_slicing
+from multi_tracker_analysis import data_slicing
 import numpy as np
 import sys
 sys.path.append('../nodes')
-import Kalman
+from multi_tracker_analysis import Kalman
 import matplotlib.pyplot as plt
 import imp
 

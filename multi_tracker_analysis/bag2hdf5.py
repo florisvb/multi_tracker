@@ -2,6 +2,7 @@
 
 # written by sdvillal / StrawLab: https://github.com/strawlab/bag2hdf5/blob/master/bag2hdf5
 # copied here for convenience
+from __future__ import print_function
 
 import os
 import sys
@@ -18,56 +19,69 @@ import rosbag
 import warnings
 import progressbar
 
+
+
 FLOAT_TIME = True  # False to prevent saving of float redundant timestamps
 
 
 def flatten_msg(msg, t, max_strlen=None):
     assert max_strlen is not None  # don't accept default
     result = []
-    for i, attr in enumerate(msg.__slots__):
-        rostype = msg._slot_types[i]
 
-        if attr == 'header':
-            h = msg.header
-            result.extend([h.seq,
-                           h.stamp.secs,
-                           h.stamp.nsecs,
-                           h.frame_id,
-                           ])
-            if FLOAT_TIME:
-                result.append(h.stamp.secs + h.stamp.nsecs*1e-9)
-        
-        elif rostype == 'time':
+    if rostype == 'sensor_msgs/NavSatFix':
+            print('navsatfix')
             p = getattr(msg, attr)
-            result.extend([p.secs, p.nsecs])
-            if FLOAT_TIME:
-                result.append(p.secs + p.nsecs*1e-9)
+            result.extend([p.latitude, p.longitude, p.altitude, 
+                p.position_covariance[0], p.position_covariance[4], p.position_covariance[8],
+                p.status, p.service])
+            print(result[-1])
 
-        elif rostype == 'geometry_msgs/Point':
-            p = getattr(msg, attr)
-            result.extend([p.x, p.y, p.z])
+    else:
+        for i, attr in enumerate(msg.__slots__):
+            rostype = msg._slot_types[i]
 
-        elif rostype == 'geometry_msgs/Quaternion':
-            p = getattr(msg, attr)
-            result.extend([p.x, p.y, p.z, p.w])
-        
-        elif rostype == 'std_msgs/MultiArrayLayout':
-            pass
+            if attr == 'header':
+                h = msg.header
+                result.extend([h.seq,
+                               h.stamp.secs,
+                               h.stamp.nsecs,
+                               h.frame_id,
+                               ])
+                if FLOAT_TIME:
+                    result.append(h.stamp.secs + h.stamp.nsecs*1e-9)
             
-        elif '[]' in rostype and 'string' not in rostype:
-            p = getattr(msg, attr)
-            l = [i for i in p]
-            result.extend(l)
+            elif rostype == 'time':
+                p = getattr(msg, attr)
+                result.extend([p.secs, p.nsecs])
+                if FLOAT_TIME:
+                    result.append(p.secs + p.nsecs*1e-9)
 
-        else:
-            p = getattr(msg, attr)
-            if rostype == 'string' or rostype == 'string[]':
-                if rostype == 'string[]':
-                    # List of strings gets joined to one string
-                    warnings.warn('string array is joined to single string', RuntimeWarning, stacklevel=2)
-                    p = ','.join(p)
-                assert len(p) <= max_strlen
-            result.append(p)
+            elif rostype == 'geometry_msgs/Point':
+                p = getattr(msg, attr)
+                result.extend([p.x, p.y, p.z])
+
+            elif rostype == 'geometry_msgs/Point':
+                p = getattr(msg, attr)
+                result.extend([p.x, p.y, p.z])
+
+            
+            elif rostype == 'std_msgs/MultiArrayLayout':
+                pass
+                
+            elif '[]' in rostype and 'string' not in rostype:
+                p = getattr(msg, attr)
+                l = [i for i in p]
+                result.extend(l)
+
+            else:
+                p = getattr(msg, attr)
+                if rostype == 'string' or rostype == 'string[]':
+                    if rostype == 'string[]':
+                        # List of strings gets joined to one string
+                        warnings.warn('string array is joined to single string', RuntimeWarning, stacklevel=2)
+                        p = ','.join(p)
+                    assert len(p) <= max_strlen
+                result.append(p)
     # also do timestamp
     result.extend([t.secs, t.nsecs])
     if FLOAT_TIME:
@@ -104,7 +118,8 @@ def rostype2dtype(rostype, max_strlen=None):
     elif rostype == 'string' or rostype == 'string[]':
         dtype = 'S' + str(max_strlen)
     else:
-        raise ValueError('unknown ROS type: %s' % rostype)
+        print('unknown ROS type: %s trying float' % rostype )
+        dtype = np.float64
     return dtype
 
 
@@ -136,6 +151,17 @@ def make_dtype(msg, max_strlen=None):
                            (attr+'_y', np.float32),
                            (attr+'_z', np.float32),
                            ])
+        elif rostype == 'sensor_msgs/NavSatFix':
+            result.extend([(attr+'_lat', np.float32),
+                           (attr+'_lon', np.float32),
+                           (attr+'_alt', np.float32),
+                           (attr+'_cov1', np.float32),
+                           (attr+'_cov2', np.float32),
+                           (attr+'_cov3', np.float32),
+                           (attr+'_status', np.float32),
+                           (attr+'_service', np.float32),
+                           ])
+            #print(result[-1])
         elif rostype == 'geometry_msgs/Quaternion':
             result.extend([(attr+'_x', np.float32),
                            (attr+'_y', np.float32),
@@ -181,16 +207,20 @@ def bag2hdf5(fname, out_fname, topics=None, max_strlen=None, skip_messages={}):
     pbar = progressbar.ProgressBar(widgets=_pbw, maxval=bag.size).start()
     
     if topics is None:
-        print 'AUTO FIND TOPICS'
+        print( 'AUTO FIND TOPICS')
         topics = []
         for topic, msg, t in bag.read_messages():
             topics.append(topic)
         topics = np.unique(topics).tolist()
-        print topics
+        print (topics)
         
-    print 'skip messages: '
-    print skip_messages
-    print
+    print ('skip messages: ')
+    print (skip_messages)
+    print()
+
+    print( 'topics: ')
+    print (topics)
+    print()
     
     try:
         with h5py.File(out_fname, mode='w') as out_f:
@@ -198,7 +228,6 @@ def bag2hdf5(fname, out_fname, topics=None, max_strlen=None, skip_messages={}):
                 m = -1
                 for topic, msg, t in bag.read_messages(topics=[topic]):
                     m += 1
-                    
                     
                     if topic not in skip_messages.keys():
                         skip_messages[topic] = []
@@ -210,18 +239,20 @@ def bag2hdf5(fname, out_fname, topics=None, max_strlen=None, skip_messages={}):
                     # get the data
                     
                     if m not in skip_messages[topic]:
+                        #print(msg)
                         this_row = flatten_msg(msg, t, max_strlen=max_strlen)
-                        
+                        #print(this_row)
+
                         # convert it to numpy element (and dtype)
                         if topic not in results2:
                             try:
                                 dtype = make_dtype(msg, max_strlen=max_strlen)
                             except:
-                                print >> sys.stderr, "*********************************"
-                                print >> sys.stderr, 'topic:', topic
-                                print >> sys.stderr, "\nerror while processing message:\n\n%r" % msg
-                                print >> sys.stderr, '\nROW:', this_row
-                                print >> sys.stderr, "*********************************"
+                                print("*********************************")
+                                print ('topic:', topic, file=sys.stderr)
+                                print ("\nerror while processing message:\n\n%r" % msg, file=sys.stderr)
+                                print ('\nROW:', this_row, file=sys.stderr)
+                                print ("*********************************")
                                 raise
                             results2[topic] = dict(dtype=dtype,
                                                    object=[this_row])
@@ -248,15 +279,17 @@ def bag2hdf5(fname, out_fname, topics=None, max_strlen=None, skip_messages={}):
                             results2[topic]['object'] = []
                     
                     else:
-                        print 'skipping message: ', m
+                        print ('skipping message: ', m)
             # done reading bag file. flush remaining data to h5 file
             for topic in results2:
-                print topic
-                print results2[topic]
-                print
+                print (topic)
+                #print results2[topic]
+                print()
                 if not len(results2[topic]['object']):
                     # no data
                     continue
+                print('*****')
+                #print(results2[topic])
                 arr = np.array(**results2[topic])
                 if topic in dsets:
                     h5append(dsets[topic], arr)
@@ -287,7 +320,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if not os.path.exists(args.filename):
-        print >> sys.stderr, 'No file %s' % args.filename
+        print ('No file %s' % args.filename, file=sys.stderr)
         sys.exit(1)
     fname = os.path.splitext(args.filename)[0]
     if args.out is not None:
@@ -296,7 +329,7 @@ if __name__ == '__main__':
     else:
         output_fname = fname + '.hdf5'
         if os.path.exists(output_fname):
-            print >> sys.stderr, 'will not overwrite %s' % output_fname
+            print ('will not overwrite %s' % output_fname, file=sys.stderr)
             sys.exit(1)
 
     bag2hdf5(args.filename,
