@@ -3,6 +3,10 @@ import os
 import numpy as np
 import multi_tracker_analysis as mta
 
+def load_sensory_stimulus_on():
+    # write some code that reads a file and reformats stimulus on/off times to have the form of a list of epoch timestamps e.g. [[t1,t2],[t3,4]]
+    return [[1444888597, 1444888599], [1444888602, 1444888603]]
+
 class Config(object):
     def __init__(self, path, identifiercode=''):
         if '.py' in path:
@@ -19,7 +23,10 @@ class Config(object):
         self.minimal_cumulative_distance_travelled = 4
         
         # other parameters
-        self.sensory_stimulus_on = []
+        if self.identifiercode == '20160412_134708_N1': # only do this for this particular example
+            self.sensory_stimulus_on = load_sensory_stimulus_on()
+        else:
+            self.sensory_stimulus_on = []
         
     def preprocess_data(self, pandas_dataframe):
         print 'Preprocessing data - see config file for details!'
