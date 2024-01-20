@@ -61,7 +61,7 @@ def incredibly_basic(self):
         contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     elif OPENCV_VERSION == 3:
         self.threshed = np.uint8(self.threshed)
-        image, contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     try:
         header  = Header(stamp=self.framestamp,frame_id=str(self.framenumber))
@@ -153,7 +153,7 @@ def extract_and_publish_contours(self):
     if OPENCV_VERSION == 2:
         contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     elif OPENCV_VERSION == 3:
-        image, contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(self.threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # http://docs.opencv.org/trunk/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html
     
     try:
