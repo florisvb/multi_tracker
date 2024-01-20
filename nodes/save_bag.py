@@ -57,7 +57,7 @@ class SaveBag:
         rospy.logwarn('Saving bag file: %s' % (self.filenameBag))
         cmdline = ['rosbag', 'record','-O', self.filenameBag]
         cmdline.extend(self.topics)
-        print cmdline
+        print(cmdline)
         self.processRosbag = subprocess.Popen(cmdline, preexec_fn=subprocess.os.setpgrp)
     
     def StopRecordingBag(self):
@@ -85,12 +85,12 @@ if __name__ == '__main__':
     
     try:
         configuration = imp.load_source('configuration', options.config)
-        print "Loaded configuration: ", options.config
+        print("Loaded configuration: ", options.config)
     except: # look in home directory for config file
         home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/' + options.nodenum + '/home_directory') )
         config_file = os.path.join(home_directory, options.config)
         configuration = imp.load_source('configuration', config_file)
-        print "Loaded configuration: ", config_file
+        print("Loaded configuration: ", config_file)
     
     config = configuration.Config()
 

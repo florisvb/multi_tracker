@@ -19,7 +19,7 @@ from multi_tracker.srv import resetBackgroundService
 import time, os
 
 from distutils.version import LooseVersion, StrictVersion
-print 'Using open cv: ' + cv2.__version__
+print('Using open cv: ' + cv2.__version__)
 
 # video would not load before installing most recent version of pyqtgraph from github repo
 # this is the version of the commit that fixed the
@@ -27,10 +27,10 @@ print 'Using open cv: ' + cv2.__version__
 # version checking with distutils.version. See: http://stackoverflow.com/questions/11887762/compare-version-strings
 if StrictVersion(cv2.__version__.split('-')[0]) >= StrictVersion("3.0.0"):
     OPENCV_VERSION = 3
-    print 'Open CV 3'
+    print('Open CV 3')
 else:
     OPENCV_VERSION = 2
-    print 'Open CV 2'
+    print('Open CV 2')
     
 ###########################################################################################################
 # Incredibly basic image processing function (self contained), to demonstrate the format custom image processing functions should follow
@@ -67,7 +67,7 @@ def incredibly_basic(self):
         header  = Header(stamp=self.framestamp,frame_id=str(self.framenumber))
     except:
         header  = Header(stamp=None,frame_id=str(self.framenumber))
-        print 'could not get framestamp, run tracker_nobuffer instead'
+        print('could not get framestamp, run tracker_nobuffer instead')
         
     contour_info = []
     for contour in contours:
@@ -160,7 +160,7 @@ def extract_and_publish_contours(self):
         header  = Header(stamp=self.framestamp,frame_id=str(self.framenumber))
     except:
         header  = Header(stamp=None,frame_id=str(self.framenumber))
-        print 'could not get framestamp, run tracker_nobuffer instead'
+        print('could not get framestamp, run tracker_nobuffer instead')
         
     contour_info = []
     for contour in contours:
@@ -230,16 +230,16 @@ def reset_background_if_difference_is_very_large(self, color='dark'):
 
 def reset_background(self):
     self.backgroundImage = copy.copy(np.float32(self.imgScaled))
-    print self.imgScaled.shape, self.backgroundImage.shape
+    print(self.imgScaled.shape, self.backgroundImage.shape)
     filename = self.experiment_basename + '_' + time.strftime("%Y%m%d_%H%M%S_bgimg_N" + self.nodenum, time.localtime()) + '.png'
     home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/' + self.nodenum + '/data_directory') )
     filename = os.path.join(home_directory, filename)
     
     try:
         cv2.imwrite(filename, self.backgroundImage) # requires opencv > 2.4.9
-        print 'Background reset: ', filename
+        print('Background reset: ', filename)
     except:
-        print 'failed to save background image, might need opencv 2.4.9?'
+        print('failed to save background image, might need opencv 2.4.9?')
 
 def add_image_to_background(self, color='dark'):
     tmp_backgroundImage = copy.copy(np.float32(self.imgScaled))
@@ -253,9 +253,9 @@ def add_image_to_background(self, color='dark'):
     
     try:
         cv2.imwrite(filename, self.backgroundImage) # requires opencv > 2.4.9
-        print 'Background reset: ', filename
+        print('Background reset: ', filename)
     except:
-        print 'failed to save background image, might need opencv 2.4.9?'
+        print('failed to save background image, might need opencv 2.4.9?')
 ###########################################################################################################
 
 ###########################################################################################################
@@ -334,7 +334,7 @@ def dark_or_light_objects_only(self, color='dark'):
             self.backgroundImage = copy.copy(np.float32(np.median(self.medianbgimages, axis=0)))
             self.medianbgimages.pop(0)
             self.medianbgimages_times.pop(0)
-            print 'reset background with median image'
+            print('reset background with median image')
 
     try:
         kernel = self.kernel

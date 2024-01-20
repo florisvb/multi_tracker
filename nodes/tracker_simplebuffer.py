@@ -70,7 +70,7 @@ class Tracker:
                 p = '/multi_tracker/' + nodenum + '/tracker/' + parameter
                 self.params[parameter] = rospy.get_param(p)
             except:
-                print 'Using default parameter: ', parameter, ' = ', value
+                print('Using default parameter: ', parameter, ' = ', value)
 	
         self.experiment_basename = rospy.get_param('/multi_tracker/' + nodenum + '/experiment_basename', 'none')
         if self.experiment_basename == 'none':
@@ -129,7 +129,7 @@ class Tracker:
         # Convert the image.
         try:
             img = self.cvbridge.imgmsg_to_cv2(rosimg, 'passthrough') # might need to change to bgr for color cameras
-        except CvBridgeError, e:
+        except CvBridgeError as e:
             rospy.logwarn ('Exception converting background image from ROS to opencv:  %s' % e)
             img = np.zeros((320,240))
             

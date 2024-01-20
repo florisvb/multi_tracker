@@ -25,7 +25,7 @@ class DataListener:
         filename = experiment_basename + '_trackedobjects.hdf5'
         home_directory = os.path.expanduser( rospy.get_param('/multi_tracker/' + nodenum + '/data_directory') )
         filename = os.path.join(home_directory, filename)
-        print 'Saving hdf5 data to: ', filename
+        print('Saving hdf5 data to: ', filename)
         self.time_start = time.time()
         self.record_time_hrs = record_time_hrs
         
@@ -136,7 +136,7 @@ class DataListener:
         
     def stop_saving_data(self):
         self.hdf5.close()
-        print 'shut down nicely'
+        print('shut down nicely')
         
 if __name__ == '__main__':
     parser = OptionParser()

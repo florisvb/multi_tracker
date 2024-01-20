@@ -21,13 +21,13 @@ from multi_tracker.srv import resetBackgroundService, addImageToBackgroundServic
 import image_processing
 
 from distutils.version import LooseVersion, StrictVersion
-print 'Using open cv: ' + cv2.__version__
+print('Using open cv: ' + cv2.__version__)
 if StrictVersion(cv2.__version__.split('-')[0]) >= StrictVersion("3.0.0"):
     OPENCV_VERSION = 3
-    print 'Open CV 3'
+    print('Open CV 3')
 else:
     OPENCV_VERSION = 2
-    print 'Open CV 2'
+    print('Open CV 2')
 
 if 0:#OPENCV_VERSION == 3:
     raise ImportError('cv bridge not compatible with opencv 3, killing live viewer')
@@ -58,7 +58,7 @@ def draw_trajectory(img, pts, color, thickness):
             cv2.line(img, (int(pts[i][0]), int(pts[i][1])), (int(pts[i+1][0]), int(pts[i+1][1])), color, thickness)
         except:
             pass
-            print 'could not draw trajectory line, length pts: ', len(pts), 'i: ', i
+            print('could not draw trajectory line, length pts: ', len(pts), 'i: ', i)
             
 # The main tracking class, a ROS node
 class LiveViewer:
@@ -91,7 +91,7 @@ class LiveViewer:
                     p = '/multi_tracker/' + nodenum + '/tracker/' + parameter
                     self.params[parameter] = rospy.get_param(p)
                 except:
-                    print 'Using default parameter: ', parameter, ' = ', value
+                    print('Using default parameter: ', parameter, ' = ', value)
                 
         # initialize the node
         rospy.init_node('liveviewer_' + nodenum)
@@ -120,7 +120,7 @@ class LiveViewer:
         try:
             self.add_image_to_background = rospy.ServiceProxy(add_image_to_background_service_name, addImageToBackgroundService)
         except:
-            print 'could not connect to add image to background service - is tracker running?'
+            print( 'could not connect to add image to background service - is tracker running?')
 
     def reset_background(self, service_call):
         self.reset_background_flag = True
@@ -158,7 +158,7 @@ class LiveViewer:
         # Convert the image.
         try:
             img = self.cvbridge.imgmsg_to_cv2(rosimg, 'passthrough') # might need to change to bgr for color cameras
-        except CvBridgeError, e:
+        except CvBridgeError as e:
             rospy.logwarn ('Exception converting background image from ROS to opencv:  %s' % e)
             img = np.zeros((320,240))
         
@@ -217,13 +217,13 @@ class LiveViewer:
         
     def on_mouse_click(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONUP:
-            print 'clicked pixel: ', [x, y]
+            print('clicked pixel: ', [x, y])
     
     def on_key_press(self, ascii_key):
         key = chr(ascii_key)
         if key == 'a':
             resp = self.add_image_to_background()
-            print 'added image to background'
+            print('added image to background')
             
     def Main(self):
         while (not rospy.is_shutdown()):
