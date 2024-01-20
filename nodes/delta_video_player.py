@@ -37,13 +37,13 @@ import matplotlib.pyplot as plt
 
 
 from distutils.version import LooseVersion, StrictVersion
-print 'Using open cv: ' + cv2.__version__
+print('Using open cv: ' + cv2.__version__)
 if StrictVersion(cv2.__version__.split('-')[0]) >= StrictVersion("3.0.0"):
     OPENCV_VERSION = 3
-    print 'Open CV 3'
+    print('Open CV 3')
 else:
     OPENCV_VERSION = 2
-    print 'Open CV 2'
+    print('Open CV 2')
 
 # The main tracking class, a ROS node
 class DeCompressor:
@@ -64,6 +64,7 @@ class DeCompressor:
         self.subDeltaVid = rospy.Subscriber(topic_in, DeltaVid, self.delta_image_callback, queue_size=30)
         
         self.directory = directory #rospy.get_param('/multi_tracker/delta_video/directory', default='')
+        print('Directory with background images: ', self.directory)
         
         self.cvbridge = CvBridge()
         
@@ -131,7 +132,7 @@ class DeCompressor:
         rospy.spin()
         if self.videowriter is not None:
             self.videowriter.release()
-            print "Note: use this command to make a mac / quicktime friendly video: avconv -i test.avi -c:v libx264 -c:a copy outputfile.mp4"
+            print("Note: use this command to make a mac / quicktime friendly video: avconv -i test.avi -c:v libx264 -c:a copy outputfile.mp4")
 #####################################################################################################
     
 if __name__ == '__main__':
